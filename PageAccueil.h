@@ -7,7 +7,7 @@ const char *MainHtml = R"====(
 
 <head>
   <meta charset="UTF-8">
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="/commun.css">
   <title>RMS F1ATB</title>
 
@@ -275,6 +275,14 @@ const char *MainHtml = R"====(
     }
     #date{
       display:none;
+    }
+    @media(max-width:700px){
+      .grid-container2,.grid-container2M{grid-template-columns:repeat(3,auto)}
+      .grid-container1{grid-template-columns:repeat(2,auto)}
+      .item1{grid-column:1/span 2}
+      .item2{grid-column:3/span 1}
+      .item_Force{grid-column:2/span 2}
+      h2{font-size:1.2rem}
     }
   </style>
 </head>
