@@ -169,7 +169,6 @@ void LectureEnphase() {  //Lecture des consommations
     WiFiClient clientFirmV5;
     if (!clientFirmV5.connect(host.c_str(), 80, 3000)) {
       StockMessage("connection to client clientFirmV5 failed (call to Envoy-S)");
-      delay(200);
       return;
     }
     String url = "/ivp/meters/reports/consumption";
@@ -182,6 +181,7 @@ void LectureEnphase() {  //Lecture des consommations
         clientFirmV5.stop();
         return;
       }
+      yield();
     }
     timeout = millis();
     String line;

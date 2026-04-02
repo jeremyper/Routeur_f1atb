@@ -39,7 +39,6 @@ void LectureShellyProEm() {
     if (!clientESP_RMS.connect(host.c_str(), 80, 3000)) {
       StockMessage("connection to Shelly Pro Em failed : " + host);
       clientESP_RMS.stop();
-      delay(200);
       return;
     }
 
@@ -49,9 +48,9 @@ void LectureShellyProEm() {
       if (millis() - timeout > 5000) {
         StockMessage("client Shelly Em Timeout ! : " + host);
         clientESP_RMS.stop();
-        delay(200);
         return;
       }
+      yield();
     }
     timeout = millis();
     // Lecture des données brutes distantes
@@ -72,13 +71,9 @@ void LectureShellyProEm() {
   }
   // Protocole monophasé ou triphasé FIN
   if (!clientESP_RMS.connect(host.c_str(), 80, 3000)) {
-    delay(500);
     if (!clientESP_RMS.connect(host.c_str(), 80, 3000)) {
-      delay(100); //Necessaire
       clientESP_RMS.stop();
       StockMessage("connection to Shelly Em failed : " + host);
-      
-      delay(200);
       return;
     }
   }
@@ -91,9 +86,9 @@ void LectureShellyProEm() {
     if (millis() - timeout > 5000) {
       StockMessage("client Shelly Em Timeout 2 ! : " + host);
       clientESP_RMS.stop();
-      delay(100);
       return;
     }
+    yield();
   }
   timeout = millis();
   // Lecture des données brutes distantes

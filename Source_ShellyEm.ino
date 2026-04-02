@@ -35,9 +35,7 @@ void LectureShellyEm() {
   WiFiClient clientESP_RMS;
   String host = IP2String(RMSextIP);
   if (!clientESP_RMS.connect(host.c_str(), 80, 3000)) {
-    delay(500);
     if (!clientESP_RMS.connect(host.c_str(), 80, 3000)) {
-      delay(100);
       clientESP_RMS.stop();
       StockMessage("connection to Shelly Em failed : " + host);
       return;
@@ -61,9 +59,9 @@ void LectureShellyEm() {
     if (millis() - timeout > 5000) {
       StockMessage("client Shelly Em Timeout ! : " + host);
       clientESP_RMS.stop();
-      delay(100);
       return;
     }
+    yield();
   }
   if (voie ==3) {   //Triphasé
     Shelly_Data = ReadStringMulti(clientESP_RMS, "fs_mounted");
