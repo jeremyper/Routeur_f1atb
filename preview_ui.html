@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Preview UI - RMS F1ATB</title>
+<style>
+/* ══ commun.css ══════════════════════════════════════════════ */
+:root{--acc:#4ab3f4;--acc2:#7dcfff;--btn-bg:linear-gradient(135deg,#3a3a5e,#252540);--btn-bg2:linear-gradient(135deg,#4a4a7e,#353560);--rad:8px}
+*,*::before,*::after{box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#111122;color:#e0e0f0;margin:0;padding:10px}
+a:link{color:var(--acc);text-decoration:none}
+a:visited{color:#a0c8f0;text-decoration:none}
+a:hover{color:var(--acc2);text-decoration:underline}
+.onglets{margin-top:4px;display:flex;flex-wrap:wrap;gap:4px;font-size:105%;align-items:center}
+#onglets2{margin-top:6px;display:flex;flex-wrap:wrap;gap:4px;font-size:85%}
+.Bonglet{border:2px solid #444;background:linear-gradient(135deg,#2a2a3e,#1e1e32);border-radius:6px;padding:4px 14px;display:inline-block;transition:background .15s,border-color .15s;cursor:pointer}
+.Bonglet:hover{background:linear-gradient(135deg,#3a3a5e,#2a2a48);border-color:var(--acc)}
+.Bonglet.actif{border:inset 8px #80e0ff}
+.Bonglet2{border:1px solid #444;background:#1e1e30;border-radius:5px;padding:3px 10px;display:inline-block;transition:background .15s;cursor:pointer}
+.Bonglet2:hover{background:#2a2a3e}
+.Bonglet2.actif{border:inset 4px #80e0ff}
+#pied{display:flex;justify-content:space-between;font-size:13px;color:#888;padding:6px 2px;border-top:1px solid #333;margin-top:16px}
+.lds-dual-ring{color:#e6e655;visibility:visible!important;display:inline-block;width:32px;height:32px;vertical-align:middle}
+.lds-dual-ring::after{content:" ";display:block;width:24px;height:24px;margin:4px;border-radius:50%;border:4px solid currentColor;border-color:currentColor transparent currentColor transparent;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.bouton,input[type=file]::file-selector-button{margin:4px;font-size:15px;height:36px;padding:0 16px;border:2px solid #555;border-radius:var(--rad);cursor:pointer;background:var(--btn-bg);color:#dde;font-weight:500;transition:background .15s,border-color .15s,transform .1s}
+.bouton:hover{background:var(--btn-bg2);border-color:var(--acc)}
+.bouton:active{transform:translateY(1px)}
+
+/* ══ Séparateur de sections de la preview ════════════════════ */
+.section-title{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#556;border-bottom:1px solid #223;padding:20px 0 6px;margin:0 0 10px}
+
+/* ══ Page Accueil ════════════════════════════════════════════ */
+.grid-container2{display:grid;grid-template-columns:repeat(6,auto);gap:2px;background:rgba(30,30,30,0.3);padding:10px;border:2px inset grey;border-radius:10px;text-align:right;color:#111}
+.grid-container2>div{padding:8px}
+.item1{grid-column:2/span 2;background:rgba(62,194,247,0.5);font-weight:bold}
+.item2{grid-column:4/span 2;background:rgba(62,194,247,0.5);font-weight:bold}
+.item5,.item6,.item7{background:rgba(62,194,247,0.5);font-weight:bold}
+.item8{grid-column-start:1;text-align:left}
+.item_val{background:rgba(200,200,200,0.5)}
+.W{background:#f88}.Wh{background:#ff8}.VA{background:#0ff}
+.jaugeBack{background:rgb(0,195,255);width:208px;height:36px;position:relative;padding:4px}
+.jauge{background:#ff8;height:28px;position:absolute;top:4px;left:4px;text-align:left;overflow:visible}
+
+/* ══ Page Actions ════════════════════════════════════════════ */
+:root{
+  --card:rgba(28,28,44,0.55);--card-border:#3a3a5a;
+  --popup-bg:#1e2030;--popup-border:#4a4a6a;
+}
+.cadre{width:100%;max-width:1100px;margin:auto;padding:0 6px}
+h4{padding:6px 4px;margin:8px 0 2px;color:#cce;border-left:4px solid var(--acc);padding-left:10px}
+h5{padding:4px 4px;margin:6px 0 2px;color:#aac;border-left:3px solid #557;padding-left:8px}
+.planning{width:100%;position:relative;margin:4px 0 12px;padding:6px;border:1px solid var(--card-border);background:var(--card);color:#222;border-radius:var(--rad);box-shadow:0 3px 12px rgba(0,0,0,.4)}
+.titre{display:flex;justify-content:center;cursor:pointer;color:#e8e8ff;font-weight:700;font-size:115%;padding:6px 0;letter-spacing:.5px}
+.titre:hover{color:var(--acc2)}
+.visu{position:absolute;top:4px;right:6px;cursor:pointer;font-size:120%;opacity:.7}
+.mode{display:flex;flex-wrap:wrap;gap:4px;font-size:14px;text-align:center;background:rgba(20,20,36,.6);border-radius:8px;margin:4px 0;padding:6px 4px;border:1px solid #333}
+.mode>div{display:flex;align-items:center;gap:4px;padding:3px 8px;border:1px solid #444;border-radius:20px;background:rgba(50,50,70,.5);cursor:pointer;color:#ccc;white-space:nowrap}
+.mode>div.sel{background:rgba(74,179,244,.2);border-color:var(--acc);color:#fff}
+.TitZone{font-size:11px;font-style:italic;font-weight:700;color:#aaa;white-space:nowrap}
+.les_select{display:flex;flex-wrap:wrap;gap:8px;font-size:14px;text-align:left;margin:4px 0;padding:8px;border:1px solid #333;background:rgba(20,20,36,.5);color:#ccc;border-radius:8px;align-items:flex-end}
+.les_select>div{display:flex;flex-direction:column;gap:2px}
+.les_select input,.les_select select{margin:2px 0;font-size:14px;max-width:150px;border-radius:5px;border:1px solid #555;background:#252538;color:#dde;padding:2px 4px;height:28px}
+.boutons{display:inline-flex;gap:4px}
+.tbut{width:36px;height:36px;padding:0;text-align:center;font-weight:700;font-size:22px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;border:2px solid #555;border-radius:8px;background:linear-gradient(135deg,#3a3a5e,#252540);color:#dde;transition:background .15s,border-color .15s}
+.tbut:hover{background:linear-gradient(135deg,#4a4a7e,#353560);border-color:var(--acc)}
+.bouton_curseur{display:flex;flex-wrap:wrap;gap:8px;font-size:14px;text-align:center;margin:4px 0;padding:8px;border:1px solid #333;background:rgba(20,20,36,.5);color:#ccc;border-radius:8px;align-items:center}
+.slideTriac{width:100%;position:relative;display:table}
+.slideTriacIn{display:table-row;width:100%}
+.Tcell1{display:table-cell;width:36%;text-align:right;padding-right:8px;color:#bbb;font-size:13px;vertical-align:middle}
+.Tcell2{display:table-cell;width:56%;vertical-align:middle}
+.Tcell3{display:table-cell;width:8%;text-align:left;padding-left:8px;font-weight:700;color:var(--acc);vertical-align:middle;font-size:15px}
+input[type=range]{accent-color:var(--acc);width:100%}
+.curseur{position:relative;width:100%;height:34px;margin:6px 0}
+.periode{position:absolute;height:100%;border:2px solid rgba(255,255,255,.3);border-radius:5px;display:flex;justify-content:space-between;align-items:center;color:#fff;font-size:12px;box-shadow:inset 0 1px 0 rgba(255,255,255,.15)}
+.Hfin{position:absolute;bottom:2px;right:3px;font-size:11px;opacity:.85}
+.handleStyle{position:absolute;right:-14px;top:50%;transform:translateY(-50%);width:28px;height:36px;background:rgba(255,255,255,.9);border:2px solid #333;border-radius:7px;cursor:ew-resize;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#333;z-index:10;box-shadow:0 2px 6px rgba(0,0,0,.4)}
+.infoAction{position:relative;display:flex;width:100%;min-height:44px;font-size:13px;flex-wrap:wrap}
+.infoZone{position:relative;display:flex;flex-direction:column;justify-content:center;align-items:center;border:1px solid #999;border-radius:5px;text-align:center;background:rgba(220,220,220,.88);cursor:pointer;padding:3px 4px;font-size:12px;transition:filter .15s}
+.infoZone:hover{filter:brightness(1.1)}
+.infoZ{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);border:2px solid var(--popup-border);border-radius:12px;background:var(--popup-bg);color:#e0e0f0;z-index:2000;font-size:15px;min-width:280px;max-width:420px;width:90vw;box-shadow:0 8px 32px rgba(0,0,0,.7);overflow:hidden}
+.infoZ input{width:72px;margin:3px;font-size:14px;border-radius:5px;border:1px solid #555;background:#252538;color:#dde;padding:2px 4px}
+.infoZ select{font-size:14px;border-radius:5px;border:1px solid #555;background:#252538;color:#dde;padding:2px}
+.selectZ{background:linear-gradient(135deg,#3a3a5e,#252550);padding:8px 10px;font-size:15px;font-weight:700;color:#cce;position:relative;border-bottom:1px solid var(--popup-border);display:flex;align-items:center;justify-content:space-between}
+.closeZ{background:rgba(255,60,60,.7);border:none;color:#fff;cursor:pointer;height:24px;width:24px;border-radius:50%;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.closeZ:hover{background:rgba(255,60,60,1)}
+.fcontainer{display:flex;flex-wrap:wrap;gap:6px;background:rgba(20,20,36,.6);padding:8px;border-top:1px solid #333}
+.fcontleft{display:flex;flex-direction:column;gap:6px}
+.radioC{border:2px solid #444;border-radius:8px;display:inline-flex;align-items:center;gap:6px;padding:5px 10px;background:rgba(50,50,70,.5);transition:border-color .15s,background .15s;cursor:pointer}
+.radioC.sel{border-color:var(--acc);background:rgba(74,179,244,.15)}
+.radioC input[type=radio]{width:16px;cursor:pointer;accent-color:var(--acc)}
+.zOff{background:rgba(80,80,200,.25);border:1px solid #66f;margin:4px;padding:6px 8px;border-radius:8px}
+.zOn{background:rgba(200,60,60,.25);border:1px solid #f77;margin:4px;padding:6px 8px;border-radius:8px}
+.zPw{background:rgba(60,180,60,.25);border:1px solid #6f6;margin:4px;padding:6px 8px;border-radius:8px}
+.zTriac{background:rgba(200,180,40,.25);border:1px solid #dd6;margin:4px;padding:6px 8px;border-radius:8px}
+.bord1px{border:1px solid #445;margin:5px 4px;padding:6px;border-radius:6px;background:rgba(30,30,50,.5)}
+.minmax{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:4px 0}
+#BoutonsBas{text-align:center;padding:12px 0}
+#message{position:fixed;border:2px solid #555;border-radius:8px;top:8px;right:8px;background:rgba(20,20,40,.95);color:#dde;font-size:15px;text-align:left;padding:8px 12px;box-shadow:0 4px 16px rgba(0,0,0,.5);max-width:300px}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SECTION 1 : NAVIGATION ONGLETS
+════════════════════════════════════════════════════════════ -->
+<div class="section-title">① Navigation — onglets modernisés</div>
+
+<div class="onglets">
+  <div class="Bonglet"><a href="#">Accueil</a></div>
+  <div class="Bonglet"><a href="#">Données brutes</a></div>
+  <div class="Bonglet"><a href="#">Paramètres</a></div>
+  <div class="Bonglet actif"><a href="#">Actions</a></div>
+</div>
+<div id="onglets2">
+  <div class="Bonglet2"><a href="#">Généraux</a></div>
+  <div class="Bonglet2"><a href="#">Heure</a></div>
+  <div class="Bonglet2 actif"><a href="#">Import / Export</a></div>
+  <div class="Bonglet2"><a href="#">OTA</a></div>
+  <div class="Bonglet2"><a href="#">WIFI</a></div>
+  <div class="Bonglet2"><a href="#">Couleurs</a></div>
+</div>
+<h2 style="color:#cce;margin:8px 0 4px">Maison Demo — RMS</h2>
+
+<br>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SECTION 2 : PAGE ACCUEIL — Tableau de mesures
+════════════════════════════════════════════════════════════ -->
+<div class="section-title">② Page Accueil — tableau de mesures + jauge</div>
+
+<div class="grid-container2" style="max-width:700px">
+  <div style="grid-column:1/span 6;text-align:center;background:rgba(30,30,30,.3);font-weight:bold;color:#cce">Jeudi 02/04/2026 &nbsp;|&nbsp; 14:32:07 &nbsp;|&nbsp; Source : Shelly Pro EM</div>
+  <div class="item5">Puissance</div>
+  <div class="item6">Soutirée</div>
+  <div class="item7">Injectée</div>
+  <div class="item5">Max S</div>
+  <div class="item5">Max I</div>
+  <div class="item5">Cos φ</div>
+
+  <div class="item8 W">Maison</div>
+  <div class="item_val W">1 240 W</div>
+  <div class="item_val W">0 W</div>
+  <div class="item_val W">2 800 W</div>
+  <div class="item_val W">0 W</div>
+  <div class="item_val">0.97</div>
+
+  <div class="item8 Wh">Énergie jour</div>
+  <div class="item_val Wh">4 120 Wh</div>
+  <div class="item_val Wh">1 850 Wh</div>
+  <div style="grid-column:3/span 3"></div>
+
+  <div class="item8" style="grid-column:1/span 6;text-align:left;padding:4px 6px">
+    <strong style="color:#aac">SSR Chauffe-eau</strong>
+    <div class="jaugeBack" style="display:inline-block;margin-left:10px">
+      <div class="jauge" style="width:68%">68%</div>
+    </div>
+    &nbsp; 846 W &nbsp;|&nbsp; <span style="color:#8f8">ON</span>
+  </div>
+</div>
+
+<br>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SECTION 3 : PAGE ACTIONS — carte planning Triac/SSR
+════════════════════════════════════════════════════════════ -->
+<div class="section-title">③ Page Actions — carte SSR Chauffe-eau</div>
+
+<div class="cadre">
+  <h4>Planning des Routages <small style="font-weight:400;color:#889">(suivant sonde Maison)</small></h4>
+  <h5>Routage via SSR — Chauffe-eau</h5>
+
+  <div class="planning">
+    <div class="titre">⚡ Chauffe-eau <span class="visu">📈</span></div>
+
+    <!-- Mode -->
+    <div class="mode">
+      <div class="TitZone">Mode</div>
+      <div><input type="radio" name="m0" checked> Inactif</div>
+      <div class="sel"><input type="radio" name="m0" checked> On/Off</div>
+      <div><input type="radio" name="m0"> Demi-sinus</div>
+      <div><input type="radio" name="m0"> Multi-sinus</div>
+      <div><input type="radio" name="m0"> Train de sinus</div>
+      <div><input type="radio" name="m0"> PWM</div>
+    </div>
+
+    <!-- Sortie -->
+    <div class="les_select">
+      <div class="TitZone">Sortie</div>
+      <div><span style="font-size:12px">Gpio</span>
+        <select><option>gpio:18</option><option>gpio:19</option></select>
+      </div>
+      <div><span style="font-size:12px">Sortie 'On'</span>
+        <select><option>3.3V</option><option>0V</option></select>
+      </div>
+      <div><span style="font-size:12px">Temporisation (s)</span>
+        <input type="number" value="30" style="width:70px">
+      </div>
+      <div><span style="font-size:12px">Ouverture si forcée</span>
+        <input type="number" value="100" style="width:70px"> %
+      </div>
+    </div>
+
+    <!-- PID -->
+    <div class="bouton_curseur">
+      <div class="boutons">
+        <button class="tbut">−</button>
+        <button class="tbut">+</button>
+      </div>
+      <div class="slideTriac" style="flex:1">
+        <div class="slideTriacIn">
+          <div class="Tcell1">Coef. Proportionnel</div>
+          <div class="Tcell2"><input type="range" min="0" max="100" value="40" style="width:100%;max-width:none"></div>
+          <div class="Tcell3">40</div>
+        </div>
+        <div class="slideTriacIn">
+          <div class="Tcell1">Coef. Intégral / Réactivité</div>
+          <div class="Tcell2"><input type="range" min="0" max="100" value="65" style="width:100%;max-width:none"></div>
+          <div class="Tcell3">65</div>
+        </div>
+        <div class="slideTriacIn">
+          <div class="Tcell1">Coef. Dérivé</div>
+          <div class="Tcell2"><input type="range" min="0" max="100" value="10" style="width:100%;max-width:none"></div>
+          <div class="Tcell3">10</div>
+        </div>
+      </div>
+      <div><label style="font-size:13px;color:#ccc">PID On <input type="checkbox"></label></div>
+    </div>
+
+    <!-- Timeline -->
+    <div style="margin:4px">
+      <div class="infoAction">
+        <!-- zones cliquables info -->
+        <div class="infoZone" style="width:29.2%;border-color:#66f">
+          <div class="Hfin">07:00</div>
+          <div style="color:#33a">OFF</div>
+        </div>
+        <div class="infoZone" style="width:20.8%;border-color:#6f6">
+          <div class="Hfin">12:00</div>
+          <div>On si Pw&lt;−200W</div><div>Off si Pw&gt;50W</div>
+        </div>
+        <div class="infoZone" style="width:29.2%;border-color:#6f6">
+          <div class="Hfin">19:00</div>
+          <div>On si Pw&lt;−300W</div><div>Off si Pw&gt;50W</div>
+          <div style="font-size:10px;color:#595">T ≤ 55°</div>
+        </div>
+        <div class="infoZone" style="width:20.8%;border-color:#66f">
+          <div class="Hfin">24:00</div>
+          <div style="color:#33a">OFF</div>
+        </div>
+      </div>
+      <!-- Barre de timeline visuelle -->
+      <div class="curseur">
+        <div class="periode" style="width:29.2%;left:0%;background:#66f">
+          <div class="handleStyle">|||</div>
+        </div>
+        <div class="periode" style="width:20.8%;left:29.2%;background:#6f6">
+          <div class="handleStyle">|||</div>
+        </div>
+        <div class="periode" style="width:29.2%;left:50%;background:#6f6">
+          <div class="handleStyle">|||</div>
+        </div>
+        <div class="periode" style="width:20.8%;left:79.2%;background:#66f"></div>
+      </div>
+    </div>
+  </div><!-- .planning -->
+
+  <div id="BoutonsBas">
+    <button class="bouton">Sauvegarder</button>
+    <span class="lds-dual-ring"></span>
+    <button class="bouton">ESP32 Reset</button>
+  </div>
+</div>
+
+<br>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SECTION 4 : POPUP modal de configuration de période
+════════════════════════════════════════════════════════════ -->
+<div class="section-title">④ Popup de configuration de période (modal centré)</div>
+
+<div style="position:relative;height:420px;background:rgba(0,0,0,.15);border:1px solid #333;border-radius:8px;overflow:hidden">
+  <div style="padding:12px;opacity:.3">← Contenu de la page en arrière-plan →</div>
+  <!-- Modal affiché -->
+  <div class="infoZ" style="display:block;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)">
+    <div class="selectZ">
+      Sélection Action — Période 07:00→12:00
+      <div class="closeZ">✕</div>
+    </div>
+    <div class="fcontainer">
+      <div class="fcontleft">
+        <div class="zOff">
+          <div class="radioC sel"><input type="radio" name="rZ" checked> OFF</div>
+        </div>
+        <div class="zOn">
+          <div class="radioC"><input type="radio" name="rZ"> ON</div>
+          <div><small>Ouverture : </small><input type="number" value="100">%</div>
+        </div>
+        <div class="zPw">
+          <div class="radioC"><input type="radio" name="rZ"> Routage ON/Off</div>
+          <div><small>On : </small>Pw &lt; <input type="number" value="-200">W</div>
+          <div><small>Off : </small>Pw &gt; <input type="number" value="50">W</div>
+        </div>
+      </div>
+      <div>
+        <div class="bord1px">
+          <div style="font-size:12px;color:#aac;font-weight:700">Conditions optionnelles</div>
+          <div>Canal Température
+            <select><option>Non exploité</option><option>Sonde ballon (54.3°)</option></select>
+          </div>
+          <div class="minmax">
+            <div>T ≥ <input type="number" value="">°</div>
+            <div>T ≤ <input type="number" value="55">°</div>
+          </div>
+        </div>
+        <div class="bord1px">
+          <div style="font-size:12px;color:#aac;font-weight:700">Tarif actif si</div>
+          <div><span style="color:#0af">Tempo Bleu</span> <input type="checkbox" checked>
+               <span style="color:#eee"> Blanc</span> <input type="checkbox">
+               <span style="color:#f55"> Rouge</span> <input type="checkbox"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<br>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SECTION 5 : Boutons & spinner
+════════════════════════════════════════════════════════════ -->
+<div class="section-title">⑤ Boutons & spinner</div>
+<button class="bouton">Sauvegarder</button>
+<button class="bouton">ESP32 Reset</button>
+<button class="bouton" style="background:linear-gradient(135deg,#5e3a3a,#402525);border-color:#844">⚠ Réinitialiser</button>
+<span class="lds-dual-ring"></span>
+
+<!-- Footer -->
+<div id="pied">
+  <div>Routeur Version : <span>17.16 | Source : Shelly Pro EM</span></div>
+  <div><a href="#">F1ATB.fr</a></div>
+</div>
+
+</body>
+</html>
