@@ -31,6 +31,7 @@ void Init_Server() {
   server.on("/BruteJS2", handleBruteJS2);
   server.on("/ajax_histo48h", handleAjaxHisto48h);
   server.on("/ajax_histo1an", handleAjaxHisto1an);
+  server.on("/ajax_histmeteo", handleAjaxHistMeteo);  //Historique prévision météo / production
   server.on("/ajax_dataRMS", handleAjaxRMS);
   server.on("/ajax_dataESP32", handleAjaxESP32);
   server.on("/ajax_data", handleAjaxData);
@@ -682,6 +683,17 @@ void handleParaVar() {
   String Json;
   serializeJson(conf, Json);
   server.send(200, "application/json", Json);
+}
+void handleAjaxHistMeteo() {  //Historique quotidien : date;prevision_kWh;production_kWh;routee_kWh;coef
+  String S = "";
+  if (LittleFS.exists("/histmeteo.csv")) {
+    File f = LittleFS.open("/histmeteo.csv", "r");
+    if (f) {
+      S = f.readString();
+      f.close();
+    }
+  }
+  server.send(200, "text/plain", S);
 }
 void handleSetGpio() {
   int gpio = server.arg("gpio").toInt();

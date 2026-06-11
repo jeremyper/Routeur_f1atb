@@ -74,5 +74,6 @@ void Call_Meteo_data() {
   //Production estimée en kWh (rendement global 0.80)
   Meteo_PrevisionJour = radJour / 3.6 * MeteoPVcrete * 0.80;
   Meteo_PrevisionDemain = radDemain / 3.6 * MeteoPVcrete * 0.80;
+  Meteo_PrevisionJourMemo = Meteo_PrevisionJour;  //Mémo de la prévision annoncée pour l'historique quotidien
   StockMessage("Météo : prévision solaire jour " + String(Meteo_PrevisionJour, 1) + " kWh, demain " + String(Meteo_PrevisionDemain, 1) + " kWh");
 }

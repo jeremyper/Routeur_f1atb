@@ -392,6 +392,10 @@ function SetParaVar() {
     GID('meteoPrev').style.display = "block";
   }
 
+  // Graphiques météo : prévision horaire (appel direct Open-Meteo) et historique prévision/production
+  Graphes_Dispo[11] = (V.MeteoOn == 1);
+  if (V.MeteoOn == 1) LoadMeteoPrev();
+  LoadHistMeteo();
 }
 
 // Fonction clic autre routeur
@@ -844,7 +848,148 @@ function Plot_ouvertures_2s() {
   GID("SVG_Ouvertures_2s").innerHTML = S;
 }
 
+// Prévision solaire horaire sur 48h : le navigateur interroge directement Open-Meteo,
+// rien n'est stocké sur l'ESP. Rafraîchissement toutes les heures.
+async function LoadMeteoPrev() {
+  const REFRESH_INTERVAL_METEO = 3600000; // 1 heure
+  if (V.MeteoOn != 1 || !Graphes_Select[11]) return;
+  try {
+    const lat = (F.MeteoLat !== undefined) ? F.MeteoLat : 46.5;
+    const lon = (F.MeteoLon !== undefined) ? F.MeteoLon : 2.4;
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=shortwave_radiation&forecast_days=2&timezone=auto`;
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`Erreur HTTP: ${response.status} Open-Meteo`);
+    const retour = await response.json();
+    if (retour.hourly && retour.hourly.shortwave_radiation) PlotMeteoPrev(retour.hourly.shortwave_radiation);
+  } catch (error) {
+    console.error("Erreur LoadMeteoPrev:", error);
+  } finally {
+    setTimeout(LoadMeteoPrev, REFRESH_INTERVAL_METEO);
+  }
+}
 
+// Tracé de l'irradiance prévue (convertie en puissance PV estimée si la puissance crête est connue)
+function PlotMeteoPrev(tabIrr) {
+  const kwc = parseFloat(F.MeteoPVcrete) || 0;
+  const enW = kwc > 0;
+  const fact = enW ? kwc * 0.8 : 1; // kWc x 1000 x irradiance/1000 x 0.80 => W
+  const Tab = [];
+  let Vmax = 1;
+  const N = Math.min(48, tabIrr.length);
+  if (N < 2) return;
+  for (let i = 0; i < N; i++) {
+    const v = Math.round((parseFloat(tabIrr[i]) || 0) * fact);
+    Tab.push(Math.max(0, v));
+    Vmax = Math.max(Vmax, v);
+  }
+  const couleur1 = "#" + Koul[Coul_VA][3];
+  const cT = "#" + Koul[Coul_Graphe][1];
+  const Y0 = 250, Yamp = 230;
+  let S = PlotCommun("SVG_MeteoPrev", cT, Vmax, "heure");
+  const dX = 900 / N;
+  // Axe des heures : un tic toutes les 4h
+  for (let h = 0; h < N; h += 4) {
+    const X = 100 + dX * h;
+    S += `<line x1='${X}' y1='${Y0}' x2='${X}' y2='${Y0 + 6}' style='stroke:${cT};stroke-width:2' />`;
+    S += `<text x='${X - 8}' y='${Y0 + 22}' style='font-size:16px;fill:${cT};'>${h % 24}</text>`;
+  }
+  // Séparation aujourd'hui / demain
+  const Xsep = 100 + dX * 24;
+  S += `<line x1='${Xsep}' y1='20' x2='${Xsep}' y2='${Y0}' style='stroke:${cT};stroke-width:1.5;stroke-dasharray:6 6;' />`;
+  S += `<text x='${100 + dX * 9}' y='42' style='font-size:16px;fill:${cT};'>Aujourd&apos;hui</text>`;
+  S += `<text x='${100 + dX * 34}' y='42' style='font-size:16px;fill:${cT};'>Demain</text>`;
+  // Marqueur de l'heure courante
+  const d = new Date();
+  const Xnow = Math.round(100 + dX * (d.getHours() + d.getMinutes() / 60));
+  S += `<line x1='${Xnow}' y1='20' x2='${Xnow}' y2='${Y0}' style='stroke:#f66;stroke-width:2;' />`;
+  // Titre, dégradé sous la courbe puis courbe (même style que Plot)
+  const titre = enW ? "Prévision production PV sur 48h en W (Open-Meteo)" : "Irradiance solaire prévue sur 48h en W/m² (Open-Meteo)";
+  S += `<text x='450' y='18' style='font-size:18px;fill:${couleur1};'>${titre}</text>`;
+  S += `<defs><linearGradient id='grad_SVG_MeteoPrev' x1='0' y1='0' x2='0' y2='1'>`;
+  S += `<stop offset='0' stop-color='${couleur1}' stop-opacity='0.45'/>`;
+  S += `<stop offset='1' stop-color='${couleur1}' stop-opacity='0.03'/>`;
+  S += `</linearGradient></defs>`;
+  let Pts = "";
+  let Xlast = 100;
+  for (let i = 0; i < N; i++) {
+    const X = 100 + dX * i;
+    const Y = Y0 - Yamp * Tab[i] / cadrageMax;
+    Xlast = X;
+    Pts += X + "," + Y + " ";
+  }
+  S += `<polygon points='100,${Y0} ${Pts}${Xlast},${Y0}' fill='url(#grad_SVG_MeteoPrev)' stroke='none' />`;
+  S += `<polyline points='${Pts}' style='fill:none;stroke:${couleur1};stroke-width:2.5' stroke-linejoin='round' stroke-linecap='round' />`;
+  S += "</svg>";
+  GID("SVG_MeteoPrev").innerHTML = S;
+  TabVal["S_SVG_MeteoPrev"] = [Tab];
+  TabCoul["S_SVG_MeteoPrev"] = [couleur1];
+}
+
+// Historique quotidien prévision météo vs production réelle vs énergie routée (fichier /histmeteo.csv de l'ESP)
+async function LoadHistMeteo() {
+  try {
+    const response = await fetch('/ajax_histmeteo');
+    if (!response.ok) return;
+    const retour = await response.text();
+    const lignes = retour.split("\n").filter(l => l.indexOf(";") > 0);
+    if (lignes.length === 0) return; //Pas encore de données : graphique non proposé
+    Graphes_Dispo[12] = true;
+    if (Graphes_Select[12]) PlotHistMeteo(lignes);
+  } catch (error) {
+    console.error("Erreur LoadHistMeteo:", error);
+  }
+}
+
+// Tracé : production (barres), énergie routée (barres) et prévision (courbe) en kWh par jour
+function PlotHistMeteo(lignes) {
+  const tabDate = [], tabPrev = [], tabProd = [], tabRout = [];
+  let Vmax = 1;
+  for (const l of lignes) {
+    const c = l.split(";");
+    if (c.length < 4) continue;
+    tabDate.push(c[0].substring(0, 5)); // jj/mm
+    const prev = parseFloat(c[1]), prod = parseFloat(c[2]), rout = parseFloat(c[3]);
+    tabPrev.push(isNaN(prev) ? -1 : prev);
+    tabProd.push(isNaN(prod) ? -1 : prod);
+    tabRout.push(isNaN(rout) ? -1 : rout);
+    Vmax = Math.max(Vmax, prev || 0, prod || 0, rout || 0);
+  }
+  if (tabDate.length === 0) return;
+  const cT = "#" + Koul[Coul_Graphe][1];
+  const cWh = Koul[Coul_Wh][3];
+  const cProd = "#" + cWh.substring(4, 6) + cWh.substring(2, 4) + cWh.substring(0, 2); //Production (couleur "injectée")
+  const cRout = "#" + cWh;                                                             //Routé (couleur "soutirée")
+  const cPrev = "#" + Koul[Coul_VA][3];                                                //Prévision
+  const Y0 = 250, Yamp = 230;
+  let S = PlotCommun("SVG_HistMeteo", cT, Vmax, "Date");
+  const dX = 900 / tabDate.length;
+  const step = Math.max(1, Math.floor(tabDate.length / 10));
+  let Sprev = "";
+  for (let i = 0; i < tabDate.length; i++) {
+    const X = 100 + dX * i;
+    if (tabProd[i] >= 0) { //Barre production réelle
+      const H1 = Yamp * tabProd[i] / cadrageMax;
+      S += `<rect width='${0.42 * dX}' height='${H1}' x='${X}' y='${Y0 - H1}' rx='2' fill='${cProd}A0' />`;
+    }
+    if (tabRout[i] >= 0) { //Barre énergie routée
+      const H2 = Yamp * tabRout[i] / cadrageMax;
+      S += `<rect width='${0.42 * dX}' height='${H2}' x='${X + 0.45 * dX}' y='${Y0 - H2}' rx='2' fill='${cRout}A0' />`;
+    }
+    if (tabPrev[i] >= 0) Sprev += (X + dX / 2) + "," + (Y0 - Yamp * tabPrev[i] / cadrageMax) + " ";
+    if (i % step === 0) {
+      const X2 = X + 12, Y5 = Y0 + 50;
+      S += `<text x='${X2}' y='${Y5}' transform='rotate(-90,${X2},${Y5})' style='font-size:12px;fill:${cT};'>${tabDate[i]}</text>`;
+    }
+  }
+  if (Sprev !== "") S += `<polyline points='${Sprev}' style='fill:none;stroke:${cPrev};stroke-width:2.5' stroke-linejoin='round' stroke-linecap='round' />`;
+  S += `<text x='110' y='18' style='font-size:18px;fill:${cPrev};'>Prévision (kWh)</text>`;
+  S += `<text x='400' y='18' style='font-size:18px;fill:${cProd};'>Production PV (kWh)</text>`;
+  S += `<text x='700' y='18' style='font-size:18px;fill:${cRout};'>Energie routée (kWh)</text>`;
+  S += "</svg>";
+  GID("SVG_HistMeteo").innerHTML = S;
+  TabVal["S_SVG_HistMeteo"] = [tabDate, tabPrev, tabProd, tabRout];
+  TabCoul["S_SVG_HistMeteo"] = [cT, cPrev, cProd, cRout];
+}
 
 )====";
 
@@ -1048,10 +1193,10 @@ function AdaptationSource() {
 
 
 // Fonction d'initialisation
-var Graphes_Nom=["Pw / 10 mn","Pw T","Pw / 48h","Pw 48h T","Temperature 0","Temperature 1","Temperature 2","Temperature 3","Ouvertures / 10mn","Ouvertures / 48h","Wh Jour"];
-var Graphes_Dispo=[true,true,true,true,true,true,true,true,true,true,true]; //Il y a des données
-var Graphes_Select=[true,true,true,true,true,true,true,true,true,true,true]; //Affichage choisi par la personne
-var Graphes_Ordre=[0,1,2,3,4,5,6,7,8,9,10]; //11 graphiques différents
+var Graphes_Nom=["Pw / 10 mn","Pw T","Pw / 48h","Pw 48h T","Temperature 0","Temperature 1","Temperature 2","Temperature 3","Ouvertures / 10mn","Ouvertures / 48h","Wh Jour","Prévision solaire 48h","Météo : prévision vs production"];
+var Graphes_Dispo=[true,true,true,true,true,true,true,true,true,true,true,false,false]; //Il y a des données (météo : confirmé après chargement)
+var Graphes_Select=[true,true,true,true,true,true,true,true,true,true,true,true,true]; //Affichage choisi par la personne
+var Graphes_Ordre=[0,1,2,3,4,5,6,7,8,9,10,11,12]; //13 graphiques différents
 function Init() {
   SetHautBas();
   
@@ -1096,19 +1241,26 @@ function Init() {
 
             `<p id="SVG_Ouvertures_2s"></p>`,
             `<p id="SVG_Ouvertures"></p>`,
-            `<p id="SVG_WhJour"></p>`     
+            `<p id="SVG_WhJour"></p>`,
+            `<p id="SVG_MeteoPrev"></p>`,
+            `<p id="SVG_HistMeteo"></p>`
   ];
-  
-  
+
+  const NB_GRAPHES = Graphes_Nom.length; //13 graphiques différents
   let Ordre_g= JSON.parse(localStorage.getItem("TableauGraphiques"));
   if (Ordre_g!=null) {
+      //Migration des caches d'anciennes versions : retrait des index inconnus ou en double, ajout des graphes manquants
+      Ordre_g=Ordre_g.filter((v,i,t)=>v>=0 && v<NB_GRAPHES && t.indexOf(v)===i);
+      for (let i=0;i<NB_GRAPHES;i++){
+        if (Ordre_g.indexOf(i)<0) Ordre_g.push(i);
+      }
       Graphes_Ordre=Ordre_g;
-      if(Graphes_Ordre.length>11) Graphes_Ordre.pop(); //Retrait SVG_Wh1an
   }
   let Ordre_gS= JSON.parse(localStorage.getItem("TableauGraphiquesSelected"));
   if (Ordre_gS!=null) {
       Graphes_Select= Ordre_gS;
-      if(Graphes_Select.length>11) Graphes_Select.pop(); //Retrait SVG_Wh1an
+      while(Graphes_Select.length>NB_GRAPHES) Graphes_Select.pop();
+      while(Graphes_Select.length<NB_GRAPHES) Graphes_Select.push(true); //Nouveaux graphes météo affichés par défaut
   }
   let G="";
   for (let i=0;i<Graphes_Ordre.length;i++){

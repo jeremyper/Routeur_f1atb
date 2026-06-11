@@ -619,8 +619,9 @@ byte MeteoOn = 0;                  //0=inactif, 1=actif
 float MeteoLat = 46.5;             //Latitude
 float MeteoLon = 2.4;              //Longitude
 float MeteoPVcrete = 3.0;          //Puissance crête installation en kWc
-float Meteo_PrevisionJour = -1;    //Production estimée aujourd'hui en kWh (-1 = pas de donnée)
-float Meteo_PrevisionDemain = -1;  //Production estimée demain en kWh (-1 = pas de donnée)
+float Meteo_PrevisionJour = -1;      //Production estimée aujourd'hui en kWh (-1 = pas de donnée)
+float Meteo_PrevisionDemain = -1;    //Production estimée demain en kWh (-1 = pas de donnée)
+float Meteo_PrevisionJourMemo = -1;  //Prévision du jour telle qu'annoncée (mémo pour l'historique prévision/production)
 unsigned long LastMeteoMillis = 0;
 WiFiClientSecure clientSecuMeteo;
 
