@@ -572,7 +572,7 @@ void handlePara() {
 }
 void handleParaNew() {
   String EtatGpioInitial = String(Fpwm);
-  for (int i = 1; i < NbActions; i++) {
+  for (int i = 0; i < NbActions; i++) {
     EtatGpioInitial += String(LesActions[i].Gpio) + String(LesActions[i].OutOn) + String(LesActions[i].OutOff);
   }
   DeserializeConfiguration(server.arg("plain"));
@@ -595,7 +595,7 @@ void handleParaNew() {
   LastHeureRTE = -1;
   //Test si modifs sur GPIOs
   String EtatGpioFinal = String(Fpwm);
-  for (int i = 1; i < NbActions; i++) {
+  for (int i = 0; i < NbActions; i++) {
     EtatGpioFinal += String(LesActions[i].Gpio) + String(LesActions[i].OutOn) + String(LesActions[i].OutOff);
   }
   if (EtatGpioFinal != EtatGpioInitial) InitGPIOs();

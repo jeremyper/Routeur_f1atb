@@ -377,7 +377,7 @@ function SetParaVar() {
   }
   
   S = 'Source : ';
-  if (F.Source === "Ext") { 
+  if (F.Source === "Ext") {
     S += 'ESP distant ' + IPextDisp;
     if (IdsxSource > -1) S += " " + nomRMS[IdsxSource];
     GID("donneeDistante").style.display = "block";
@@ -385,7 +385,13 @@ function SetParaVar() {
     S += 'ESP local';
   }
   GH('source', S);
-  
+
+  // Prévision solaire (Open-Meteo)
+  if (V.MeteoOn == 1 && V.PrevisionJour >= 0) {
+    GH('meteoPrev', "&#9728; Prévision solaire &nbsp;&mdash;&nbsp; aujourd'hui : <strong>" + V.PrevisionJour + " kWh</strong> &nbsp;|&nbsp; demain : <strong>" + V.PrevisionDemain + " kWh</strong>");
+    GID('meteoPrev').style.display = "block";
+  }
+
 }
 
 // Fonction clic autre routeur

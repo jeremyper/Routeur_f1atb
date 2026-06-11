@@ -108,12 +108,6 @@ function SetParaFixe() {
     // Autres paramètres
     GID("ModeW").value = F.ModeReseau;
     GID("sources").value = F.Source;
-    GID("RMSextIP").value = int2ip(F.RMSextIP);
-    GID("RMSextIPauto").checked = F.RMSextIPauto == 1;
-    GID("EnphaseUser").value = F.EnphaseUser;
-    GID("EnphasePwd").value = F.EnphasePwd;
-    GID("EnphaseSerial").value = F.EnphaseSerial;
-    GID("TopicP").value = F.TopicP;
     GID("MQTTRepet").value = F.MQTTRepet;
     GID("MQTTIP").value = int2ip(F.MQTTIP);
     GID("MQTTPort").value = F.MQTTPort;
@@ -135,16 +129,14 @@ function SetParaFixe() {
     GID("ComSurv").value = F.ComSurv;
     GID("Serie").value = F.pSerial;
     GID("Serial2V").value =F.Serial2V;
-    GID("pTriac").value = F.pTriac;
     GID("ESP").value = F.ESP32_Type;
     GID("pLED").value = F.LEDgroupe;
-    GID("Rot").value = F.rotation;
-    GID("DurEcran").value = F.DurEcran;
-    GID("clickPresence").value = F.clickPresence;
-    GID("NumPageBoot").value = F.NumPageBoot;
     GID("pUxI").value = F.pUxI;
     GID("PTemp").value = F.pTemp;
-    GID("EstimCACSI").checked = (F.ReacCACSI == 100)? true:false; 1;
+    GID("MeteoOn").checked = F.MeteoOn == 1;
+    GID("MeteoLat").value = F.MeteoLat !== undefined ? F.MeteoLat : 46.5;
+    GID("MeteoLon").value = F.MeteoLon !== undefined ? F.MeteoLon : 2.4;
+    GID("MeteoPVcrete").value = F.MeteoPVcrete !== undefined ? F.MeteoPVcrete : 3.0;
 
     // --- Paramètres de Température (LesParas[1] à LesParas[4]) ---
     const NbCanauxTemp = 4;
@@ -178,31 +170,24 @@ function SendValues() {
   F.WifiSleep = GID("WifiSleep").checked ? 1 : 0;
   F.hostname =GID("hostname").value;
   F.pSerial = GID("Serie").value;
-  F.pTriac = GID("pTriac").value;
   F.ModePara = document.querySelector('input[name="ModeP"]:checked').value;
   F.ModeReseau = GID("ModeW").value;
   F.ESP32_Type = GID("ESP").value;
   F.LEDgroupe = GID("pLED").value;
-  F.rotation = GID("Rot").value;
-  F.DurEcran = GID("DurEcran").value;
-  F.clickPresence = GID("clickPresence").value;
-  F.NumPageBoot = GID("NumPageBoot").value;
   F.pUxI = GID("pUxI").value;
   F.pTemp = GID("PTemp").value;
-  F.ReacCACSI = GID("EstimCACSI").checked ? 100 : 0; 
   F.Source=GID("sources").value;
   if (F.ModePara == 0) { //Non Expert
     F.subMQTT = 0; F.WifiSleep = 1;
   }
-  F.RMSextIP = ip2int(GID("RMSextIP").value);
-  F.RMSextIPauto = GID("RMSextIPauto").checked ? 1 : 0;
   F.Gateway = ip2int(GID("gateway").value);
   F.masque = ip2int(GID("masque").value);
   F.dns = ip2int(GID("dns").value);
 
-  F.EnphaseUser = GID("EnphaseUser").value ;
-  F.EnphasePwd = GID("EnphasePwd").value ;
-  F.EnphaseSerial = GID("EnphaseSerial").value ;
+  F.MeteoOn = GID("MeteoOn").checked ? 1 : 0;
+  F.MeteoLat = parseFloat(GID("MeteoLat").value) || 0;
+  F.MeteoLon = parseFloat(GID("MeteoLon").value) || 0;
+  F.MeteoPVcrete = parseFloat(GID("MeteoPVcrete").value) || 3;
 
   F.nomRouteur =GID("nomRouteur").value.trim() ;
   F.nomSondeFixe = GID("nomSondeFixe").value.trim();
@@ -218,7 +203,6 @@ function SendValues() {
   F.MQTTPrefix = GID("MQTTPrefix").value.trim();
   F.MQTTPrefixEtat = GID("MQTTPrefixEtat").value.trim();
   F.MQTTdeviceName = GID("MQTTdeviceName").value.trim();
-  F.TopicP= GID("TopicP").value.trim();
   F.nomRouteur = GID("nomRouteur").value.trim();
   F.nomSondeFixe = GID("nomSondeFixe").value.trim();
   F.nomSondeMobile = GID("nomSondeMobile").value.trim();
@@ -300,50 +284,31 @@ function checkDisabled() {
     const selectedMode = document.querySelector('input[name="ModeP"]:checked');
     F.ModePara = selectedMode ? selectedMode.value : '0'; 
  
-    const pESP = GID("ESP").value;
-
-    if (GID("sources").value =="Linky") GID("Serial2V").value=9600; //vitesse Linky en mode standard 
     GID("Vport_serie").style.display = (GID("Serie").value>0) ? "table-row": "none";
 
-    // Mise à jour de l'affichage des boutons/lignes
-    GID("Bwifi").style.display = (F.ESP32_Type != 10) ? "inline-block" : "none";
-    
     // Affichage des paramètres IP statiques
     const ipSettingsVisible = !(GID("dhcp").checked || F.ModeReseau == 2);
     GID("infoIP").style.display = ipSettingsVisible ? "table" : "none";
-    
+
     // Visibilité DHCP
     GID("dhcp").style.visibility = (F.ModeReseau == 2) ? "hidden" : "visible";
     GID("ipreset").style.display = (F.ModeReseau == 2) ? "none" : "inherit";
-    
-    const isESPTypeEcran = ((pESP >= 4 && pESP<=9 ) || pESP==101);
-    GID("rotation").style.display = isESPTypeEcran ? "table-row" : "none";
-    GID("dureeOn").style.display = isESPTypeEcran ? "table-row" : "none";
-    GID("Click35").style.display = isESPTypeEcran && GID("DurEcran").value>0  ? "table-row" : "none";
-    GID("L_NumPageBoot").style.display = isESPTypeEcran  ? "table-row" : "none";
 
-    
-    
     // Lignes de WiFi (visibilité)
     GID("l_wifi_0").style.display = (F.ModeReseau == 2) ? "none" : "table-row";
     GID("l_wifi_1").style.display = (F.ModeReseau == 2 || F.ModePara == 0) ? "none" : "table-row";
-    GID("l_wifi_2").style.display = (F.ModeReseau == 2 || F.ModePara == 0 || F.ESP32_Type == 10) ? "none" : "table-row";
+    GID("l_wifi_2").style.display = (F.ModeReseau == 2 || F.ModePara == 0) ? "none" : "table-row";
 
     // Visibilité de la liste des routeurs
     GID("listerouteurs").style.display = (F.ModeReseau == 2 || F.ModePara == 0) ? "none" : "block";
-    
-    // Désactivation des options de source si F.ModeReseau == 2 (AP mode) ou F.ModePara == 0 (Non Expert)
-    const isDisabledAP = (F.ModeReseau == 2);
-    const isDisabledExpert = (F.ModePara == 0 || F.ModeReseau == 2);
 
-    for (let i = 5; i < 11; i++) {
-        if (GID("sources").options[i]) {
-            GID("sources").options[i].disabled = isDisabledAP;
-        }
-    }
-    if (GID("sources").options[11]) {
-        GID("sources").options[11].disabled = isDisabledExpert;
-    }
+    const isDisabledAP = (F.ModeReseau == 2);
+
+    // Météo : champs visibles seulement si activée, indisponible en mode point isolé
+    GID("MeteoOn").disabled = isDisabledAP;
+    if (isDisabledAP) GID("MeteoOn").checked = false;
+    const meteoVisible = GID("MeteoOn").checked;
+    document.querySelectorAll(".ligneMeteo").forEach(l => { l.style.display = meteoVisible ? "table-row" : "none"; });
 
     // Désactivation des options de température par canal
     for (let i = 0; i < 4; i++) {
@@ -406,12 +371,9 @@ function checkDisabled() {
         }
     }
     
-    // Visibilité du Topic de Puissance (pour source 11/MQTT)
-    GID('ligneTopicP').style.display = (GID("sources").value == "Pmqtt") ? "table-row" : "none";
-    
     // Mise à jour et appel final
     F.Source = GID("sources").value;
-    if (F.Source != 'Ext') V.Source_data = F.Source;
+    V.Source_data = F.Source;
     AdaptationSource();
 }
 
@@ -448,58 +410,16 @@ function checkIP(id) {
  * Adapte l'affichage des champs de source de données en fonction de la source sélectionnée.
  */
 function AdaptationSource() {
-    // Visibilité des options de nom (Fixe)
-    const isSourceDual = (V.Source_data === 'UxIx2' || ((V.Source_data === 'ShellyEm' || V.Source_data === 'ShellyPro') && GID("EnphaseSerial").value != 3));
+    // Visibilité des options de nom (Fixe) : UxIx2 a une seconde sonde
+    const isSourceDual = (V.Source_data === 'UxIx2');
     GID('ligneFixe').style.display = isSourceDual ? "table-row" : "none";
     GID('ligneFixe1').style.display = isSourceDual ? "table-row" : "none";
     GID('ligneFixe2').style.display = isSourceDual ? "table-row" : "none";
-    
+
     // Visibilité de la calibration (seulement si UxI est la source et la source de données)
     const isSourceUxI = (V.Source_data === 'UxI' && F.Source === 'UxI');
     GID('Zcalib').style.display = isSourceUxI ? "table" : "none";
     GID('Analog').style.display = isSourceUxI ? "table-row" : "none";
-    
-    // Visibilité des options Linky/CACSI
-    GID('CACSI').style.display = (F.Source === 'Linky') ? "table" : "none";
-    
-    // Détermination des libellés d'IP externe
-    let txtExt = "ESP-RMS";
-    let lab_enphaseShelly = "Numéro série passerelle IQ Enphase : <span class='fsize10'><br>Pour firmvare Envoy-S V7 seulement</span>";
-    
-    switch (F.Source) {
-        case 'Enphase':
-            txtExt = "Enphase-Envoy";
-            break;
-        case 'SmartG':
-            txtExt = "SmartGateways";
-            break;
-        case 'HomeW':
-            txtExt = "HomeWizard";
-            break;
-        case 'ShellyEm':
-        case 'ShellyPro':
-            txtExt = "Shelly (Pro) Em ";
-            lab_enphaseShelly = `<div class='shem'><strong>Shelly (Pro) Em</strong><br>
-                                 Monophasé : Courant maison sur voie 0,1 ou 2<br>
-                                 Triphasé : mettre 3</div>
-                                 <div class='shem'><Strong>Shelly Em Gen3</strong><br>
-                                 Courant maison sur voie 0 = 30, voie 1 = 31</div>`;
-            break;
-    }
-    
-    // Mise à jour des libellés
-    GH('labExtIp', txtExt);
-    GH('label_enphase_shelly', lab_enphaseShelly);
-
-    // Visibilité de la ligne d'IP externe/Référence
-    const isExternalSource = ['Ext', 'Enphase', 'SmartG', 'HomeW', 'ShellyEm', 'ShellyPro'].includes(F.Source);
-    GID('ligneExt').style.display = isExternalSource ? "table-row" : "none";
-    GID('ligneExtIPauto').style.display = F.Source === 'Enphase' ? "table-row" : "none";
-
-    // Visibilité des options d'authentification/série Enphase/Shelly
-    GID('ligneEnphaseUser').style.display = (F.Source === 'Enphase') ? "table-row" : "none";
-    GID('ligneEnphasePwd').style.display = (F.Source === 'Enphase') ? "table-row" : "none";
-    GID('ligneEnphaseSerial').style.display = (F.Source === 'Enphase' || F.Source === 'ShellyEm' || F.Source === 'ShellyPro') ? "table-row" : "none";
 }
 
 /**
@@ -534,8 +454,16 @@ function SetParaVar() {
         GH("refTempIP" + i, Soptions);
         GID("refTempIP" + i).value = refTempIP[i];
     }
-    
-    
+
+    // Affichage de la prévision solaire
+    if (V.MeteoOn == 1) {
+        if (V.PrevisionJour >= 0) {
+            GH("previsionMeteo", "Aujourd'hui : <strong>" + V.PrevisionJour + " kWh</strong> &nbsp;|&nbsp; Demain : <strong>" + V.PrevisionDemain + " kWh</strong>");
+        } else {
+            GH("previsionMeteo", "En attente de données Open-Meteo...");
+        }
+    }
+
     // Mettre à jour l'état des champs désactivés
     checkDisabled();
 }

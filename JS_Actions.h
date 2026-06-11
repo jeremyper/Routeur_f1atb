@@ -31,8 +31,7 @@ function Init() {
  */
 
 function CreerAction(NumAction, Titre) {
-    let type=3; //Pw pour les relais
-    if (NumAction==0) type=4; //Pw pour le Triac
+    let type=3; //Pw : routage proportionnel
     const S = {
         Action: NumAction,
         Actif: 0,
@@ -62,7 +61,9 @@ function CreerAction(NumAction, Titre) {
                     SelAct: 255,
                     Ooff: 0,
                     O_on: 0,
-                    Tarif: 31
+                    Tarif: 31,
+                    MeteoCond: 0,
+                    MeteoSeuil: 0
                 }]
     };
     return S;
@@ -75,12 +76,9 @@ function CreerAction(NumAction, Titre) {
 function TracePlanning(iAct) {
     // Modes d'activation
     let Radio0 = "<div><input type='radio' name='modeactif" + iAct + "' id='radio" + iAct + "-0' onclick='checkDisabled();'>Inactif</div>";
-    let Radio1 = "<div><input type='radio' name='modeactif" + iAct + "' id='radio" + iAct + "-1' onclick='checkDisabled();'>Découpe sinus</div>";
-    if (iAct > 0) { Radio1 = "<div><input type='radio' name='modeactif" + iAct + "' id='radio" + iAct + "-1' onclick='checkDisabled();'>On/Off</div>"; }
-    Radio1 += "<div><input type='radio' name='modeactif" + iAct + "' id='radio" + iAct + "-5' onclick='checkDisabled();'>Demi-sinus</div>";
-    Radio1 += "<div><input type='radio' name='modeactif" + iAct + "' id='radio" + iAct + "-2' onclick='checkDisabled();'>Multi-sinus</div>";
-    Radio1 += "<div><input type='radio' name='modeactif" + iAct + "' id='radio" + iAct + "-3' onclick='checkDisabled();'>Train de sinus</div>";
-    Radio1 += "<div id='Pwm" + iAct + "'><input type='radio' name='modeactif" + iAct + "' id='radio" + iAct + "-4' onclick='checkDisabled();'>PWM</div>";
+    let Radio1 = "<div><input type='radio' name='modeactif" + iAct + "' id='radio" + iAct + "-1' onclick='checkDisabled();' title='Tout ou rien : relais ou commande externe'>On/Off</div>";
+    Radio1 += "<div><input type='radio' name='modeactif" + iAct + "' id='radio" + iAct + "-2' onclick='checkDisabled();' title='SSR zéro-crossing : sinusoïdes réparties dans la trame, régulation fine et sans harmoniques (recommandé)'>Multi-sinus</div>";
+    Radio1 += "<div><input type='radio' name='modeactif" + iAct + "' id='radio" + iAct + "-3' onclick='checkDisabled();' title='SSR zéro-crossing : salves de sinusoïdes complètes, sans harmoniques'>Train de sinus</div>";
     
     // Sélecteur de pin GPIO
     let SelectPin = "<div id='SelectPin" + iAct + "'>Gpio <select id='selectPin" + iAct + "' onchange='checkDisabled();' title='Choix broche (GPIO) de commande'>";
@@ -153,7 +151,6 @@ function TracePlanning(iAct) {
         const radioActive = GID("radio" + iAct + "-" + action.Actif);
         if (radioActive) radioActive.checked = true;
         action.Action=iAct ;
-        if (iAct==0 && action.Titre =="") action.Titre="Triac";
         GH("titre" + iAct, action.Titre);
         GV("host" + iAct, action.Host);
         GV("port" + iAct, action.Port);
@@ -253,26 +250,30 @@ function TracePeriodes(iAct) {
             }
             TxtTarif = `<div>${tarifText}</div>`;
         }
-        
-        const condition = (temperature !== "" || H_Ouvert !== "" || TxtTarif !== "") ? "<div>Condition(s) :</div>" + temperature + H_Ouvert + TxtTarif : "";
+
+        // Condition météo (prévision solaire)
+        let TxtMeteo = "";
+        if (V.MeteoOn == 1 && periode.MeteoCond > 0) {
+            const lib = ["", "Prev. demain &lt;", "Prev. demain &ge;", "Prev. jour &lt;", "Prev. jour &ge;"];
+            TxtMeteo = `<div>&#9728; ${lib[periode.MeteoCond]} ${(periode.MeteoSeuil || 0) / 10} kWh</div>`;
+        }
+
+        const condition = (temperature !== "" || H_Ouvert !== "" || TxtTarif !== "" || TxtMeteo !== "") ? "<div>Condition(s) :</div>" + temperature + H_Ouvert + TxtTarif + TxtMeteo : "";
         let TexteMinMax = "";
 
-        // Détermination du contenu de la zone d'info en fonction du type d'action/période
-        if (action.Actif <= 1 && iAct > 0) {
-            // Action On/Off (index > 0)
+        // Détermination du contenu de la zone d'info en fonction du mode de l'action
+        if (action.Actif <= 1) {
+            // Action On/Off
             periode.Vmax = Math.max(periode.Vmin, periode.Vmax);
             TexteMinMax = `<div>Off si Pw&gt;${periode.Vmax}W</div><div>On si Pw&lt;${periode.Vmin}W</div>${condition}`;
         } else {
-            // Action de découpe sinus (Triac/PWM/Actif=0)
+            // Routage proportionnel (Multi/Train de sinus)
             periode.Vmax = Math.max(0, periode.Vmax);
             periode.Vmax = Math.min(100, periode.Vmax);
             TexteMinMax = `<div>Seuil Pw : ${periode.Vmin}W</div><div>Ouvre Max : ${periode.Vmax}%</div>${condition}`;
         }
-        
-        // Texte spécifique pour la découpe Triac 
-        const TexteTriac = `<div>Seuil Pw : ${periode.Vmin}W</div><div>Ouvre Max : ${periode.Vmax}%</div>${condition}`;
-        
-        const paras = [`Pas de contr&ocirc;le`, `OFF`, `<div>ON</div><div>Ouverture : ${periode.ONouvre}%</div>` + condition, TexteMinMax, TexteTriac];
+
+        const paras = [`Pas de contr&ocirc;le`, `OFF`, `<div>ON</div><div>Ouverture : ${periode.ONouvre}%</div>` + condition, TexteMinMax, TexteMinMax];
         const para = paras[Type];
         
         // Remplissage du div de la période (curseur visuel)
@@ -490,7 +491,9 @@ function AddSub(v, iAct) {
                 SelAct: 255,
                 Ooff: 0,
                 O_on: 0,
-                Tarif: 31 // Tarif codé en bits (toutes les options actives par défaut)
+                Tarif: 31, // Tarif codé en bits (toutes les options actives par défaut)
+                MeteoCond: 0,
+                MeteoSeuil: 0
             };
             F.Actions[iAct].Periodes.push(newPeriod);
             
@@ -572,29 +575,22 @@ function infoZclicK(i, iAct) {
         if (Tinf > 1500 || Tinf < -500) TinfC = ""; 
         if (Tsup > 1500 || Tsup < -500) TsupC = ""; 
 
-        if (iAct > 0) {
+        {
             // Mode Routage ON/OFF ou Multi/Train de sinus
-            const Routage = ["", "Routage ON/Off", "Routage Multi-sinus", "Routage Train de Sinus", "PWM", "Routage Demi-Sinus"];
-            S += "<div class='zPw'><div class='radioC'><input type='radio' name='R" + idZ + "' onclick='selectZ(3," + i + "," + iAct + ");' " + check + ">" + Routage[F.Actions[iAct].Actif] + "</div>";
-            
+            const Routage = ["", "Routage ON/Off", "Routage Multi-sinus", "Routage Train de Sinus"];
+            S += "<div class='zPw'><div class='radioC'><input type='radio' name='R" + idZ + "' onclick='selectZ(3," + i + "," + iAct + ");' " + check + ">" + (Routage[F.Actions[iAct].Actif] || "Routage") + "</div>";
+
             if (F.Actions[iAct].Actif <= 1) {
                 // Routage ON/OFF
                 S += "<div><small>On : &nbsp;</small>Pw &lt;<input id='Pw_min_" + idZ + "' type='number' value='" + Vmin + "' onchange='NewVal(this)' title='Seuil de puissance pour activer ou désactiver le routage. Attention, en cas de mode On/Off la diff&eacute;rence, seuil sup&eacute;rieur moins seuil inf&eacute;rieur doit &ecirc;tre sup&eacute;rieure &agrave; la consommation du dipositif pour &eacute;viter l&apos;oscillation du relais de commande.'>W</div>";
                 S += "<div><small>Off : </small>Pw &gt;<input id='Pw_max_" + idZ + "' type='number' value='" + Vmax + "' onchange='NewVal(this)'>W</div>";
                 S += "<div><small>Puissance active en entrée de maison</small></div></div>";
             } else {
-                // Routage Multi/Train de sinus/PWM
+                // Routage Multi/Train de sinus
                 S += "<div><small>Seuil Pw : &nbsp;</small><input id='Pw_min_" + idZ + "' type='number' value='" + Vmin + "' onchange='NewVal(this)' title='Seuil de puissance pour activer ou désactiver le routage.' >W</div>";
                 S += "<div><small>Puissance active en entrée de maison</small></div>";
                 S += "<div><small>Ouvre Max : </small><input id='Pw_max_" + idZ + "' type='number' value='" + Vmax + "' onchange='NewVal(this)' title='Ouverture maximum du SSR. Valeur typique : 100%'>%</div></div>";
             }
-        } else {
-            // Mode Triac/Découpe Sinus (iAct === 0)
-            const Routage = ["", "Routage Découpe Sinus", "Routage Multi-sinus", "Routage Train de Sinus", "", "Routage Demi-Sinus"];
-            S += "<div class='zTriac'><div class='radioC'><input type='radio' name='R" + idZ + "' onclick='selectZ(4," + i + "," + iAct + ");' " + check + ">" + Routage[F.Actions[iAct].Actif] + "</div>";
-            S += "<div>Seuil Pw &nbsp;<input id='Pw_min_" + idZ + "' type='number' value='" + Vmin + "' onchange='NewVal(this)' title='Seuil en W de r&eacute;gulation par le Triac de la puissance mesur&eacute;e Pw en entrée de la maison. Valeur typique : 0.'>W</div>";
-            S += "<div><small>Puissance active en entrée de maison</small></div>";
-            S += "<div>Ouvre Max <input id='Pw_max_" + idZ + "' type='number' value='" + Vmax + "' onchange='NewVal(this)' title='Ouverture maximum du triac. Valeur typique : 100%'>%</div></div>";
         }
         
         S += "</div>"; // Ferme fcontleft
@@ -660,15 +656,37 @@ function infoZclicK(i, iAct) {
             }
             S += "</div>";
         }
+
+        // Condition Météo (prévision solaire Open-Meteo)
+        if (V.MeteoOn == 1) {
+            const MeteoSeuilkWh = (periode.MeteoSeuil || 0) / 10;
+            S += "<div class='bord1px'>";
+            S += "<div title='Condition d&apos;activation suivant la production solaire pr&eacute;vue. Exemple : forcer le chauffe-eau la nuit uniquement si demain sera couvert.'>&#9728; Prévision solaire :</div>";
+            S += "<div>Actif si <select id='MeteoC_" + idZ + "' onchange='NewVal(this)'>";
+            S += "<option value=0>Toujours (pas de condition)</option>";
+            S += "<option value=1>Prévision demain &lt; seuil</option>";
+            S += "<option value=2>Prévision demain &ge; seuil</option>";
+            S += "<option value=3>Prévision aujourd'hui &lt; seuil</option>";
+            S += "<option value=4>Prévision aujourd'hui &ge; seuil</option>";
+            S += "</select></div>";
+            S += "<div>Seuil <input id='MeteoS_" + idZ + "' type='number' step='0.1' min='0' value='" + MeteoSeuilkWh + "' onchange='NewVal(this)'> kWh</div>";
+            if (V.PrevisionJour >= 0) {
+                S += "<div><small>Prévision : aujourd'hui " + V.PrevisionJour + " kWh, demain " + V.PrevisionDemain + " kWh</small></div>";
+            } else {
+                S += "<div><small>En attente de données Open-Meteo...</small></div>";
+            }
+            S += "</div>";
+        }
         S += "</div>"; // Ferme le bloc conditions
-        
+
         S += "</div>"; // Ferme la div container
 
         GH(idZ, S);
-        
+
         // --- Affectation des valeurs aux sélecteurs (après construction du HTML) ---
         if (capteurT) GID("CanalTemp" + idZ).value = periode.CanalTemp;
         GID("SelAct" + idZ).value = periode.SelAct;
+        if (V.MeteoOn == 1) GID("MeteoC_" + idZ).value = periode.MeteoCond || 0;
         GID(idZ).style.display = "block";
     }
 }
@@ -740,10 +758,6 @@ function NewVal(t) {
         periode.Vmin = Math.floor(value);
     } else if (champs[0].indexOf("Pw_max") >= 0) {
         periode.Vmax = Math.floor(value);
-        if (iAct === 0) { // Logique spécifique pour l'Action Triac (index 0)
-            periode.Vmax = Math.max(periode.Vmax, 5);
-            periode.Vmax = Math.min(periode.Vmax, 100);
-        }
     } else if (champs[0].indexOf("ouvre") > 0) { // Ouverture ON
         periode.ONouvre = Math.floor(value);
     } else if (champs[0].indexOf("inf") > 0) { // Température inférieure (Tinf)
@@ -780,6 +794,10 @@ function NewVal(t) {
         periode.CanalTemp = parseInt(value, 10);
     } else if (champs[0].indexOf("SelAct") >= 0) {
         periode.SelAct = parseInt(value, 10);
+    } else if (champs[0].indexOf("MeteoC") >= 0) {
+        periode.MeteoCond = parseInt(value, 10);
+    } else if (champs[0].indexOf("MeteoS") >= 0) {
+        periode.MeteoSeuil = Math.max(0, Math.round(parseFloat(value) * 10) || 0);
     }
 }
 
@@ -818,15 +836,10 @@ function checkDisabled() {
     const val  = id => GID(id).value;
     const chk  = id => GID(id).checked;
 
-    show("SelectOut0", "none");
-    show("SelectPin0", "none");
-    show("Freq_PWM", "none");
-    show("commun", (F.ModePara > 0 && F.ReacCACSI < 100) ? "block" : "none");
-
     for (let iAct = 0; iAct < F.Actions.length; iAct++) {
 
         // --- Détermination du mode actif ---
-        for (let m = 0; m <= 5; m++) {
+        for (let m = 0; m <= 3; m++) {
             if (chk(`radio${iAct}-${m}`)) {
                 F.Actions[iAct].Actif = m;
             }
@@ -834,18 +847,14 @@ function checkDisabled() {
 
         const pinVal = parseInt(val(`selectPin${iAct}`), 10);
 
-        // Forçage si pas de pin
-        if (pinVal === -1 && F.Actions[iAct].Actif > 1 && iAct > 0) {
+        // Forçage si pas de pin : seul le On/Off (commande externe) est possible
+        if (pinVal === -1 && F.Actions[iAct].Actif > 1) {
             F.Actions[iAct].Actif = 1;
             GID(`radio${iAct}-1`).checked = true;
         }
 
         // Mise à jour planning
         TracePeriodes(iAct);
-
-        const triac = (F.pTriac > 0) ? "block" : "none";
-        show("planning0", triac);
-        show("TitrTriac", triac);
 
         const actif = F.Actions[iAct].Actif;
         const actifVisible = (actif > 0) ? "block" : "none";
@@ -855,14 +864,14 @@ function checkDisabled() {
         show(`forceOuvre${iAct}`, actifVisible);
 
         // Mode On/Off simple → pas de visu/graph
-        if (actif === 1 && iAct > 0) {
+        if (actif === 1) {
             show(`graphAction${iAct}`, "none");
             show(`visu${iAct}`, "none");
             show(`forceOuvre${iAct}`, "none");
         }
 
         // Zones Host/Port/Repet
-        let hostDisp = (actif === 1 && iAct>0) ? "block" : "none";
+        let hostDisp = (actif === 1) ? "block" : "none";
         show(`Tempo${iAct}`, hostDisp);
 
         let disable = (pinVal < 0);
@@ -877,8 +886,8 @@ function checkDisabled() {
         show(`Port${iAct}`, hostDisp);
         show(`Repet${iAct}`, hostDisp);
 
-        // Désactivation des modes 2..5 si pas de pin
-        for (const mode of [2, 3, 4, 5]) {
+        // Désactivation des modes proportionnels si pas de pin
+        for (const mode of [2, 3]) {
             const r = GID(`radio${iAct}-${mode}`);
             if (r) r.disabled = disable;
         }
@@ -895,20 +904,14 @@ function checkDisabled() {
         // Ligne basse
         show(
             `ligne_bas${iAct}`,
-            (actif === 1 && pinVal <= 0 && iAct > 0) ? "flex" : "none"
+            (actif === 1 && pinVal <= 0) ? "flex" : "none"
         );
 
-        // Slider Triac
+        // Sliders PID
         show(
             `fen_slide${iAct}`,
-            (actif === 1 && iAct > 0) ? "none" : "table"
+            (actif === 1) ? "none" : "table"
         );
-
-        // PWM → affichage Freq et Commun
-        if (chk(`radio${iAct}-4`)) {
-            show("Freq_PWM", "block");
-            show("commun", "block");
-        }
 
         // PID
         const pid = GID(`PID${iAct}`);
@@ -916,7 +919,7 @@ function checkDisabled() {
 
         show(
             `PIDbox${iAct}`,
-            (F.ModePara === 0 || (pinVal <= 0 && iAct > 0) || (actif === 1 && iAct > 0))
+            (F.ModePara === 0 || pinVal <= 0 || actif === 1)
                 ? "none" : "block"
         );
 
@@ -924,9 +927,6 @@ function checkDisabled() {
         show(`Propor${iAct}`, pidActive ? "table-row" : "none");
         show(`Derive${iAct}`, pidActive ? "table-row" : "none");
     }
-
-    // PWM désactivé sur triac
-    show("Pwm0", "none");
 }
 
 
@@ -934,23 +934,20 @@ function checkDisabled() {
  * Etabli les configurations d'actions 
  */
 function TraceActions(rajout) {
-        
-            if (F.Actions.length == 0) {  //Action 0 Triac au mini
-                F.Actions[0] = CreerAction(0, "Titre Triac");
-            }
-            if (F.Actions.length == 1) {  //Action 1 relais au mini au mini
-                F.Actions[1] = CreerAction(1, "Titre Relais 1");
+
+            if (F.Actions.length == 0) {  //Au moins une action
+                F.Actions[0] = CreerAction(0, "Chauffe-eau (SSR)");
             }
             let Imax=F.Actions.length;
-            if (rajout) F.Actions[Imax] = CreerAction(Imax, "Titre Relais " + Imax);
+            if (rajout) F.Actions[Imax] = CreerAction(Imax, "Action " + Imax);
 
             var S = "";
-            for (var i = 1; i < F.Actions.length; i++) {
+            for (var i = 0; i < F.Actions.length; i++) {
                 S += "<div id='planning" + i + "' class='planning' ></div>";
             }
-           
 
-            if (F.Actions.length<10) S += "<input id='butR' type='button'  class='tbut' value='+' onclick='TraceActions(true);' title='Rajouter un relais d&apos;action.'>";
+
+            if (F.Actions.length<10) S += "<input id='butR' type='button'  class='tbut' value='+' onclick='TraceActions(true);' title='Rajouter une action.'>";
             GH("plannings", S);
             for (var iAct = 0; iAct < F.Actions.length; iAct++) {
                 TracePlanning(iAct);
@@ -992,12 +989,12 @@ function Send_Values(){
     // 1. Mise à jour du modèle  depuis le DOM
     for (let iAct = 0; iAct < F.Actions.length; iAct++) {
         const action = F.Actions[iAct];
-        
-        // Correction: S'assurer que tous les modes sont couverts (0 à 5)
-        for (let i = 0; i <= 5; i++) { 
+
+        // Modes 0 à 3 (Inactif, On/Off, Multi-sinus, Train de sinus)
+        for (let i = 0; i <= 3; i++) {
             const radio = GID(`radio${iAct}-${i}`);
-            if (radio && radio.checked) { 
-                action.Actif = i; 
+            if (radio && radio.checked) {
+                action.Actif = i;
             }
         }
         
@@ -1037,9 +1034,9 @@ function Send_Values(){
                 
             }
         
-        // Logique d'effacement de l'action (iAct > 0)
-        if (iAct > 0 && selectPin && (selectPin.value == 0 || action.Titre === "")) { 
-            action.Actif = -1; // Marque l'action à effacer 
+        // Logique d'effacement de l'action
+        if (selectPin && (selectPin.value == 0 || action.Titre === "")) {
+            action.Actif = -1; // Marque l'action à effacer
         }
         action.NbPeriode= action.Periodes.length;
     }
@@ -1057,8 +1054,6 @@ function Send_Values(){
     F.Actions=F.Actions.slice(0,j);
    
     // 3. Récupération des paramètres globaux
-    F.Fpwm = document.querySelector('input[name="Fpwm"]:checked').value;
-    F.ReacCACSI = document.querySelector('input[name="ReacCACSI"]:checked').value;
     F.NbActions=F.Actions.length;
     // 4. Envoi POST
     fetch("/ParaNew", {
@@ -1234,12 +1229,6 @@ function SetParaFixe(){
     LoadParaVar();
     Set_Couleurs();
     ShowAction();
-
-    if (F.ReacCACSI < 100) {
-        GID("CACSI" + F.ReacCACSI).checked = true; //Reactivité Ki CACSI et non Estimation
-        GID("CACSI").style = "display:block;";
-    }
-    GID("Fpwm" + F.Fpwm).checked = true;
 }
 
 

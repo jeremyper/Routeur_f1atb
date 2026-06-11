@@ -276,6 +276,17 @@ const char *MainHtml = R"====(
     #date{
       display:none;
     }
+    #meteoPrev{
+      display:none;
+      text-align:center;
+      font-size:15px;
+      padding:4px 10px;
+      margin:4px auto;
+      width:fit-content;
+      border:1px solid rgba(74,179,244,.5);
+      border-radius:8px;
+      background:rgba(30,30,60,.4);
+    }
     @media(max-width:700px){
       .grid-container2,.grid-container2M{grid-template-columns:repeat(3,auto)}
       .grid-container1{grid-template-columns:repeat(2,auto)}
@@ -292,6 +303,7 @@ const char *MainHtml = R"====(
   <div id="LED" title="Réception des données"></div>
   <div id="lesOnglets"></div>
   <div id="date">DATE</div>
+  <div id="meteoPrev"></div>
   <h2 id="routeur">Routeur - RMS - F1ATB</h2>
   <div id="TabMesures"></div>
 
