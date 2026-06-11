@@ -208,6 +208,10 @@ void sendMQTTDiscoveryMsg_global() {
     DeviceTextToDiscover("RTE_Jour", "RTE Jour");
     DeviceTextToDiscover("RTE_Demain", "RTE Lendemain");
   }
+  if (MeteoOn == 1) {
+    DeviceToDiscover("Prevision_Solaire_Jour", "Prévision Solaire Jour", "kWh", "energy", "1");
+    DeviceToDiscover("Prevision_Solaire_Demain", "Prévision Solaire Demain", "kWh", "energy", "1");
+  }
 
   if (Source == "UxIx3") {
     DeviceToDiscover("Tension_M1", "Tension p1", "V", "voltage", "2");
@@ -380,6 +384,9 @@ void SendDataToHomeAssistant() {
 
   if (TempoRTEon == 1) {
     len += snprintf(value + len, sizeof(value) - len, ",\"RTE_Jour\":\"%s\", \"RTE_Demain\":\"%s\"", RTE_Jour.c_str(), RTE_Demain.c_str());
+  }
+  if (MeteoOn == 1 && Meteo_PrevisionJour >= 0) {
+    len += snprintf(value + len, sizeof(value) - len, ",\"Prevision_Solaire_Jour\":%.1f, \"Prevision_Solaire_Demain\":%.1f", Meteo_PrevisionJour, Meteo_PrevisionDemain);
   }
   if (Source == "UxIx3") {  //Modif Piamp 8/12/2025
     len += snprintf(value + len, sizeof(value) - len, ",\"Tension_M1\": %.1f, \"Intensite_M1\": %.1f,\"Tension_M2\": %.1f, \"Intensite_M2\": %.1f,\"Tension_M3\": %.1f, \"Intensite_M3\": %.1f, \"Frequence\":%.2f", Tension_M1, Intensite_M1, Tension_M2, Intensite_M2, Tension_M3, Intensite_M3, Frequence);

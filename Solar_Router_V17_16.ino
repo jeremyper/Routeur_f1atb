@@ -614,6 +614,16 @@ byte TempoRTEon = 0;
 int LastHeureRTE = -1;
 int LTARFbin = 0;  //Code binaire  des tarifs
 
+//Paramètres Prévision Météo solaire (Open-Meteo)
+byte MeteoOn = 0;                  //0=inactif, 1=actif
+float MeteoLat = 46.5;             //Latitude
+float MeteoLon = 2.4;              //Longitude
+float MeteoPVcrete = 3.0;          //Puissance crête installation en kWc
+float Meteo_PrevisionJour = -1;    //Production estimée aujourd'hui en kWh (-1 = pas de donnée)
+float Meteo_PrevisionDemain = -1;  //Production estimée demain en kWh (-1 = pas de donnée)
+unsigned long LastMeteoMillis = 0;
+WiFiClientSecure clientSecuMeteo;
+
 //Paramètres pour Source Externe
 int8_t RMSextIdx = 0;
 bool RMSextIPauto =true;
@@ -1440,6 +1450,7 @@ void loop() {
       if (LTARF.indexOf("ROUGE") >= 0) Ltarf += 16;
       LTARFbin = Ltarf;
       if (LTARF != "") PrintScroll(LTARF);
+      Call_Meteo_data();  //Prévision solaire Open-Meteo (rafraichie toutes les 2h)
     }
     if (ESP32_Type == 0) StockMessage("! Carte ESP32 non définie !");
     if (pSerial == 0 && (Source == "UxIx2" || Source == "UxIx3")) StockMessage("! Port série non défini !");

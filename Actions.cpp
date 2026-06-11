@@ -48,7 +48,19 @@ Action::Action(int aIdx) {
     Ooff[i] = 0;      //Ouvre Min Action pour Actif. 0 non utilisé
     O_on[i] = 0;
     Tarif[i] = 0;
+    MeteoCond[i] = 0;   //Pas de condition météo
+    MeteoSeuil[i] = 0;  //Seuil en dixièmes de kWh
   }
+}
+
+//Condition météo d'une période : vraie si pas de condition, pas de prévision disponible, ou prévision conforme
+bool Action::MeteoOk(int i) {
+  if (MeteoCond[i] == 0) return true;
+  float prevision = (MeteoCond[i] <= 2) ? Meteo_PrevisionDemain : Meteo_PrevisionJour;
+  if (prevision < 0) return true;  //Pas de donnée météo : on n'empêche pas l'action
+  float seuil = float(MeteoSeuil[i]) / 10.0;
+  if (MeteoCond[i] == 1 || MeteoCond[i] == 3) return (prevision < seuil);
+  return (prevision >= seuil);
 }
 
 
@@ -129,6 +141,7 @@ Action::ParaPeriode Action::ParaEnCours(int Heure, float Temperature, int Ltarfb
         }
       }
       if (Ltarfbin > 0 && (Ltarfbin & Tarif[i]) == 0) ConditionsOk = false;
+      if (!MeteoOk(i)) ConditionsOk = false;  //Condition prévision météo solaire
       if (SelAct[i] != 255) {  //On conditionne à une autre action
         if (Hmin[i] != 0 && (Hmin[i] > ExtHequiv || ExtValide == 0)) ConditionsOk = false;
         if (Hmax[i] != 0 && (Hmax[i] < ExtHequiv || ExtValide == 0)) ConditionsOk = false;
@@ -168,6 +181,7 @@ byte Action::TypeEnCours(int Heure, float Temperature, int Ltarfbin, int Retard)
         }
       }
       if (Ltarfbin > 0 && (Ltarfbin & Tarif[i]) == 0) ConditionsOk = false;
+      if (!MeteoOk(i)) ConditionsOk = false;  //Condition prévision météo solaire
       if (SelAct[i] != 255) {  //On conditionne à une autre action
         if (Hmin[i] != 0 && (Hmin[i] > ExtHequiv || ExtValide == 0)) ConditionsOk = false;
         if (Hmax[i] != 0 && (Hmax[i] < ExtHequiv || ExtValide == 0)) ConditionsOk = false;

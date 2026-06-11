@@ -658,6 +658,9 @@ void handleParaVar() {
   conf["IP_Fixe"] = RMS_IP[0];  //Derniere IP connu si DHCP
   conf["LTARF"] = LTARF;        //Tarif
   conf["LTARFbin"] = LTARFbin;
+  conf["MeteoOn"] = MeteoOn;
+  conf["PrevisionJour"] = serialized(String(Meteo_PrevisionJour, 1));    //Production solaire estimée kWh
+  conf["PrevisionDemain"] = serialized(String(Meteo_PrevisionDemain, 1));
   for (int c = 0; c < 4; c++) {
     conf["temperature"][c] = temperature[c];
   }
