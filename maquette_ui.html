@@ -1,0 +1,591 @@
+<!doctype html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Maquette — Routeur Solaire</title>
+<style>
+/* ════════════════════════════════════════════════════════════════
+   MAQUETTE D'ÉTUDE — page d'accueil repensée du routeur F1ATB
+   Fichier autonome, données factices. Mobile-first, dark mode.
+   ════════════════════════════════════════════════════════════════ */
+:root{
+  --bg:#0e1118;
+  --bg2:#131725;
+  --card:#191e2e;
+  --card2:#1f2538;
+  --line:#2a3147;
+  --txt:#e8ecf6;
+  --txt2:#9aa3b8;
+  --txt3:#6b7388;
+  --sun:#ffb74d;      /* production */
+  --sun2:#ff9800;
+  --home:#4ab3f4;     /* maison / conso */
+  --grid:#b39ddb;     /* réseau */
+  --ok:#4caf7d;
+  --ok-bg:rgba(76,175,125,.14);
+  --warn:#ffb74d;
+  --warn-bg:rgba(255,183,77,.13);
+  --off:#5c6478;
+  --danger:#ef6e6e;
+  --rad:16px;
+  --shadow:0 4px 18px rgba(0,0,0,.35);
+}
+html[data-theme=light]{
+  --bg:#f2f4f9; --bg2:#e9edf5; --card:#ffffff; --card2:#f4f6fb;
+  --line:#dde2ee; --txt:#1c2233; --txt2:#5a6379; --txt3:#8a92a6;
+  --shadow:0 4px 14px rgba(30,40,80,.10);
+  --ok-bg:rgba(76,175,125,.16); --warn-bg:rgba(255,152,0,.14);
+}
+*,*::before,*::after{box-sizing:border-box}
+body{
+  margin:0; background:var(--bg); color:var(--txt);
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  font-size:15px; line-height:1.45;
+  padding-bottom:76px; /* place pour la nav basse mobile */
+}
+button{font-family:inherit}
+
+/* ── En-tête ─────────────────────────────────────────────────── */
+header{
+  position:sticky; top:0; z-index:50;
+  background:color-mix(in srgb,var(--bg) 86%,transparent);
+  backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);
+}
+.head-in{
+  max-width:1060px; margin:auto; padding:10px 16px;
+  display:flex; align-items:center; gap:10px;
+}
+.logo{width:34px;height:34px;flex-shrink:0}
+.head-tit{flex:1;min-width:0}
+.head-tit b{font-size:17px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.head-tit span{font-size:12px;color:var(--txt3)}
+.pill{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:12px;font-weight:600;padding:4px 10px;border-radius:99px;
+  background:var(--ok-bg);color:var(--ok);white-space:nowrap;
+}
+.pill .dot{width:7px;height:7px;border-radius:50%;background:var(--ok);animation:pulse 2s infinite}
+@keyframes pulse{50%{opacity:.35}}
+.tarif{
+  font-size:12px;font-weight:700;padding:4px 10px;border-radius:99px;
+  background:rgba(76,175,125,.18);color:var(--ok);white-space:nowrap;
+}
+.icon-btn{
+  background:none;border:1px solid var(--line);color:var(--txt2);
+  width:36px;height:36px;border-radius:10px;cursor:pointer;font-size:17px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.icon-btn:hover{border-color:var(--home);color:var(--txt)}
+
+/* ── Bandeau flux d'énergie ──────────────────────────────────── */
+main{max-width:1060px;margin:auto;padding:14px 14px 0}
+.flux{
+  display:flex;align-items:stretch;justify-content:space-between;gap:4px;
+  background:linear-gradient(160deg,var(--card),var(--bg2));
+  border:1px solid var(--line);border-radius:var(--rad);
+  padding:14px 8px;box-shadow:var(--shadow);
+}
+.flux-node{flex:1;text-align:center;min-width:0}
+.flux-node .ico{font-size:26px;line-height:1}
+.flux-node .lbl{font-size:11.5px;color:var(--txt3);margin-top:2px;text-transform:uppercase;letter-spacing:.6px}
+.flux-node .val{font-size:clamp(17px,4.5vw,24px);font-weight:700;margin-top:1px;white-space:nowrap}
+.flux-node .sub{font-size:11.5px;color:var(--txt2)}
+.v-sun .val{color:var(--sun)} .v-home .val{color:var(--home)} .v-grid .val{color:var(--grid)}
+.flux-link{display:flex;flex-direction:column;justify-content:center;align-items:center;width:42px;flex-shrink:0}
+.flux-link svg{width:40px;height:14px;overflow:visible}
+.flux-link .fl-lbl{font-size:10px;color:var(--txt3);margin-top:2px;white-space:nowrap}
+.dashmove{stroke-dasharray:5 6;animation:flow 1.2s linear infinite}
+@keyframes flow{to{stroke-dashoffset:-11}}
+
+/* ── Grille de tuiles ────────────────────────────────────────── */
+.tiles{display:grid;grid-template-columns:1fr;gap:14px;margin-top:14px}
+@media(min-width:640px){.tiles{grid-template-columns:1fr 1fr}}
+@media(min-width:980px){.tiles{grid-template-columns:1fr 1fr 1fr}.t-graph,.t-autom{grid-column:span 3}}
+@media(min-width:640px) and (max-width:979px){.t-graph,.t-autom{grid-column:span 2}}
+
+.tile{
+  background:var(--card);border:1px solid var(--line);
+  border-radius:var(--rad);padding:16px;box-shadow:var(--shadow);
+  display:flex;flex-direction:column;gap:8px;min-width:0;
+}
+.tile-head{display:flex;align-items:center;gap:8px}
+.tile-head .ico{font-size:18px}
+.tile-head h2{font-size:13px;margin:0;color:var(--txt2);font-weight:600;text-transform:uppercase;letter-spacing:.8px;flex:1}
+.tile-head a{font-size:12px;color:var(--txt3);text-decoration:none}
+.tile-head a:hover{color:var(--home)}
+.big{font-size:32px;font-weight:750;line-height:1.05}
+.big small{font-size:16px;font-weight:600;color:var(--txt2)}
+.kv{display:flex;justify-content:space-between;font-size:13.5px;color:var(--txt2);padding:3px 0;border-top:1px dashed var(--line)}
+.kv b{color:var(--txt);font-weight:600;font-variant-numeric:tabular-nums}
+.badge{
+  display:inline-flex;align-items:center;gap:7px;
+  font-size:13px;font-weight:600;border-radius:10px;padding:7px 10px;width:fit-content;max-width:100%;
+}
+.badge.ok{background:var(--ok-bg);color:var(--ok)}
+.badge.warn{background:var(--warn-bg);color:var(--warn)}
+.badge.idle{background:rgba(140,148,170,.12);color:var(--txt2)}
+
+/* ── Tuile chauffe-eau : cuve + jauge ────────────────────────── */
+.ballon-row{display:flex;gap:16px;align-items:center}
+.tank{
+  width:62px;height:118px;flex-shrink:0;position:relative;
+  border:2px solid var(--line);border-radius:18px;overflow:hidden;
+  background:var(--bg2);
+}
+.tank-fill{
+  position:absolute;bottom:0;left:0;right:0;height:78%;
+  background:linear-gradient(to top,#ff7043,#ffb74d 70%,#ffd54f);
+  transition:height .6s ease;
+}
+.tank-fill::before{ /* petite vague */
+  content:"";position:absolute;top:-5px;left:-10%;width:120%;height:10px;
+  background:inherit;border-radius:50%;
+  filter:brightness(1.15);
+}
+.tank-target{
+  position:absolute;left:0;right:0;height:0;border-top:2px dashed color-mix(in srgb,var(--txt) 55%,transparent);
+}
+.tank-target span{
+  position:absolute;right:3px;top:-15px;font-size:9.5px;color:var(--txt2);
+  background:color-mix(in srgb,var(--card) 80%,transparent);padding:0 3px;border-radius:4px;
+}
+.ballon-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:7px}
+.temp-now{font-size:34px;font-weight:750;line-height:1}
+.temp-now small{font-size:14px;color:var(--txt2);font-weight:600}
+.routage-bar{height:8px;border-radius:99px;background:var(--bg2);overflow:hidden;border:1px solid var(--line)}
+.routage-bar>div{height:100%;width:74%;border-radius:99px;background:linear-gradient(90deg,var(--sun2),var(--sun));transition:width .4s}
+.routage-lbl{font-size:12.5px;color:var(--txt2)}
+.routage-lbl b{color:var(--sun)}
+
+/* ── Boutons de forçage ──────────────────────────────────────── */
+.force-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:2px}
+.fbtn{
+  flex:1;min-width:90px;border:1px solid var(--line);border-radius:11px;
+  background:var(--card2);color:var(--txt);padding:9px 8px;font-size:13.5px;font-weight:600;
+  cursor:pointer;transition:border-color .15s,background .15s;
+}
+.fbtn:hover{border-color:var(--home)}
+.fbtn.on{background:var(--warn-bg);border-color:var(--warn);color:var(--warn)}
+.fbtn.stop.on{background:rgba(239,110,110,.14);border-color:var(--danger);color:var(--danger)}
+
+/* ── Tuile météo ─────────────────────────────────────────────── */
+.meteo-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.meteo-day{
+  background:var(--card2);border:1px solid var(--line);border-radius:12px;
+  padding:10px;text-align:center;
+}
+.meteo-day .ic{font-size:30px}
+.meteo-day .d{font-size:12px;color:var(--txt3);text-transform:uppercase;letter-spacing:.6px}
+.meteo-day .v{font-size:20px;font-weight:700;margin-top:1px}
+.meteo-day .v small{font-size:12px;color:var(--txt2);font-weight:600}
+.meteo-note{font-size:12.5px;color:var(--txt2);display:flex;gap:7px;align-items:flex-start}
+.meteo-note .ic{flex-shrink:0}
+
+/* ── Tuile automatisations ───────────────────────────────────── */
+.autom-list{display:flex;flex-direction:column;gap:8px}
+.autom{
+  display:flex;align-items:center;gap:12px;
+  background:var(--card2);border:1px solid var(--line);border-radius:12px;
+  padding:11px 12px;cursor:pointer;transition:border-color .15s;
+}
+.autom:hover{border-color:var(--home)}
+.autom .st{width:11px;height:11px;border-radius:50%;flex-shrink:0;margin-top:1px}
+.st.run{background:var(--sun);box-shadow:0 0 8px var(--sun);animation:pulse 1.8s infinite}
+.st.sched{background:var(--home)}
+.st.off{background:var(--off)}
+.autom .tx{flex:1;min-width:0}
+.autom .tx b{display:block;font-size:14.5px}
+.autom .tx span{font-size:12.5px;color:var(--txt2);display:block}
+.autom .chev{color:var(--txt3);font-size:18px;flex-shrink:0}
+.mini-bar{height:5px;border-radius:99px;background:var(--bg);margin-top:5px;overflow:hidden;max-width:220px}
+.mini-bar>div{height:100%;background:linear-gradient(90deg,var(--sun2),var(--sun));border-radius:99px}
+
+/* ── Tuile graphique ─────────────────────────────────────────── */
+.t-graph .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--txt2)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.graph-wrap{position:relative;width:100%}
+.graph-wrap svg{width:100%;height:auto;display:block;border-radius:10px;background:var(--bg2);border:1px solid var(--line);touch-action:pan-y}
+.gtip{
+  position:absolute;pointer-events:none;display:none;
+  background:var(--card);border:1px solid var(--line);border-radius:9px;
+  font-size:12px;padding:6px 9px;box-shadow:var(--shadow);white-space:nowrap;z-index:5;
+}
+.gtip b{font-variant-numeric:tabular-nums}
+.range-row{display:flex;gap:6px}
+.rbtn{
+  border:1px solid var(--line);background:none;color:var(--txt2);
+  font-size:12px;font-weight:600;border-radius:99px;padding:4px 12px;cursor:pointer;
+}
+.rbtn.sel{background:var(--home);border-color:var(--home);color:#fff}
+
+/* ── Navigation basse (mobile) / haute (desktop) ─────────────── */
+nav{
+  position:fixed;bottom:0;left:0;right:0;z-index:60;
+  background:color-mix(in srgb,var(--card) 92%,transparent);
+  backdrop-filter:blur(12px);
+  border-top:1px solid var(--line);
+  display:flex;justify-content:space-around;
+  padding:6px 4px calc(6px + env(safe-area-inset-bottom));
+}
+nav a{
+  text-decoration:none;color:var(--txt3);font-size:10.5px;font-weight:600;
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  padding:4px 12px;border-radius:12px;min-width:62px;
+}
+nav a .ni{font-size:20px;line-height:1}
+nav a.sel{color:var(--home);background:rgba(74,179,244,.10)}
+@media(min-width:980px){
+  body{padding-bottom:20px}
+  nav{position:static;border-top:none;max-width:1060px;margin:18px auto 0;background:none;backdrop-filter:none;justify-content:center;gap:18px}
+  nav a{flex-direction:row;font-size:13px}
+}
+.foot{
+  max-width:1060px;margin:22px auto 0;padding:0 16px;
+  font-size:12px;color:var(--txt3);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;
+}
+.maq-note{
+  max-width:1060px;margin:10px auto 0;padding:0 16px;font-size:11.5px;color:var(--txt3);
+  text-align:center;font-style:italic;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="head-in">
+    <svg class="logo" viewBox="13 18 46 44"><rect width="64" height="64" fill="#4caf7d" rx="14"/><path d="m16 36h19l16 20h-20z" fill="#92d3f5"/><circle cx="48" cy="28" fill="#fcea2b" r="8"/><g fill="none" stroke="#10241a" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="m16 36h19l16 20h-20z"/><path d="m17 43v13h10"/><path d="m24 46h19"/><path d="m26 36 16 20"/><circle cx="48" cy="28" r="8"/></g></svg>
+    <div class="head-tit">
+      <b>Routeur Solaire — Maison</b>
+      <span id="horloge">mercredi 11 juin · 14:32</span>
+    </div>
+    <div class="pill"><span class="dot"></span>En ligne</div>
+    <div class="tarif" title="Tarif en cours">HC</div>
+    <button class="icon-btn" id="themeBtn" title="Basculer clair / sombre">◐</button>
+  </div>
+</header>
+
+<main>
+
+  <!-- ═══ Bandeau flux : que se passe-t-il maintenant ? ═══ -->
+  <section class="flux" aria-label="Flux d'énergie en temps réel">
+    <div class="flux-node v-sun">
+      <div class="ico">☀️</div>
+      <div class="lbl">Production</div>
+      <div class="val">2,43 kW</div>
+      <div class="sub">panneaux</div>
+    </div>
+    <div class="flux-link">
+      <svg viewBox="0 0 40 14"><line x1="0" y1="7" x2="32" y2="7" stroke="var(--sun)" stroke-width="2.5" class="dashmove"/><path d="M31 2l8 5-8 5z" fill="var(--sun)"/></svg>
+      <span class="fl-lbl">2,43 kW</span>
+    </div>
+    <div class="flux-node v-home">
+      <div class="ico">🏠</div>
+      <div class="lbl">Maison</div>
+      <div class="val">1,12 kW</div>
+      <div class="sub">consommés</div>
+    </div>
+    <div class="flux-link">
+      <svg viewBox="0 0 40 14"><line x1="0" y1="7" x2="32" y2="7" stroke="var(--grid)" stroke-width="2.5" class="dashmove"/><path d="M31 2l8 5-8 5z" fill="var(--grid)"/></svg>
+      <span class="fl-lbl">0,11 kW</span>
+    </div>
+    <div class="flux-node v-grid">
+      <div class="ico">⚡</div>
+      <div class="lbl">Réseau</div>
+      <div class="val">injecte</div>
+      <div class="sub">0,11 kW</div>
+    </div>
+  </section>
+
+  <div class="tiles">
+
+    <!-- ═══ Tuile Production ═══ -->
+    <section class="tile">
+      <div class="tile-head"><span class="ico">☀️</span><h2>Production solaire</h2><a href="#">Détails ›</a></div>
+      <div class="big" style="color:var(--sun)">2,43 <small>kW</small></div>
+      <div class="badge ok">▲ 11,2 kWh produits aujourd'hui</div>
+      <div>
+        <div class="kv"><span>Pic du jour</span><b>2,91 kW à 13:05</b></div>
+        <div class="kv"><span>Hier</span><b>13,4 kWh</b></div>
+        <div class="kv"><span>Ce mois</span><b>164 kWh</b></div>
+      </div>
+    </section>
+
+    <!-- ═══ Tuile Maison ═══ -->
+    <section class="tile">
+      <div class="tile-head"><span class="ico">🏠</span><h2>Maison</h2><a href="#">Détails ›</a></div>
+      <div class="big" style="color:var(--home)">1,12 <small>kW</small></div>
+      <div class="badge ok">✓ 100 % solaire en ce moment</div>
+      <div>
+        <div class="kv"><span>Pris au réseau aujourd'hui</span><b>1,9 kWh</b></div>
+        <div class="kv"><span>Renvoyé au réseau</span><b>0,8 kWh</b></div>
+        <div class="kv"><span>Autoconsommation</span><b>93 %</b></div>
+      </div>
+    </section>
+
+    <!-- ═══ Tuile Chauffe-eau ═══ -->
+    <section class="tile">
+      <div class="tile-head"><span class="ico">🚿</span><h2>Chauffe-eau</h2><a href="#">Régler ›</a></div>
+      <div class="ballon-row">
+        <div class="tank" title="Température du ballon">
+          <div class="tank-fill" id="tankFill"></div>
+          <div class="tank-target" id="tankTarget"><span>cible 55°</span></div>
+        </div>
+        <div class="ballon-info">
+          <div class="temp-now">52,4° <small>/ 55°C</small></div>
+          <div class="badge ok" id="ballonEtat">☀️ Le soleil suffira aujourd'hui</div>
+          <div>
+            <div class="routage-lbl">Surplus routé : <b>1 310 W</b> · ouverture 74 %</div>
+            <div class="routage-bar"><div id="routBar"></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="force-row">
+        <button class="fbtn" data-force="ce" onclick="forcer(this,'Chauffe-eau forcé 1 h')">▶ Forcer 1 h</button>
+        <button class="fbtn stop" data-force="ce-stop" onclick="forcer(this,'Chauffe-eau arrêté 1 h')">⏸ Arrêter 1 h</button>
+      </div>
+    </section>
+
+    <!-- ═══ Tuile Météo / prévision ═══ -->
+    <section class="tile">
+      <div class="tile-head"><span class="ico">🌤️</span><h2>Prévision solaire</h2><a href="#">Open-Meteo</a></div>
+      <div class="meteo-grid">
+        <div class="meteo-day">
+          <div class="ic">☀️</div>
+          <div class="d">Aujourd'hui</div>
+          <div class="v">12,8 <small>kWh</small></div>
+        </div>
+        <div class="meteo-day">
+          <div class="ic">🌧️</div>
+          <div class="d">Demain</div>
+          <div class="v">3,1 <small>kWh</small></div>
+        </div>
+      </div>
+      <div class="meteo-note"><span class="ic">🌙</span><span>Demain s'annonce couvert : une <b>chauffe forcée est prévue cette nuit (02:00 → 06:00)</b> en heures creuses pour garantir l'eau chaude.</span></div>
+    </section>
+
+    <!-- ═══ Tuile Automatisations (langage clair) ═══ -->
+    <section class="tile t-autom">
+      <div class="tile-head"><span class="ico">🤖</span><h2>Automatisations</h2><a href="#">Tout gérer ›</a></div>
+      <div class="autom-list">
+
+        <div class="autom" onclick="alert('Maquette : ouvrirait le réglage de l\'automatisation Chauffe-eau')">
+          <span class="st run"></span>
+          <span class="tx">
+            <b>Chauffe-eau</b>
+            <span>Routage du surplus en cours — actif depuis 2 h 41</span>
+            <span class="mini-bar"><div style="width:74%"></div></span>
+          </span>
+          <span class="chev">›</span>
+        </div>
+
+        <div class="autom" onclick="alert('Maquette : ouvrirait le réglage de l\'automatisation Chauffe-eau nuit')">
+          <span class="st sched"></span>
+          <span class="tx">
+            <b>Chauffe-eau — secours nuit</b>
+            <span>Prévu cette nuit 02:00 → 06:00 · car demain &lt; 5 kWh de soleil</span>
+          </span>
+          <span class="chev">›</span>
+        </div>
+
+        <div class="autom" onclick="alert('Maquette : ouvrirait le réglage de l\'automatisation Radiateur')">
+          <span class="st off"></span>
+          <span class="tx">
+            <b>Sèche-serviettes</b>
+            <span>Arrêté · prochaine plage 18:00 → 21:00 si salle de bain &lt; 19°</span>
+          </span>
+          <span class="chev">›</span>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ═══ Tuile Graphique du jour ═══ -->
+    <section class="tile t-graph">
+      <div class="tile-head"><span class="ico">📈</span><h2>Aujourd'hui</h2>
+        <div class="range-row">
+          <button class="rbtn sel">Jour</button><button class="rbtn" onclick="alert('Maquette : vue 48 h')">48 h</button><button class="rbtn" onclick="alert('Maquette : vue Année')">Année</button>
+        </div>
+      </div>
+      <div class="legend">
+        <span><i style="background:var(--sun)"></i>Production</span>
+        <span><i style="background:var(--home)"></i>Consommation maison</span>
+        <span><i style="background:var(--ok)"></i>Surplus → chauffe-eau</span>
+      </div>
+      <div class="graph-wrap">
+        <svg id="gJour" viewBox="0 0 720 270" preserveAspectRatio="none" aria-label="Production et consommation du jour"></svg>
+        <div class="gtip" id="gTip"></div>
+      </div>
+    </section>
+
+  </div>
+
+  <div class="foot">
+    <span>Routeur V17.16 · source UxIx2 · 192.168.1.245</span>
+    <span>Basé sur RMS F1ATB</span>
+  </div>
+  <div class="maq-note">Maquette d'étude — données factices, aucun appel réseau.</div>
+</main>
+
+<!-- ═══ Navigation ═══ -->
+<nav>
+  <a href="#" class="sel"><span class="ni">🏠</span>Accueil</a>
+  <a href="#" onclick="alert('Maquette : page Historique (graphiques 48 h / an, export)');return false"><span class="ni">📊</span>Historique</a>
+  <a href="#" onclick="alert('Maquette : page Automatisations (plannings, assistant)');return false"><span class="ni">🤖</span>Autom.</a>
+  <a href="#" onclick="alert('Maquette : page Réglages (WiFi, sondes, MQTT, avancé)');return false"><span class="ni">⚙️</span>Réglages</a>
+</nav>
+
+<script>
+/* ── Données factices ───────────────────────────────────────── */
+const NOW_H = 14.53;          // heure courante simulée
+const T_BALLON = 52.4, T_CIBLE = 55, T_MIN = 15, T_MAX = 65;
+
+/* ── Thème clair / sombre ───────────────────────────────────── */
+const themeBtn = document.getElementById('themeBtn');
+if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches)
+  document.documentElement.dataset.theme = 'light';
+themeBtn.onclick = () => {
+  const h = document.documentElement;
+  h.dataset.theme = (h.dataset.theme === 'dark') ? 'light' : 'dark';
+  drawGraph(); // re-rendu avec les couleurs du thème
+};
+
+/* ── Horloge factice ────────────────────────────────────────── */
+setInterval(() => {
+  const d = new Date();
+  document.getElementById('horloge').textContent =
+    d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'}) +
+    ' · ' + d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+}, 1000);
+
+/* ── Jauge du ballon ────────────────────────────────────────── */
+(function(){
+  const pct  = Math.max(0, Math.min(1,(T_BALLON - T_MIN)/(T_MAX - T_MIN)));
+  const pctC = Math.max(0, Math.min(1,(T_CIBLE  - T_MIN)/(T_MAX - T_MIN)));
+  document.getElementById('tankFill').style.height = (pct*100).toFixed(0)+'%';
+  document.getElementById('tankTarget').style.bottom = (pctC*100).toFixed(0)+'%';
+})();
+
+/* ── Boutons de forçage (simulation) ────────────────────────── */
+function forcer(btn, msg){
+  document.querySelectorAll('.fbtn').forEach(b => { if(b!==btn) b.classList.remove('on'); });
+  btn.classList.toggle('on');
+  const etat = document.getElementById('ballonEtat');
+  if (btn.classList.contains('on')) {
+    etat.className = 'badge warn';
+    etat.textContent = '✋ ' + msg + ' (manuel)';
+  } else {
+    etat.className = 'badge ok';
+    etat.textContent = '☀️ Le soleil suffira aujourd’hui';
+  }
+}
+
+/* ── Graphique du jour (SVG vanilla, données factices) ──────── */
+const H_STEP = 0.25;                       // un point / 15 mn
+let PROD = [], CONSO = [], ROUTE = [];
+(function genData(){
+  // nuages pseudo-aléatoires reproductibles
+  let seed = 42; const rnd = () => (seed = (seed*9301+49297)%233280) / 233280;
+  for (let h = 0; h <= 24; h += H_STEP) {
+    // production : cloche entre 6h30 et 21h, pic ~2900 W vers 13h
+    let p = 0;
+    if (h > 6.5 && h < 21) {
+      p = 2900 * Math.exp(-Math.pow((h-13.4)/3.4, 2));
+      if (h > 9.2 && h < 10.1) p *= 0.45;       // passage nuageux
+      if (h > 15.6 && h < 16.3) p *= 0.6;
+      p *= 0.92 + rnd()*0.16;
+    }
+    // conso maison : talon + pics matin / midi
+    let c = 260 + rnd()*120;
+    if (h > 6.8 && h < 8.3)  c += 1500*Math.exp(-Math.pow((h-7.5)/0.5,2));
+    if (h > 11.8 && h < 13.6) c += 900*Math.exp(-Math.pow((h-12.6)/0.6,2));
+    if (h > 19 && h < 22)    c += 1100*Math.exp(-Math.pow((h-20.3)/0.9,2));
+    if (h >= 2 && h < 6)     c += 2400;          // chauffe forcée HC (exemple)
+    if (h > NOW_H) { p = NaN; c = NaN; }         // futur : pas de données
+    PROD.push(p); CONSO.push(c);
+    ROUTE.push(isNaN(p) ? NaN : Math.max(0, Math.min(p - c, 2400) * (h>8.4&&h<19?1:0)));
+  }
+})();
+
+const svg = document.getElementById('gJour'), tip = document.getElementById('gTip');
+const W=720, H=270, ML=44, MR=10, MT=12, MB=26, VMAX=3200;
+const X = i => ML + (W-ML-MR) * (i*H_STEP)/24;
+const Y = v => MT + (H-MT-MB) * (1 - v/VMAX);
+
+function pathArea(tab){
+  let dM='', first=-1, last=-1;
+  tab.forEach((v,i)=>{ if(!isNaN(v)){ if(first<0)first=i; last=i;
+    dM += (dM?'L':'M') + X(i).toFixed(1) + ',' + Y(v).toFixed(1); }});
+  if(first<0) return {line:'',area:''};
+  const area = dM + 'L'+X(last).toFixed(1)+','+Y(0).toFixed(1)
+                  + 'L'+X(first).toFixed(1)+','+Y(0).toFixed(1)+'Z';
+  return {line:dM, area};
+}
+function cssVar(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+
+function drawGraph(){
+  const cSun=cssVar('--sun'), cHome=cssVar('--home'), cOk=cssVar('--ok'),
+        cTxt=cssVar('--txt3'), cLine=cssVar('--line');
+  let s = '';
+  // grille horizontale + libellés kW
+  for (let v=0; v<=VMAX; v+=1000){
+    s += `<line x1="${ML}" y1="${Y(v)}" x2="${W-MR}" y2="${Y(v)}" stroke="${cLine}" stroke-width="1" stroke-dasharray="3 5"/>`;
+    s += `<text x="${ML-6}" y="${Y(v)+4}" text-anchor="end" font-size="11" fill="${cTxt}">${v/1000} kW</text>`;
+  }
+  // libellés heures
+  for (let h=0; h<=24; h+=4)
+    s += `<text x="${X(h/H_STEP)}" y="${H-8}" text-anchor="middle" font-size="11" fill="${cTxt}">${h}h</text>`;
+  // surplus routé (aire verte)
+  const r = pathArea(ROUTE);
+  s += `<path d="${r.area}" fill="${cOk}" opacity="0.25"/>`;
+  // production (aire + ligne)
+  const p = pathArea(PROD);
+  s += `<path d="${p.area}" fill="${cSun}" opacity="0.16"/>`;
+  s += `<path d="${p.line}" fill="none" stroke="${cSun}" stroke-width="2.4" stroke-linejoin="round"/>`;
+  // consommation (ligne)
+  const c = pathArea(CONSO);
+  s += `<path d="${c.line}" fill="none" stroke="${cHome}" stroke-width="2" stroke-linejoin="round"/>`;
+  // repère "maintenant"
+  const xn = X(NOW_H/H_STEP);
+  s += `<line x1="${xn}" y1="${MT}" x2="${xn}" y2="${H-MB}" stroke="${cTxt}" stroke-width="1.4" stroke-dasharray="4 4"/>`;
+  s += `<text x="${xn+5}" y="${MT+11}" font-size="11" fill="${cTxt}">maintenant</text>`;
+  // curseur de survol (rempli au pointage)
+  s += `<line id="gCursor" x1="0" y1="${MT}" x2="0" y2="${H-MB}" stroke="${cTxt}" stroke-width="1" visibility="hidden"/>`;
+  svg.innerHTML = s;
+}
+drawGraph();
+
+/* survol / toucher : valeurs au point */
+function showTip(evt){
+  const r = svg.getBoundingClientRect();
+  const cx = (evt.touches ? evt.touches[0].clientX : evt.clientX) - r.left;
+  const xv = cx * W / r.width;
+  const i  = Math.round(((xv-ML)/(W-ML-MR))*24/H_STEP);
+  if (i<0 || i>=PROD.length || isNaN(PROD[i])) { hideTip(); return; }
+  const h  = i*H_STEP, hh = Math.floor(h), mm = Math.round((h-hh)*60);
+  document.getElementById('gCursor').setAttribute('x1', X(i));
+  document.getElementById('gCursor').setAttribute('x2', X(i));
+  document.getElementById('gCursor').setAttribute('visibility','visible');
+  tip.innerHTML = `<b>${hh}h${String(mm).padStart(2,'0')}</b><br>` +
+    `<span style="color:var(--sun)">☀ ${Math.round(PROD[i])} W</span><br>` +
+    `<span style="color:var(--home)">🏠 ${Math.round(CONSO[i])} W</span><br>` +
+    `<span style="color:var(--ok)">→ ballon ${Math.round(ROUTE[i]||0)} W</span>`;
+  tip.style.display='block';
+  const left = Math.min(Math.max(cx-50, 0), r.width-110);
+  tip.style.left = left+'px';
+  tip.style.top  = '8px';
+}
+function hideTip(){
+  tip.style.display='none';
+  const cur=document.getElementById('gCursor');
+  if(cur) cur.setAttribute('visibility','hidden');
+}
+svg.addEventListener('mousemove', showTip);
+svg.addEventListener('mouseleave', hideTip);
+svg.addEventListener('touchstart', showTip, {passive:true});
+svg.addEventListener('touchmove',  showTip, {passive:true});
+svg.addEventListener('touchend',   hideTip);
+</script>
+</body>
+</html>
