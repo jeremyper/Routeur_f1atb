@@ -55,13 +55,9 @@ Action::Action(int aIdx) {
 
 void Action::Arreter() {
   int Tseconde = int(millis() / 1000);
-  if ((Tseconde - T_LastAction) >= Tempo || Idx == 0 || Actif != 1) {
+  if ((Tseconde - T_LastAction) >= Tempo || Actif != 1) {
     if (Gpio > 0) {
-      if (Actif == 4) {  //PWM
-        ledcWrite(Gpio, OutOff * 255);
-      } else {
-        digitalWrite(Gpio, OutOff);
-      }
+      digitalWrite(Gpio, OutOff);
       T_LastAction = Tseconde;
     } else {
       if (On || ((Tseconde - T_LastAction) > Repet && Repet != 0)) {
@@ -76,11 +72,7 @@ void Action::RelaisOn() {
   int Tseconde = int(millis() / 1000);
   if ((Tseconde - T_LastAction) >= Tempo) {
     if (Gpio > 0) {
-      if (Actif == 4) {  //PWM
-        ledcWrite(Gpio, OutOn * 255);
-      } else {
-        digitalWrite(Gpio, OutOn);
-      }
+      digitalWrite(Gpio, OutOn);
       T_LastAction = Tseconde;
       On = true;
     } else {
@@ -218,27 +210,20 @@ int Action::Valmax(int Heure) {  //Retourne la valeur Vmax (ex ouverture du Tria
   return S;
 }
 
-void Action::InitGpio(int FreqPWM) {  //Initialise les sorties GPIO pour des relais
+void Action::InitGpio() {  //Initialise les sorties GPIO pour des relais ou SSR
   int p;
-  String S;
   String IS = "|";  //Input Separator
 
-  if (Idx > 0) {
-    T_LastAction = 0;
-    Gpio = -1;
-    p = OrdreOn.indexOf(IS);
-    if (p >= 0) {
-      Gpio = OrdreOn.substring(0, p).toInt();
-      OutOn = OrdreOn.substring(p + 1).toInt();
-      OutOff = (1 + OutOn) % 2;
-      if (Gpio > 0) {
-        if (Actif == 4) {                            //PWM
-          ledcAttachChannel(Gpio, FreqPWM, 8, Idx);  //Affectation des  channels
-        } else {
-          pinMode(Gpio, OUTPUT);
-          digitalWrite(Gpio, OutOff);
-        }
-      }
+  T_LastAction = 0;
+  Gpio = -1;
+  p = OrdreOn.indexOf(IS);
+  if (p >= 0) {
+    Gpio = OrdreOn.substring(0, p).toInt();
+    OutOn = OrdreOn.substring(p + 1).toInt();
+    OutOff = (1 + OutOn) % 2;
+    if (Gpio > 0) {
+      pinMode(Gpio, OUTPUT);
+      digitalWrite(Gpio, OutOff);
     }
   }
 }
@@ -250,11 +235,8 @@ void Action::CallExterne(String host, String url, int port) {
     host.toCharArray(hostbuf, host.length() + 1);
     if (!clientExt.connect(hostbuf, port, 3000)) {
       clientExt.stop();
-      delay(500);
       if (!clientExt.connect(hostbuf, port, 3000)) {
-        delay(100);  //Necessaire
         StockMessage("connection to :" + host + " failed");
-        delay(100);
         return;
       }
     }
@@ -266,6 +248,7 @@ void Action::CallExterne(String host, String url, int port) {
         clientExt.stop();
         return;
       }
+      yield();
     }
 
     // Read all the lines of the reply from server

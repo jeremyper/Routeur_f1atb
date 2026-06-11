@@ -251,14 +251,6 @@ void handleAjaxRMS() {  // Envoi des dernières données  brutes reçues du RMS
       S += RS + String(Tension_T) + RS + String(Intensite_T) + RS + String(PuissanceS_T - PuissanceI_T) + RS + String(PowerFactor_T) + RS + String(Energie_T_Soutiree) + RS + String(Energie_T_Injectee);
       S += RS + String(Frequence);
     }
-    if (Source_data == "Linky") {
-      S += GS;
-      while (LastIdx != IdxDataRawLinky) {
-        S += String(DataRawLinky[LastIdx]);
-        LastIdx = (1 + LastIdx) % 10000;
-      }
-      S += GS + String(IdxDataRawLinky);
-    }
     if (Source_data == "Enphase") {
       S += GS + String(Tension_M) + RS + String(Intensite_M) + RS + String(PuissanceS_M - PuissanceI_M) + RS + String(PowerFactor_M) + RS + String(Energie_M_Soutiree) + RS + String(Energie_M_Injectee);
       S += RS + String(PactProd) + RS + String(PactConso_M);
@@ -342,18 +334,9 @@ void handleAjaxESP32() {  // Envoi des dernières infos sur l'ESP32
   float H = float(T_On_seconde) / 3600.0;
   String coeur0 = String(int(previousTimeRMSMin)) + ", " + String(int(previousTimeRMSMoy)) + ", " + String(int(previousTimeRMSMax));
   String coeur1 = String(int(previousLoopMin)) + ", " + String(int(previousLoopMoy)) + ", " + String(int(previousLoopMax));
-  String acces = "";
-  String Mac = "";
-  String adr = "";
-  if (ESP32_Type == 10) {
-    acces = " " + RS + " " + RS + " ";
-    Mac = Ethernet.macAddress();
-    adr = Ethernet.localIP().toString() + US + hostname + US + "" + RS + Ethernet.gatewayIP().toString() + RS + Ethernet.subnetMask().toString();
-  } else {
-    acces = WiFi.RSSI() + RS + WiFi.BSSIDstr() + RS + WiFi.channel();
-    Mac = WiFi.macAddress();
-    adr = WiFi.localIP().toString() + US + hostname + US + WiFi.globalIPv6().toString() + RS + WiFi.gatewayIP().toString() + RS + WiFi.subnetMask().toString();
-  }
+  String acces = WiFi.RSSI() + RS + WiFi.BSSIDstr() + RS + WiFi.channel();
+  String Mac = WiFi.macAddress();
+  String adr = WiFi.localIP().toString() + US + hostname + US + WiFi.globalIPv6().toString() + RS + WiFi.gatewayIP().toString() + RS + WiFi.subnetMask().toString();
   S += String(H) + RS + String(ESP32_Type) + RS + acces + RS + Mac + RS + ssid + RS + adr;
   S += RS + coeur0 + RS + coeur1 + RS + "inutil" + RS;
   S += String(esp_get_free_internal_heap_size()) + RS + String(esp_get_minimum_free_heap_size()) + RS;
@@ -610,12 +593,6 @@ void handleParaNew() {
   }
 
   LastHeureRTE = -1;
-  if ((ESP32_Type >= 4 && ESP32_Type <= 9) || ESP32_Type==101) {
-    int R=rotation;
-    if (ESP32_Type ==9) R=(R+2)%4;
-    lcd->setRotation(R);
-    GoPage(NumPage);
-  }
   //Test si modifs sur GPIOs
   String EtatGpioFinal = String(Fpwm);
   for (int i = 1; i < NbActions; i++) {
@@ -623,7 +600,6 @@ void handleParaNew() {
   }
   if (EtatGpioFinal != EtatGpioInitial) InitGPIOs();
   // Recherche des Noms (routeurs, températures,actions) des RMS partenaires
-  IndexSource();
   Liste_des_Noms();
 }
 
@@ -676,8 +652,6 @@ void handleajaxRAZhisto() {
 }
 void handleParaVar() {
   String localIP = WiFi.localIP().toString();
-  if (ESP32_Type == 10)
-    localIP = Ethernet.localIP().toString();
   JsonDocument conf;
   conf["Source_data"] = Source_data;
   conf["localIP"] = localIP;    //Ip explicit x.x.x.x
@@ -872,7 +846,6 @@ void handleCouleurUpdate() {
   EcritureEnROM();
 
   server.send(200, "text/plain", "OK couleurs");
-  if ((ESP32_Type >= 4 && ESP32_Type <= 9)||ESP32_Type==101) SetCouleurs();
 }
 void handleCommunCSS() {
   CacheEtClose(60);

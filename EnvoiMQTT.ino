@@ -78,13 +78,7 @@ bool testMQTTconnected() {
       snprintf(StateTopic, sizeof(StateTopic), "%s%s_state", PrefixMQTTEtat, MQTTdeviceName.c_str());
       byte mac[6];  // the MAC address of your Wifi shield
       String cu = "http://" + WiFi.localIP().toString();
-      if (ESP32_Type < 10 ||ESP32_Type==101 ) {
-        WiFi.macAddress(mac);
-      } else {
-        Ethernet.macAddress(mac);
-        cu = "http://" + Ethernet.localIP().toString();
-        
-      }
+      WiFi.macAddress(mac);
       snprintf(ESP_ID, sizeof(ESP_ID), "%02x%02x%02x%02x%02x", mac[4], mac[3], mac[2], mac[1], mac[0]);  // ID de l'entité pour HA
       snprintf(mdl, sizeof(mdl), "%s%s", "ESP32 - ", ESP_ID);                                         // ID de l'entité pour HA
       String mf = "F1ATB - https://f1atb.fr";
@@ -157,10 +151,6 @@ void callback(char *topic, byte *payload, unsigned int length) {
               LesActions[i].Actif = MODE_MULTISINUS;
             } else if (modeRecu == "Train") {
               LesActions[i].Actif = MODE_TRAINSINUS;
-            } else if (modeRecu == "PWM") {
-              LesActions[i].Actif = MODE_PWM;
-            } else if (modeRecu == "Demi") {
-              LesActions[i].Actif = MODE_DEMISINUS;
             }
           }
           if (message.indexOf("Periode\":") > 0) {
@@ -195,7 +185,7 @@ void sendMQTTDiscoveryMsg_global() {
   String ActionOnOff;
   // augmente la taille du buffer wifi Mqtt (voir PubSubClient.h)
   clientMQTT.setBufferSize(1700);  // voir -->#define MQTT_MAX_PACKET_SIZE 256 is the default value in PubSubClient.h
-  if (Source == "UxIx2" || Source == "ShellyEm" || Source == "ShellyPro") {
+  if (Source == "UxIx2") {
     DeviceToDiscover("PuissanceS_T", "Puissance T Soutirée", "W", "power", "0");
     DeviceToDiscover("PuissanceI_T", "Puissance T Injectée", "W", "power", "0");
     DeviceToDiscover("Tension_T", "Tension T", "V", "voltage", "2");
@@ -212,32 +202,11 @@ void sendMQTTDiscoveryMsg_global() {
       DeviceToDiscover("Temperature_" + String(canal), nomTemperature[canal], "°C", "temperature", "1");
   }
 
-  if (Source == "Linky" || TempoRTEon == 1) {
+  if (TempoRTEon == 1) {
     DeviceTextToDiscover("LTARF", "Option Tarifaire");
     DeviceToDiscoverWithoutUnit("Code_Tarifaire", "Code Tarifaire", "0");
-  }
-  if (TempoRTEon == 1) {
     DeviceTextToDiscover("RTE_Jour", "RTE Jour");
     DeviceTextToDiscover("RTE_Demain", "RTE Lendemain");
-  }
-
-  if (Source == "Linky") {
-    DeviceTextToDiscover("NGTF", "Calendrier Tarifaire");
-    DeviceTextToDiscover("STGE", "Statuts");
-    DeviceToDiscover("EASF01", "EASF01", "Wh", "energy", "0");
-    DeviceToDiscover("EASF02", "EASF02", "Wh", "energy", "0");
-    DeviceToDiscover("EASF03", "EASF03", "Wh", "energy", "0");
-    DeviceToDiscover("EASF04", "EASF04", "Wh", "energy", "0");
-    DeviceToDiscover("EASF05", "EASF05", "Wh", "energy", "0");
-    DeviceToDiscover("EASF06", "EASF06", "Wh", "energy", "0");
-    DeviceToDiscover("EASF07", "EASF07", "Wh", "energy", "0");
-    DeviceToDiscover("EASF08", "EASF08", "Wh", "energy", "0");
-    DeviceToDiscover("EASF09", "EASF09", "Wh", "energy", "0");
-    DeviceToDiscover("EASF10", "EASF10", "Wh", "energy", "0");
-  }
-  if (Source == "Enphase") {
-    DeviceToDiscover("PactProd", "Puissance produite", "W", "power", "0");
-    DeviceToDiscover("PactConso_M", "Puissance conso.", "W", "power", "0");
   }
 
   if (Source == "UxIx3") {
@@ -411,14 +380,6 @@ void SendDataToHomeAssistant() {
 
   if (TempoRTEon == 1) {
     len += snprintf(value + len, sizeof(value) - len, ",\"RTE_Jour\":\"%s\", \"RTE_Demain\":\"%s\"", RTE_Jour.c_str(), RTE_Demain.c_str());
-  }
-  if (Source == "Linky") {
-    len += snprintf(value + len, sizeof(value) - len, ",\"NGTF\":\"%s\"", NGTF.c_str());
-    len += snprintf(value + len, sizeof(value) - len, ",\"STGE\":\"%s\"", STGE.c_str());
-    len += snprintf(value + len, sizeof(value) - len, ",\"EASF01\":%ld, \"EASF02\":%ld, \"EASF03\":%ld, \"EASF04\":%ld, \"EASF05\":%ld, \"EASF06\":%ld,\"EASF07\":%ld, \"EASF08\":%ld, \"EASF09\":%ld, \"EASF10\":%ld", EASF01, EASF02, EASF03, EASF04, EASF05, EASF06, EASF07, EASF08, EASF09, EASF10);
-  }
-  if (Source == "Enphase") {
-    len += snprintf(value + len, sizeof(value) - len, ",\"PactProd\":%d, \"PactConso_M\":%d", PactProd, PactConso_M);
   }
   if (Source == "UxIx3") {  //Modif Piamp 8/12/2025
     len += snprintf(value + len, sizeof(value) - len, ",\"Tension_M1\": %.1f, \"Intensite_M1\": %.1f,\"Tension_M2\": %.1f, \"Intensite_M2\": %.1f,\"Tension_M3\": %.1f, \"Intensite_M3\": %.1f, \"Frequence\":%.2f", Tension_M1, Intensite_M1, Tension_M2, Intensite_M2, Tension_M3, Intensite_M3, Frequence);

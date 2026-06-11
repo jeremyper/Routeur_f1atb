@@ -33,8 +33,8 @@ public:
     int Vmax;
   };
   ParaPeriode ParaEnCours(int Heure, float Temperature, int Ltarfbin, int Retard);
-  void InitGpio(int FreqPWM);
-  byte Actif;  //0=Inactif,1=Decoupe ou On/Off, 2=Multi, 3= Train, 4=PWM (sauf Triac)
+  void InitGpio();
+  byte Actif;  //0=Inactif,1=On/Off, 2=Multi-sinus, 3=Train de sinus
   int Port;
   int Repet;
   int Tempo;

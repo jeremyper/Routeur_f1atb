@@ -286,6 +286,7 @@ void DeserializeConfiguration(String json) {
   for (JsonObject obj : arr) {
     if (iAct >= NbActions) break;  // éviter de dépasser le tableau
     LesActions[iAct].Actif = obj["Actif"];
+    if (LesActions[iAct].Actif > 3) LesActions[iAct].Actif = 0;  //Modes PWM/Demi-sinus supprimés
     LesActions[iAct].Titre = obj["Titre"].as<String>();
     LesActions[iAct].Host = obj["Host"].as<String>();
     LesActions[iAct].Port = obj["Port"];
