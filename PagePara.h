@@ -334,6 +334,70 @@ const char *ParaHtml = R"====(
       </div>
     </div>
 
+    <div class="Zone">
+      <div class="boldT">Onduleur SMA Sunny Boy <small>(Modbus TCP)</small></div>
+      <div class="form">
+
+        <div class="ligne">
+          <label for="SmaOn">Lire la production de l'onduleur
+            <span class="fsize10"><br>Activer d'abord Modbus TCP sur l'onduleur : Paramètres de l'appareil &gt; Communication externe &gt; Modbus &gt; TCP on</span>
+          </label>
+          <input type="checkbox" id="SmaOn" name="SmaOn" style="width:25px;" onclick="checkDisabled();">
+        </div>
+
+        <div class="ligne ligneSma">
+          <label for="SmaIP">Adresse IP de l'onduleur <span class="fsize10">(ex : 192.168.1.50)</span></label>
+          <input type="text" id="SmaIP" name="SmaIP">
+        </div>
+
+        <div class="ligne ligneSma">
+          <label>Production actuelle / du jour</label>
+          <div class="nomR" id="productionSma">-</div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="Zone">
+      <div class="boldT">Ballon d'eau chaude — forçage adaptatif</div>
+      <div class="form">
+
+        <div class="ligne">
+          <label for="BallonCanal">Sonde de température du ballon
+            <span class="fsize10"><br>Le routeur calcule chaque jour l'énergie pour remonter à la cible et ne force la nuit que si le soleil prévu ne suffira pas. Condition « Adaptatif ballon » dans les périodes d'action.</span>
+          </label>
+          <select id="BallonCanal" name="BallonCanal">
+            <option value="-1">Non exploité</option>
+            <option value="0">Canal 0</option>
+            <option value="1">Canal 1</option>
+            <option value="2">Canal 2</option>
+            <option value="3">Canal 3</option>
+          </select>
+        </div>
+
+        <div class="ligne ligneBallon">
+          <label for="BallonVolume">Volume de la cuve (litres)</label>
+          <input type="number" id="BallonVolume" name="BallonVolume" step="10" min="50" max="500">
+        </div>
+
+        <div class="ligne ligneBallon">
+          <label for="BallonTcible">Température cible (°C)</label>
+          <input type="number" id="BallonTcible" name="BallonTcible" step="1" min="40" max="80">
+        </div>
+
+        <div class="ligne ligneBallon">
+          <label for="BallonPuissance">Puissance de la résistance (W)</label>
+          <input type="number" id="BallonPuissance" name="BallonPuissance" step="100" min="500" max="6000">
+        </div>
+
+        <div class="ligne ligneBallon">
+          <label>Besoin / surplus prévu / coef appris</label>
+          <div class="nomR" id="etatBallon">-</div>
+        </div>
+
+      </div>
+    </div>
+
     <div class="Zone" id="LesSourcesTemp">
       <div class="boldT">Source des mesures de température</div>
       <div class="form">

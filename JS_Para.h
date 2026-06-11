@@ -137,6 +137,12 @@ function SetParaFixe() {
     GID("MeteoLat").value = F.MeteoLat !== undefined ? F.MeteoLat : 46.5;
     GID("MeteoLon").value = F.MeteoLon !== undefined ? F.MeteoLon : 2.4;
     GID("MeteoPVcrete").value = F.MeteoPVcrete !== undefined ? F.MeteoPVcrete : 3.0;
+    GID("SmaOn").checked = F.SmaOn == 1;
+    GID("SmaIP").value = F.SmaIP !== undefined ? F.SmaIP : "";
+    GID("BallonCanal").value = F.BallonCanal !== undefined ? F.BallonCanal : -1;
+    GID("BallonVolume").value = F.BallonVolume !== undefined ? F.BallonVolume : 200;
+    GID("BallonTcible").value = F.BallonTcible !== undefined ? F.BallonTcible : 55;
+    GID("BallonPuissance").value = F.BallonPuissance !== undefined ? F.BallonPuissance : 2400;
 
     // --- Paramètres de Température (LesParas[1] à LesParas[4]) ---
     const NbCanauxTemp = 4;
@@ -188,6 +194,12 @@ function SendValues() {
   F.MeteoLat = parseFloat(GID("MeteoLat").value) || 0;
   F.MeteoLon = parseFloat(GID("MeteoLon").value) || 0;
   F.MeteoPVcrete = parseFloat(GID("MeteoPVcrete").value) || 3;
+  F.SmaOn = GID("SmaOn").checked ? 1 : 0;
+  F.SmaIP = GID("SmaIP").value.trim();
+  F.BallonCanal = parseInt(GID("BallonCanal").value, 10);
+  F.BallonVolume = parseInt(GID("BallonVolume").value, 10) || 200;
+  F.BallonTcible = parseInt(GID("BallonTcible").value, 10) || 55;
+  F.BallonPuissance = parseInt(GID("BallonPuissance").value, 10) || 2400;
 
   F.nomRouteur =GID("nomRouteur").value.trim() ;
   F.nomSondeFixe = GID("nomSondeFixe").value.trim();
@@ -309,6 +321,16 @@ function checkDisabled() {
     if (isDisabledAP) GID("MeteoOn").checked = false;
     const meteoVisible = GID("MeteoOn").checked;
     document.querySelectorAll(".ligneMeteo").forEach(l => { l.style.display = meteoVisible ? "table-row" : "none"; });
+
+    // SMA : champs visibles seulement si activé, indisponible en mode point isolé
+    GID("SmaOn").disabled = isDisabledAP;
+    if (isDisabledAP) GID("SmaOn").checked = false;
+    const smaVisible = GID("SmaOn").checked;
+    document.querySelectorAll(".ligneSma").forEach(l => { l.style.display = smaVisible ? "table-row" : "none"; });
+
+    // Ballon : champs visibles seulement si une sonde est choisie
+    const ballonVisible = GID("BallonCanal").value >= 0;
+    document.querySelectorAll(".ligneBallon").forEach(l => { l.style.display = ballonVisible ? "table-row" : "none"; });
 
     // Désactivation des options de température par canal
     for (let i = 0; i < 4; i++) {
@@ -461,6 +483,25 @@ function SetParaVar() {
             GH("previsionMeteo", "Aujourd'hui : <strong>" + V.PrevisionJour + " kWh</strong> &nbsp;|&nbsp; Demain : <strong>" + V.PrevisionDemain + " kWh</strong>");
         } else {
             GH("previsionMeteo", "En attente de données Open-Meteo...");
+        }
+    }
+
+    // Affichage de la production SMA
+    if (V.SmaOn == 1) {
+        if (V.EnergieJourPV !== undefined && V.PuissancePV !== undefined) {
+            GH("productionSma", "<strong>" + V.PuissancePV + " W</strong> &nbsp;|&nbsp; " + (V.EnergieJourPV / 1000).toFixed(2) + " kWh aujourd'hui");
+        } else {
+            GH("productionSma", "En attente de l'onduleur...");
+        }
+    }
+
+    // Affichage de l'état du forçage adaptatif ballon
+    if (V.BallonCanal >= 0) {
+        if (V.BallonBesoin >= 0) {
+            let decision = (V.BallonBesoin - V.BallonSurplus > 0.05) ? "<span style='color:#f88;'>forçage autorisé</span>" : "<span style='color:#8f8;'>le soleil suffira</span>";
+            GH("etatBallon", "Besoin : <strong>" + V.BallonBesoin + " kWh</strong> &nbsp;|&nbsp; Surplus prévu : <strong>" + V.BallonSurplus + " kWh</strong> &nbsp;|&nbsp; Coef : " + V.BallonCoefAuto + "% &mdash; " + decision);
+        } else {
+            GH("etatBallon", "En attente (sonde et météo nécessaires)...");
         }
     }
 

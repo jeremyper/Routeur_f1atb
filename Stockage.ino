@@ -277,6 +277,13 @@ void DeserializeConfiguration(String json) {
   MeteoLon = conf["MeteoLon"].isNull() ? MeteoLon : conf["MeteoLon"].as<float>();
   MeteoPVcrete = conf["MeteoPVcrete"].isNull() ? MeteoPVcrete : conf["MeteoPVcrete"].as<float>();
   LastMeteoMillis = 0;  //Forcer une relecture météo après changement de paramètres
+  SmaOn = conf["SmaOn"] | 0;
+  SmaIP = conf["SmaIP"].isNull() ? SmaIP : conf["SmaIP"].as<String>();
+  BallonVolume = conf["BallonVolume"].isNull() ? BallonVolume : conf["BallonVolume"].as<int16_t>();
+  BallonTcible = conf["BallonTcible"].isNull() ? BallonTcible : conf["BallonTcible"].as<int16_t>();
+  BallonPuissance = conf["BallonPuissance"].isNull() ? BallonPuissance : conf["BallonPuissance"].as<int16_t>();
+  BallonCanal = conf["BallonCanal"].isNull() ? BallonCanal : conf["BallonCanal"].as<int8_t>();
+  LastSmaMillis = 0;  //Forcer une relecture SMA après changement de paramètres
   WifiSleep = conf["WifiSleep"];
   ComSurv = conf["ComSurv"];
   pSerial = conf["pSerial"];
@@ -424,6 +431,12 @@ String SerializeConfiguration() {
   conf["MeteoLat"] = MeteoLat;
   conf["MeteoLon"] = MeteoLon;
   conf["MeteoPVcrete"] = MeteoPVcrete;
+  conf["SmaOn"] = SmaOn;
+  conf["SmaIP"] = SmaIP;
+  conf["BallonVolume"] = BallonVolume;
+  conf["BallonTcible"] = BallonTcible;
+  conf["BallonPuissance"] = BallonPuissance;
+  conf["BallonCanal"] = BallonCanal;
   // Enregistrement des Actions
   if (ReacCACSI < 1)
     ReacCACSI = 1;

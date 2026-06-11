@@ -56,6 +56,7 @@ Action::Action(int aIdx) {
 //Condition météo d'une période : vraie si pas de condition, pas de prévision disponible, ou prévision conforme
 bool Action::MeteoOk(int i) {
   if (MeteoCond[i] == 0) return true;
+  if (MeteoCond[i] == 5) return (Ballon_Deficit > 0.05);  //Adaptatif : besoin du ballon > surplus solaire prévu
   float prevision = (MeteoCond[i] <= 2) ? Meteo_PrevisionDemain : Meteo_PrevisionJour;
   if (prevision < 0) return true;  //Pas de donnée météo : on n'empêche pas l'action
   float seuil = float(MeteoSeuil[i]) / 10.0;

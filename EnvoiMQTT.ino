@@ -212,6 +212,14 @@ void sendMQTTDiscoveryMsg_global() {
     DeviceToDiscover("Prevision_Solaire_Jour", "Prévision Solaire Jour", "kWh", "energy", "1");
     DeviceToDiscover("Prevision_Solaire_Demain", "Prévision Solaire Demain", "kWh", "energy", "1");
   }
+  if (SmaOn == 1) {
+    DeviceToDiscover("Production_PV", "Production PV", "W", "power", "0");
+    DeviceToDiscover("Production_PV_Jour", "Production PV Jour", "kWh", "energy", "2");
+  }
+  if (BallonCanal >= 0 && MeteoOn == 1) {
+    DeviceToDiscover("Ballon_Besoin", "Ballon Besoin Chauffe", "kWh", "energy", "1");
+    DeviceToDiscover("Ballon_Surplus_Prevu", "Ballon Surplus Prévu", "kWh", "energy", "1");
+  }
 
   if (Source == "UxIx3") {
     DeviceToDiscover("Tension_M1", "Tension p1", "V", "voltage", "2");
@@ -387,6 +395,12 @@ void SendDataToHomeAssistant() {
   }
   if (MeteoOn == 1 && Meteo_PrevisionJour >= 0) {
     len += snprintf(value + len, sizeof(value) - len, ",\"Prevision_Solaire_Jour\":%.1f, \"Prevision_Solaire_Demain\":%.1f", Meteo_PrevisionJour, Meteo_PrevisionDemain);
+  }
+  if (SmaOn == 1 && EnergieTotalePV >= 0) {
+    len += snprintf(value + len, sizeof(value) - len, ",\"Production_PV\":%.0f, \"Production_PV_Jour\":%.2f", PuissancePV, float(EnergieJourPV) / 1000.0);
+  }
+  if (BallonCanal >= 0 && MeteoOn == 1 && Ballon_Besoin >= 0) {
+    len += snprintf(value + len, sizeof(value) - len, ",\"Ballon_Besoin\":%.1f, \"Ballon_Surplus_Prevu\":%.1f", Ballon_Besoin, Ballon_SurplusPrevu);
   }
   if (Source == "UxIx3") {  //Modif Piamp 8/12/2025
     len += snprintf(value + len, sizeof(value) - len, ",\"Tension_M1\": %.1f, \"Intensite_M1\": %.1f,\"Tension_M2\": %.1f, \"Intensite_M2\": %.1f,\"Tension_M3\": %.1f, \"Intensite_M3\": %.1f, \"Frequence\":%.2f", Tension_M1, Intensite_M1, Tension_M2, Intensite_M2, Tension_M3, Intensite_M3, Frequence);

@@ -254,8 +254,12 @@ function TracePeriodes(iAct) {
         // Condition météo (prévision solaire)
         let TxtMeteo = "";
         if (V.MeteoOn == 1 && periode.MeteoCond > 0) {
-            const lib = ["", "Prev. demain &lt;", "Prev. demain &ge;", "Prev. jour &lt;", "Prev. jour &ge;"];
-            TxtMeteo = `<div>&#9728; ${lib[periode.MeteoCond]} ${(periode.MeteoSeuil || 0) / 10} kWh</div>`;
+            if (periode.MeteoCond == 5) {
+                TxtMeteo = "<div>&#9728; Adaptatif ballon</div>";
+            } else {
+                const lib = ["", "Prev. demain &lt;", "Prev. demain &ge;", "Prev. jour &lt;", "Prev. jour &ge;"];
+                TxtMeteo = `<div>&#9728; ${lib[periode.MeteoCond]} ${(periode.MeteoSeuil || 0) / 10} kWh</div>`;
+            }
         }
 
         const condition = (temperature !== "" || H_Ouvert !== "" || TxtTarif !== "" || TxtMeteo !== "") ? "<div>Condition(s) :</div>" + temperature + H_Ouvert + TxtTarif + TxtMeteo : "";
@@ -667,12 +671,16 @@ function infoZclicK(i, iAct) {
             S += "<option value=2>Prévision demain &ge; seuil</option>";
             S += "<option value=3>Prévision aujourd'hui &lt; seuil</option>";
             S += "<option value=4>Prévision aujourd'hui &ge; seuil</option>";
+            if (V.BallonCanal >= 0) S += "<option value=5>Adaptatif ballon (besoin &gt; surplus prévu)</option>";
             S += "</select></div>";
             S += "<div>Seuil <input id='MeteoS_" + idZ + "' type='number' step='0.1' min='0' value='" + MeteoSeuilkWh + "' onchange='NewVal(this)'> kWh</div>";
             if (V.PrevisionJour >= 0) {
                 S += "<div><small>Prévision : aujourd'hui " + V.PrevisionJour + " kWh, demain " + V.PrevisionDemain + " kWh</small></div>";
             } else {
                 S += "<div><small>En attente de données Open-Meteo...</small></div>";
+            }
+            if (V.BallonCanal >= 0 && V.BallonBesoin >= 0) {
+                S += "<div><small>Ballon : besoin " + V.BallonBesoin + " kWh, surplus prévu " + V.BallonSurplus + " kWh</small></div>";
             }
             S += "</div>";
         }
