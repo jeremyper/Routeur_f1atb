@@ -30,7 +30,6 @@ const char *ActionsHtml = R"====(
         .cadre { width:100%; max-width:1200px; margin:auto; padding:0 6px; }
         .form { width:100%; text-align:left; }
         .form2 { margin:auto; padding:5px; display:table; text-align:left; width:100%; }
-        #commun,#CACSI { display:none; }
 
         /* ── Titres de section ───────────────────────────────── */
         h4 { padding:6px 4px; margin:8px 0 2px; color:#cce; border-left:4px solid var(--acc); padding-left:10px; }
@@ -239,19 +238,6 @@ const char *ActionsHtml = R"====(
             display:flex; align-items:center; justify-content:center;
         }
 
-        /* ── Zone CACSI / PWM ───────────────────────────────── */
-        #CACSI,#Freq_PWM {
-            width:100%; position:relative; margin:4px; margin-bottom:10px;
-            padding:6px; border:1px solid #553;
-            background:rgba(50,50,10,.6);
-            border-radius:var(--rad);
-        }
-        .CacPwm { display:flex; flex-wrap:wrap; gap:8px; font-size:15px; padding:4px; }
-        .CacPwm>div { display:flex; align-items:center; gap:4px; padding:3px 8px;
-            border:1px solid #554; border-radius:20px; background:rgba(60,60,20,.5);
-            cursor:pointer; }
-        .CacPwm>div>input[type=radio] { accent-color:#cc4; }
-
         /* ── Message flottant ───────────────────────────────── */
         #message {
             position:fixed; border:2px solid #555; border-radius:8px;
@@ -285,54 +271,9 @@ const char *ActionsHtml = R"====(
 
         <h4>Planning des Routages <small>(suivant <span id="nomSondeMobile">sonde Maison</span>)</small></h4>
 
-        <h5 id="TitrTriac">Routage via Triac</h5>
-        <div class="form">
-            <div id="planning0" class="planning"></div>
-        </div>
-
-        <h5>Routage via Relais</h5>
+        <h5>Actions (SSR, relais, commandes externes)</h5>
         <div class="form">
             <div id="plannings"></div>
-        </div>
-
-        <div id="commun">
-            <br>
-            <h4>Paramètres communs aux Actions</h4>
-
-            <div id="CACSI">
-                <div>
-                    Réactivité si CACSI
-                    <span class="fsize10">
-                        Augmentée pour les valeurs de puissance inférieures au seuil Pw.  
-                        Pour tous les SSR ou Triac.
-                    </span>
-                </div>
-
-                <div class="form2">
-                    <div class="CacPwm">
-                        <div><input type="radio" name="ReacCACSI" id="CACSI1" value="1" checked>Pas d'augmentation</div>
-                        <div><input type="radio" name="ReacCACSI" id="CACSI2" value="2">Réactivité x 2</div>
-                        <div><input type="radio" name="ReacCACSI" id="CACSI4" value="4">Réactivité x 4</div>
-                        <div><input type="radio" name="ReacCACSI" id="CACSI8" value="8">Réactivité x 8</div>
-                    </div>
-                </div>
-            </div>
-
-            <div id="Freq_PWM">
-                <div>
-                    Fréquence signaux PWM 
-                    <span class="fsize10">Nécessite un Restart de l'ESP32</span>
-                </div>
-                <div class="form2">
-                    <div class="CacPwm">
-                        <div><input type="radio" name="Fpwm" id="Fpwm5" value="5">5 Hz</div> 
-                        <div><input type="radio" name="Fpwm" id="Fpwm50" value="50">50 Hz</div>                              
-                        <div><input type="radio" name="Fpwm" id="Fpwm500" value="500" checked>500 Hz</div>                     
-                        <div><input type="radio" name="Fpwm" id="Fpwm5000" value="5000">5000 Hz</div>                                        
-                        <div><input type="radio" name="Fpwm" id="Fpwm50000" value="50000">50000 Hz</div>                       
-                    </div>
-                </div>
-            </div>
         </div>
 
         <div id="BoutonsBas">

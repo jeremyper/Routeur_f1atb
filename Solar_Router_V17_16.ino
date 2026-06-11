@@ -318,11 +318,9 @@
 // + modif OneWire.cpp : #undef interrupts et #undef noInterrupts
 // + modif OneWire_direct_gpio.h : remplacement 2x digitalPinIsValid(pin) par pin < SOC_GPIO_PIN_COUNT
 #include "DallasTemperature.h"
-#include "UrlEncode.h"
 #include <HardwareSerial.h>
 #include <Update.h>
 #include <esp_task_wdt.h>  //Pour deinitialiser le watchdog. Nécessaire pour les gros program en ROM. Mystère non élucidé
-#include <EthernetESP32.h>
 #include <esp_wps.h>  //Librairie WPS pour appairage automatique connexion WiFi //SR19
 #include "Actions.h"
 #include "FS.h"
@@ -330,8 +328,6 @@
 #include <ArduinoJson.h>
 #include "esp_partition.h"
 #include "esp_flash.h"
-#include "CST820.h"
-#include "initGT911.h"
 
 
 // Pages WEB
@@ -360,11 +356,9 @@
 #define TEMPERATURE_PRECISION 12
 
 #define MODE_INACTIF 0
-#define MODE_DECOUPE_ONOFF 1  //Découpe pour Triac,OnOff pour SSR
+#define MODE_DECOUPE_ONOFF 1  //OnOff pour relais
 #define MODE_MULTISINUS 2
 #define MODE_TRAINSINUS 3
-#define MODE_PWM 4
-#define MODE_DEMISINUS 5
 
 
 
@@ -534,12 +528,8 @@ uint8_t tabPulseSinusOn[101] = { 0,
                                  25, 8, 22, 26, 18, 17, 8, 12, 25, 2, 26, 13, 9, 20, 22, 33, 29, 11, 36, 3,
                                  36, 18, 17, 16, 26, 39, 41, 32, 20, 14, 22, 18, 27, 17, 6, 19, 47, 46, 15, 4,
                                  17, 50, 44, 21, 34, 49, 20, 22, 49, 18, 10, 34, 53, 31, 38, 24, 32, 42, 60, 2 };
-//Triac
-bool erreurTriac = false;
-byte pTriac = 0;  //index table choix Pins pour Gachette Triac & ZC
-int8_t pulseTriac = 0, zeroCross = -1;
-int8_t PulseT[] = { 0, 4, 22, 21, 12 };
-int8_t ZeroT[] = { -1, 5, 23, 22, 14 };
+//Triac supprimé (SSR uniquement) - pTriac conservé pour compatibilité des paramètres stockés
+byte pTriac = 0;
 
 //Parameters for UxI
 byte AnalogIn0 = 35;
@@ -579,37 +569,13 @@ float Energie_jour_Injectee = 0;
 long Temps_precedent = 0;  // mesure précise du temps entre deux appels au JSY-MK-333
 float PW_M1, PW_M2, PW_M3;
 
-//Parameters for Linky
-bool LFon = false;
-bool EASTvalid = false;
-bool EAITvalid = false;
-volatile int IdxDataRawLinky = 0;
-volatile int IdxBufDecodLinky = 0;
-volatile char DataRawLinky[10000];  //Buffer entrée données Linky
-float moyPWS = 0;
-float moyPWI = 0;
-float moyPVAS = 0;
-float moyPVAI = 0;
-float COSphiS = 1;
-float COSphiI = 1;
-long TlastEASTvalide = 0;
-long TlastEAITvalide = 0;
+//Paramètres tarifaires (Tempo RTE)
 String LTARF = "";  //Option tarifaire RTE
 String STGE = "";   //Status Linky
 String STGEt = "";  //Status Tempo uniquement RTE
 String NGTF = "";   //Calendrier tarifaire
 String RTE_Jour = "NON_DEFINI";
 String RTE_Demain = "NON_DEFINI";
-long EASF01 = 0;
-long EASF02 = 0;
-long EASF03 = 0;
-long EASF04 = 0;
-long EASF05 = 0;
-long EASF06 = 0;
-long EASF07 = 0;
-long EASF08 = 0;
-long EASF09 = 0;
-long EASF10 = 0;
 
 //Paramètres for Enphase-Envoy-Smetered
 String TokenEnphase = "";
@@ -647,6 +613,16 @@ float PfMQTT = 1;
 byte TempoRTEon = 0;
 int LastHeureRTE = -1;
 int LTARFbin = 0;  //Code binaire  des tarifs
+
+//Paramètres Prévision Météo solaire (Open-Meteo)
+byte MeteoOn = 0;                  //0=inactif, 1=actif
+float MeteoLat = 46.5;             //Latitude
+float MeteoLon = 2.4;              //Longitude
+float MeteoPVcrete = 3.0;          //Puissance crête installation en kWc
+float Meteo_PrevisionJour = -1;    //Production estimée aujourd'hui en kWh (-1 = pas de donnée)
+float Meteo_PrevisionDemain = -1;  //Production estimée demain en kWh (-1 = pas de donnée)
+unsigned long LastMeteoMillis = 0;
+WiFiClientSecure clientSecuMeteo;
 
 //Paramètres pour Source Externe
 int8_t RMSextIdx = 0;
@@ -761,9 +737,6 @@ WiFiClientSecure clientSecuRTE;
 String Liste_AP = "";
 uint8_t bestBSSID[6];  //Meilleur en dBm adresse MAC
 
-//Ethernet
-int16_t EthernetBug = 0;
-EMACDriver driver(ETH_PHY_LAN8720, 23, 18, 16);  //
 
 WebServer server(80);  // Simple Web Server on port 80
 
@@ -803,25 +776,7 @@ void IRAM_ATTR GestionIT_10ms() {
       case MODE_INACTIF:  //Inactif
 
         break;
-      case MODE_DECOUPE_ONOFF:  //Decoupe Sinus uniquement pour Triac
-        if (i == 0) {
-          PulseComptage[0] = 0;
-          digitalWrite(pulseTriac, LOW);  //Stop Découpe Triac
-        }
-        break;
-      case MODE_PWM:  //PWM ne depend pas IT 10ms
-
-        break;
-      case MODE_DEMISINUS:                                                                                           //Demi-Sinus
-        PulseComptage[i] = PulseComptage[i] + PulseOn[i];                                                            //Augmente la phase
-        if (((Phase230V && PulseTotal[i] == 0) || (!Phase230V && PulseTotal[i] == 1)) && PulseComptage[i] >= 100) {  //Phase differente
-          PulseTotal[i] = 0;
-          if (Phase230V) PulseTotal[i] = 1;  //Enregistrement de la phase positive ou negative du ON
-          digitalWrite(Gpio[i], OutOn[i]);
-          PulseComptage[i] = PulseComptage[i] - 100;
-        } else {
-          digitalWrite(Gpio[i], OutOff[i]);  //Stop
-        }
+      case MODE_DECOUPE_ONOFF:  //OnOff pour relais, géré hors interruption
 
         break;
       default:              // Multi Sinus ou Train de sinus
@@ -850,34 +805,6 @@ void IRAM_ATTR onTimer10ms() {  //Interruption interne toutes 10ms
   if (ITmode < 0) GestionIT_10ms();  //IT non synchrone avec le secteur . Horloge interne
 }
 
-
-// Interruption du Triac Signal Zc, toutes les 10ms si Triac, toutes les 20ms si systeme redressement secteur
-void IRAM_ATTR currentNull() {
-  IT10ms = IT10ms + 1;
-
-  if ((millis() - lastIT) > 2) {  // to avoid glitch detection during 2ms
-    ITmode = ITmode + 3;
-    if (ITmode > 5) ITmode = 5;
-    IT10ms_in = IT10ms_in + 1;
-    lastIT = millis();
-    if (ITmode > 0) GestionIT_10ms();  //IT synchrone avec le secteur signal Zc toutes les 10ms
-  }
-}
-
-
-
-
-// Interruption Timer interne toutes les 100 micro secondes
-void IRAM_ATTR onTimer() {               //Interruption every 100 micro second
-  if (Actif[0] == MODE_DECOUPE_ONOFF) {  // Découpe Sinus
-    PulseComptage[0] = PulseComptage[0] + 1;
-    if (PulseComptage[0] > Retard[0] && Retard[0] < 98 && ITmode > 0) {  //100 steps in 10 ms
-      digitalWrite(pulseTriac, HIGH);                                    //Activate Triac
-    } else {
-      digitalWrite(pulseTriac, LOW);  //Stop Triac
-    }
-  }
-}
 
 /*** WPS Configurations ***/                                          //SR19
 #define ESP_WPS_MODE WPS_TYPE_PBC                                     //SR19
@@ -1039,21 +966,12 @@ void setup() {
   delay(100);
   MessageCommandes();
   LireSerial();
-  Ethernet.init(driver);
-  if (String(ESP.getChipModel()) == "ESP32-D0WD") {  //certains ESP32U et WT32-ETH01
-    TelnetPrintln("\nAncien modèle d'ESP32 que l'on trouve sur les cartes Ethernet WT32-ETH01 (branchez le câble) et certains ESP32U");
-    if (Ethernet.begin() != 0) {  //C'est une carte WT-ETH01
-      TelnetPrintln("Carte WT32-ETH01 qui Crash en Wifi. On force Ethernet.\n");
-      ESP32_Type = 10;  //On force Ethernet
-    }
-  }
   TelnetPrintln("InitGPIO");
   delay(500);
   LireSerial();
   InitGPIOs();
   TelnetPrintln("ESP32_Type:" + String(ESP32_Type));
   delay(500);
-  if ((ESP32_Type >= 4 && ESP32_Type <= 9)|| ESP32_Type==101) Ecran_Init(ESP32_Type);
 
   IP2String(RMS_IP[0]);
   // Set youRMS_IP[0]c IP address
@@ -1073,59 +991,30 @@ void setup() {
 
   TelnetPrintln(hostname);  //optional
   bool bestWifi = false;
-  if (ESP32_Type == 10) {  //Ethernet (avant Horloge)
-    PrintScroll("Lancement de la liaison Ethernet");
-    if (Ethernet.linkStatus() == LinkOFF) {
-      //   PrintScroll("Câble Ethernet non connecté.");  //Fonctionne pas sur WT32
-    }
-    //Ethernet.hostname(hostname);
-    if (dhcpOn == 0) {  //Static IP
-                        //optional
-                        //Adresse IP eventuelles
-                        //optional
-      Ethernet.begin(local_IP, primaryDNS, gateway, subnet);
-      delay(100);
-      Ethernet.begin(local_IP, primaryDNS, gateway, subnet);  //On s'y prend 2 fois. Parfois ne reussi pas au premier coup
-      delay(100);
-      StockMessage("Adresse IP Ethernet fixe : : " + Ethernet.localIP().toString());
-      RMS_IP[0] = String2IP(Ethernet.localIP().toString());
-    } else {
-      TelnetPrintln("Initialisation Ethernet par DHCP:");
-      if (Ethernet.begin()) {
-        StockMessage("Adresse IP Ethernet assignée par DHCP : " + Ethernet.localIP().toString());
-        RMS_IP[0] = String2IP(Ethernet.localIP().toString());
-      } else {
-        TelnetPrintln("Failed to configure Ethernet using DHCP");
-        delay(1);
-      }
-    }
+  TelnetPrintln("Lancement du Wifi");
+  delay(500);
+  //Liste Wifi à faire avant connexion à un AP. Necessaire depuis biblio ESP32 3.0.1
+  WiFi.mode(WIFI_STA);
+  WiFi.disconnect();
+  WiFi.setSortMethod(WIFI_CONNECT_AP_BY_SIGNAL);
+  WiFi.setScanMethod(WIFI_ALL_CHANNEL_SCAN);
+  TelnetPrintln("Scan du Wifi");
+  delay(500);
+  bestWifi = Liste_WIFI();
+  TelnetPrint("Version : ");
+  TelnetPrintln(Version);
+  delay(200);
+  LireSerial();
+  // Configure WIFI
+  // **************
 
-  } else {  //ESP32 en WIFI
-    TelnetPrintln("Lancement du Wifi");
-    delay(500);
-    //Liste Wifi à faire avant connexion à un AP. Necessaire depuis biblio ESP32 3.0.1
+  WiFi.hostname(hostname);
+  ap_default_ssid = (const char *)hostname.c_str();
+  // Check WiFi connection
+  // ... check mode
+  if (WiFi.getMode() != WIFI_STA) {
     WiFi.mode(WIFI_STA);
-    WiFi.disconnect();
-    WiFi.setSortMethod(WIFI_CONNECT_AP_BY_SIGNAL);
-    WiFi.setScanMethod(WIFI_ALL_CHANNEL_SCAN);
-    TelnetPrintln("Scan du Wifi");
-    delay(500);
-    bestWifi = Liste_WIFI();
-    TelnetPrint("Version : ");
-    TelnetPrintln(Version);
-    delay(200);
-    LireSerial();
-    // Configure WIFI
-    // **************
-
-    WiFi.hostname(hostname);
-    ap_default_ssid = (const char *)hostname.c_str();
-    // Check WiFi connection
-    // ... check mode
-    if (WiFi.getMode() != WIFI_STA) {
-      WiFi.mode(WIFI_STA);
-      delay(10);
-    }
+    delay(10);
   }
 
   LireSerial();
@@ -1134,7 +1023,7 @@ void setup() {
 
 
   //WIFI
-  if (ESP32_Type < 10 ||ESP32_Type==101) {
+  {
     if (ModeReseau < 2) {
       TelnetPrintln("ssid:" + ssid);
       TelnetPrintln("password:" + password);
@@ -1215,12 +1104,6 @@ void setup() {
     }
   }
 
-  if ((ESP32_Type >= 4 && ESP32_Type <= 9)||ESP32_Type==101) {
-    TraceMessages();  //Ecran
-    delay(2000);
-  }
-
-
   // Lancer serveur Telnet
   telnetServer.begin();
   telnetServer.setNoDelay(true);
@@ -1243,32 +1126,15 @@ void setup() {
     Setup_UxI();
   }
 
-  if (Source == "Enphase") {
-    Setup_Enphase();
-  }
-
-
-  if (Source == "Pmqtt") {
-    GestionMQTT();
-  }
-
   //Port Série si besoin
   if (pSerial > 0) {
 
     if (Source == "UxIx2") {
       Setup_UxIx2();
     }
-
-    if (Source == "Linky") {
-      Setup_Linky();
-    }
   }
 
-  if (Source == "Ext") {
-    IndexSource();
-  } else {
-    Source_data = Source;
-  }
+  Source_data = Source;
   LireSerial();
 
 
@@ -1282,16 +1148,6 @@ void setup() {
     &Task1,                 /* Task handle to keep track of created task */
     0);                     /* pin task to core 0 */
 
-
-  if (pTriac > 0) {
-    //Interruptions du Triac et Timer interne
-    attachInterrupt(zeroCross, currentNull, RISING);
-  }
-
-  //Hardware timer 100uS
-  timer = timerBegin(1000000);  //Clock 1MHz
-  timerAttachInterrupt(timer, &onTimer);
-  timerAlarm(timer, 100, true, 0);  //Interrupt every 100  microsecond
 
   //Hardware timer 10ms
   timer10ms = timerBegin(1000000);  //Clock 1MHz
@@ -1368,46 +1224,6 @@ void Task_LectureRMS(void *pvParameters) {
           PeriodeProgMillis = 800;
           if (Serial2V == 19200) PeriodeProgMillis = 500;
         }
-        if (Source == "Linky") {
-          LectureLinky();
-          PeriodeProgMillis = 2;
-        }
-      }
-      if (Source == "Enphase") {
-        LectureEnphase();
-        LastRMS_Millis = millis();
-        PeriodeProgMillis = 600 + ralenti;  //On s'adapte à la vitesse réponse Envoy-S metered
-      }
-      if (Source == "SmartG") {
-        LectureSmartG();
-        LastRMS_Millis = millis();
-        PeriodeProgMillis = 300 + ralenti;  //On s'adapte à la vitesse réponse SmartGateways
-      }
-      if (Source == "HomeW") {
-        LectureHomeW();
-        LastRMS_Millis = millis();
-        PeriodeProgMillis = 300 + ralenti;  //On s'adapte à la vitesse réponse HomeWizard
-      }
-      if (Source == "ShellyEm") {
-        LectureShellyEm();
-        LastRMS_Millis = millis();
-        PeriodeProgMillis = 300 + ralenti;  //On adapte la vitesse pour ne pas surchargé Wifi.La gestion overproduction est toujours à 200ms
-      }
-      if (Source == "ShellyPro") {
-        LectureShellyProEm();
-        LastRMS_Millis = millis();
-        PeriodeProgMillis = 300 + ralenti;  //On adapte  la vitesse pour ne pas surchargé Wifi
-      }
-
-      if (Source == "Ext") {
-        CallESP32_Externe();
-        LastRMS_Millis = millis();
-        PeriodeProgMillis = 400 + ralenti;  //Après pour ne pas surchargé Wifi
-      }
-      if (Source == "Pmqtt") {
-        PeriodeProgMillis = 600;
-        LastRMS_Millis = millis();
-        UpdatePmqtt();
       }
     }
     delay(2);
@@ -1570,7 +1386,7 @@ void loop() {
 
     JourHeureChange();
     TelnetPrintln("\nDate : " + DATE);
-    if (ESP32_Type < 10 || ESP32_Type ==101) {  //ESP32 en WIFI
+    {  //ESP32 en WIFI
       if (WiFi.getMode() == WIFI_STA) {
         if (WiFi.waitForConnectResult(10000) != WL_CONNECTED) {
           StockMessage("WIFI Connection Failed! #" + String(WIFIbug));
@@ -1599,20 +1415,6 @@ void loop() {
         infoSerieAP();
       }
 
-    } else {  //ESP32 Ethernet
-      PrintScroll("IP :" + Ethernet.localIP().toString());
-      if (Ethernet.linkStatus() == LinkOFF) {
-      
-        PrintScroll("Câble Ethernet non connecté.");
-        EthernetBug++;
-      } else {
-        EthernetBug = 0;
-      }
-      if (EthernetBug > ComSurv) {  // TimeOut sans réseau
-        TelnetPrintln("TimeOut sans réseau Ethernet => Reset ");
-        delay(5000);
-        ReseT("TimeOut sans réseau Ethernet => Reset ");
-      }
     }
     //Verification puissance reçue
     String OK = "Non";
@@ -1648,23 +1450,12 @@ void loop() {
       if (LTARF.indexOf("ROUGE") >= 0) Ltarf += 16;
       LTARFbin = Ltarf;
       if (LTARF != "") PrintScroll(LTARF);
-    }
-    //Test pulse Zc Triac
-    if (ITmode < 0 && pTriac > 0) {
-      if (!erreurTriac) {  //Pour ne pas répéter sans cesse
-        StockMessage("Erreur : pas de signal ZC sur gpio " + String(ZeroT[pTriac]));
-      }
-      erreurTriac = true;
-    } else {
-      erreurTriac = false;
+      Call_Meteo_data();  //Prévision solaire Open-Meteo (rafraichie toutes les 2h)
     }
     if (ESP32_Type == 0) StockMessage("! Carte ESP32 non définie !");
-    if (pSerial == 0 && (Source == "UxIx2" || Source == "UxIx3" || Source == "Linky")) StockMessage("! Port série non défini !");
+    if (pSerial == 0 && (Source == "UxIx2" || Source == "UxIx3")) StockMessage("! Port série non défini !");
   }
 
-
-  //Ecran
-  if ((ESP32_Type >= 4 && ESP32_Type <= 9)|| ESP32_Type==101) Ecran_Loop();
   //Port Série
   LireSerial();
   delay(1);
@@ -1690,8 +1481,8 @@ void GestionOverproduction() {  // chaque 200ms (adaptation 5 fois par seconde)
   float Puissance = float(PuissanceS_M - PuissanceI_M);
   if (NbActions == 0) LissageLong = true;  //Cas d'un capteur seul et actions déporté sur autre ESP
   for (int i = 0; i < NbActions; i++) {
-    Actif[i] = LesActions[i].Actif;                                                                                //0=Inactif,1=Decoupe ou On/Off, 2=Multi, 3= Train , 4=PWM, 5=Demi-Sinus
-    if (Actif[i] == MODE_MULTISINUS || Actif[i] == MODE_TRAINSINUS || Actif[i] == MODE_DEMISINUS) lissage = true;  //En RAM
+    Actif[i] = LesActions[i].Actif;                                                //0=Inactif,1=On/Off, 2=Multi, 3=Train
+    if (Actif[i] == MODE_MULTISINUS || Actif[i] == MODE_TRAINSINUS) lissage = true;  //En RAM
     forceOff = false;
 
     LeCanalTemp = LesActions[i].CanalTempEnCours(HeureCouranteDeci);
@@ -1716,7 +1507,7 @@ void GestionOverproduction() {  // chaque 200ms (adaptation 5 fois par seconde)
 
         //Coef Integral ou réactivité
         if (Puissance < SeuilPw && ReacCACSI > 1 && ReacCACSI < 100) Ki = Ki * GainCACSI;  //On boost si besoin l'écart (*2, 4 ou 8)
-        if (Actif[i] == MODE_DECOUPE_ONOFF && i > 0) {                                     //Les relais en On/Off
+        if (Actif[i] == MODE_DECOUPE_ONOFF) {                                              //Les relais en On/Off
           if (Puissance > MaxTriacPw) { RetardF[i] = 100; }                                //OFF
           if (Puissance < SeuilPw) { RetardF[i] = 0; }                                     //On
         } else {
@@ -1742,7 +1533,6 @@ void GestionOverproduction() {  // chaque 200ms (adaptation 5 fois par seconde)
           }
           LastErrorPw[i] = ErrorPw;
           if (RetardF[i] < 100 - MaxTriacPw) { RetardF[i] = 100 - MaxTriacPw; }
-          if (ITmode < 0 && i == 0) RetardF[i] = 100;  //Triac pas possible sur synchro interne
         }
 
         RetardF[i] = constrain(RetardF[i], 0.0, 100.0);
@@ -1763,8 +1553,8 @@ void GestionOverproduction() {  // chaque 200ms (adaptation 5 fois par seconde)
     } else {
 
       switch (Actif[i]) {         //valeur en RAM du Mode de regulation
-        case MODE_DECOUPE_ONOFF:  //Decoupe Sinus pour Triac ou On/Off pour relais
-          if (i > 0) LesActions[i].RelaisOn();
+        case MODE_DECOUPE_ONOFF:  //On/Off pour relais
+          LesActions[i].RelaisOn();
           break;
         case MODE_MULTISINUS:  // Multi Sinus
           PulseOn[i] = tabPulseSinusOn[100 - Retard[i]];
@@ -1781,15 +1571,6 @@ void GestionOverproduction() {  // chaque 200ms (adaptation 5 fois par seconde)
             PulseOn[i] = testPulse;     //mode Test mesure de Puissance
             PulseTotal[i] = testTrame;  //
           }
-          break;
-        case MODE_PWM:  //PWM
-          Vout = int(RetardF[i] * 2.55);
-          if (OutOn[i] == 1) Vout = 255 - Vout;
-          ledcWrite(Gpio[i], Vout);
-          break;
-        case MODE_DEMISINUS:                         // Demi-Sinus
-          PulseOn[i] = 100 - Retard[i];              //Avance de phase
-          if (PulseTotal[i] > 1) PulseTotal[i] = 0;  //0 ou 1 pour mémoriser phase230V dernier pulse
           break;
       }
     }
@@ -1814,28 +1595,13 @@ void GestionOverproduction() {  // chaque 200ms (adaptation 5 fois par seconde)
 void InitGPIOs() {
   if (ESP32_Type > 0) {
     //En premier pour affecter le GPIO au constructeur OneWire
-    for (int i = 1; i < NbActions; i++) {
-      LesActions[i].InitGpio(Fpwm);
+    for (int i = 0; i < NbActions; i++) {
+      LesActions[i].InitGpio();
       Gpio[i] = LesActions[i].Gpio;
       OutOn[i] = LesActions[i].OutOn;
       OutOff[i] = LesActions[i].OutOff;
     }
   }
-  //Triac init
-  if (pTriac > 0) {
-    if (ESP32_Type == 2 || ESP32_Type == 3) pTriac = 1;  //Obligatoire carte avec relais)
-    if (ESP32_Type == 10) pTriac = 4;                    //Obligatoire carte ETH01)
-    pulseTriac = PulseT[pTriac];
-    zeroCross = ZeroT[pTriac];
-    pinMode(zeroCross, INPUT_PULLUP);
-    pinMode(pulseTriac, OUTPUT);
-    digitalWrite(pulseTriac, LOW);  //Stop Triac
-  } else {
-    Actif[0] = MODE_INACTIF;
-    LesActions[0].Actif = MODE_INACTIF;
-  }
-  Gpio[0] = pulseTriac;
-  LesActions[0].Gpio = pulseTriac;
 
   Init_LED_OLED();
 
@@ -1844,7 +1610,6 @@ void InitGPIOs() {
     RXD2 = RX2_[pSerial];              //Port serie
     TXD2 = TX2_[pSerial];
   }
-  if (((ESP32_Type >= 4 && ESP32_Type <= 9)|| ESP32_Type==101 )&& clickPresence == 1) pinMode(35, INPUT);  //Motion detector en 35
   if (pTemp > 0) {
     TelnetPrint("Init Temp:");
     TelnetPrintln(String(pinTemp[pTemp]));
@@ -1867,9 +1632,6 @@ void infoSerieAP() {
   TelnetPrintln("ssid:xxx");
   TelnetPrintln("password:xxx");
   TelnetPrintln("restart");
-  TelnetPrintln("\nSi vous utilisez la carte ESP32-ETH01, forcez le mode Ethernet en tapant les 2 commandes ci dessous via le port série :");
-  TelnetPrintln("ETH01");
-  TelnetPrintln("restart\n");
 }
 // ***********************************
 // * Calage Zéro Energie quotidienne * -
@@ -1899,13 +1661,8 @@ void EnergieQuotidienne() {
 void H_Ouvre_Equivalent(unsigned long dt) {
   float Dheure = float(dt) / 3600000.0;
   for (int i = 0; i < NbActions; i++) {
-    if (Actif[i] != MODE_INACTIF) {                           //valeur en RAM du Mode de regulation
-      if (i == 0 && Actif[i] == MODE_DECOUPE_ONOFF) {         //Decoupe pour Triac
-        float teta = 6.28318 * (100.0 - RetardF[i]) / 100.0;  //2*PI integral sin²
-        LesActions[i].H_Ouvre += Dheure * (teta - sin(2.0 * teta) / 2.0) / 6.28318;
-      } else {
-        LesActions[i].H_Ouvre += Dheure * (100 - RetardF[i]) / 100.0;
-      }
+    if (Actif[i] != MODE_INACTIF) {  //valeur en RAM du Mode de regulation
+      LesActions[i].H_Ouvre += Dheure * (100 - RetardF[i]) / 100.0;
     }
   }
 }

@@ -245,3 +245,61 @@ void dumpPartitions() {
   esp_partition_iterator_release(it);
 }
 
+
+//**********************************************
+//* Extraction de champs JSON (parsing simple) *
+//**********************************************
+String SubJson(String F1, String F2, String Json) {
+  int p = Json.indexOf(F1);
+  Json = Json.substring(p);
+  p = Json.indexOf(F2);
+  Json = Json.substring(0, p + 1);
+  return Json;
+}
+
+float ValJson(String nom, String Json) {
+  int p = Json.indexOf(nom + "\":");
+  Json = Json.substring(p);
+  p = Json.indexOf(":");
+  Json = Json.substring(p + 1);
+  int q = Json.indexOf(",");
+  p = Json.indexOf("}");
+  p = min(p, q);
+  float val = 0;
+  if (p > 0) {
+    Json = Json.substring(0, p);
+    val = Json.toFloat();
+  }
+  return val;
+}
+
+String StringJson(String nom, String Json) {
+  int p = Json.indexOf(nom + "\":");
+  Json = Json.substring(p);
+  p = Json.indexOf(":");
+  Json = Json.substring(p + 1);
+  p = Json.indexOf("\"");
+  Json = Json.substring(p + 1);
+  p = Json.indexOf("\"");
+  Json = Json.substring(0, p);
+  return Json;
+}
+
+//*******************************
+//* Encodage URL (échappement)  *
+//*******************************
+String urlEncode(String s) {
+  String out = "";
+  const char *hex = "0123456789ABCDEF";
+  for (unsigned int i = 0; i < s.length(); i++) {
+    char c = s.charAt(i);
+    if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-' || c == '_' || c == '.' || c == '~') {
+      out += c;
+    } else {
+      out += '%';
+      out += hex[(c >> 4) & 0xF];
+      out += hex[c & 0xF];
+    }
+  }
+  return out;
+}

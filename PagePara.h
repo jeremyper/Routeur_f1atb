@@ -6,6 +6,7 @@ const char *ParaHtml = R"====(
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="commun.css">
   <script src="/CommunCouleurJS"></script>
 
@@ -23,8 +24,7 @@ const char *ParaHtml = R"====(
     .Bparametres { border: inset 10px azure; }
     .Bgeneraux { border: inset 4px azure; }
     #BoutonsBas { text-align:center; display: flex;justify-content: space-around;}
-    #ligneFixe, .ligneTemperature, #ligneExt,#ligneExtIPauto, #ligneEnphaseUser, #ligneEnphasePwd, #ligneEnphaseSerial,
-    #infoIP, #ligneTopicP, #ligneTopicT { display:none; }
+    #ligneFixe, .ligneTemperature, #infoIP, #ligneTopicT { display:none; }
     .Zone, .generaux { width:100%; border:1px solid grey; border-radius:10px; margin-top:10px;
                        background-color:rgba(30,30,30,0.3); }
     #onglets2 { display:block; }
@@ -131,55 +131,11 @@ const char *ParaHtml = R"====(
             <option value="1">Wroom seul</option>
             <option value="2">Carte 1 relais</option>
             <option value="3">Carte 4 relais</option>
-            <option value="4">Ecran ESP32-2432S028R R_ILI9341</option>
-            <option value="5">Ecran ESP32-2432S028 R_ST7789</option>
-            <option value="6">Ecran ESP32-2432S024 R_ILI9341</option>
-            <option value="7">Ecran ESP32-024 R_ST7789</option>
-            <option value="8">Ecran ESP32-2432S024C C_ILI9341</option>
-            <option value="9">Ecran JC2432W328 C_ST7789</option>
-            <option value="101">Ecran ESP32-2432S032C ST7789</option>
-            <option value="10">WT32-ETH01</option>
-          </select>
-        </div>
-
-        <div class="ligne" id="rotation">
-          <label for="Rot">Format écran</label>
-          <select id="Rot" onclick="checkDisabled();">
-            <option value="0" selected>Portrait (0°)</option>
-            <option value="1">Paysage (90°)</option>
-            <option value="2">Portrait (180°)</option>
-            <option value="3">Paysage (270°)</option>
-          </select>
-        </div>
-
-        <div class="ligne" id="dureeOn">
-          <label for="DurEcran">Durée écran On</label>
-          <select id="DurEcran" onclick="checkDisabled();">
-            <option value="10000" selected>10s</option>
-            <option value="30000">30s</option>
-            <option value="300000">5mn</option>
-            <option value="54000000">15h</option>
-            <option value="0">Permanent</option>
-          </select>
-        </div>
-        <div class="ligne" id="Click35">
-          <label for="clickPresence">Allumage écran</label>
-          <select id="clickPresence" >
-            <option value="0" selected>Click</option>
-            <option value="1">Click ou présence GPIO35</option>
-          </select>
-        </div>
-        <div class="ligne" id="L_NumPageBoot">
-          <label for="NumPageBoot">Page d'accueil écran</label>
-          <select id="NumPageBoot" >
-            <option value="0" selected>Tableau mesures</option>
-            <option value="6">Gauge Puissance</option>
-            <option value="5">Couleur fond écran</option>
           </select>
         </div>
 
         <div class="ligne" id="port_serie">
-          <label for="Serie">Port série 2 <span class="fsize10">Pour UxIx2, UxIx3 ou Linky</span></label>
+          <label for="Serie">Port série 2 <span class="fsize10">Pour module JSY (UxIx2, UxIx3)</span></label>
           <select id="Serie" onclick="checkDisabled();">
             <option value="0" selected>Non utilisé</option>
             <option value="1">RX=gpio 16, TX=gpio 17</option>
@@ -191,7 +147,7 @@ const char *ParaHtml = R"====(
         </div>
 
         <div class="ligne" id="Vport_serie">
-          <label for="Serial2V">Vitesse Port série 2 <span class="fsize10">Défaut : UxIx2=4800, UxIx3=9600, Linky=9600</span></label>
+          <label for="Serial2V">Vitesse Port série 2 <span class="fsize10">Défaut : UxIx2=4800, UxIx3=9600</span></label>
           <select id="Serial2V" onclick="checkDisabled();">
             <option value="0" selected>Pas utilisé</option>
             <option value="4800">4800 bauds</option>
@@ -213,28 +169,13 @@ const char *ParaHtml = R"====(
         </div>
 
         <div class="ligne">
-          <label for="pTriac">GPIOs Triac</label>
-          <select id="pTriac" onclick="checkDisabled();">
-            <option value="0" selected>Pas de triac</option>
-            <option value="1">Pulse=gpio 4, Zc=gpio 5</option>
-            <option value="2">Pulse=gpio 22, Zc=gpio 23</option>
-            <option value="3">Pulse=gpio 21, Zc=gpio 22</option>
-            <option value="4">Pulse=gpio 12, Zc=gpio 14</option>
-          </select>
-        </div>
-
-        <div class="ligne">
-          <label for="pLED">Affichage LED / OLED</label>
+          <label for="pLED">LEDs d'état</label>
           <select id="pLED" onclick="checkDisabled();">
             <option value="0" selected>Pas d'affichage</option>
             <option value="1">LEDs gpio 18, gpio 19</option>
             <option value="2">LEDs gpio 4, gpio 16</option>
             <option value="3">LEDs gpio 2, gpio 4</option>
             <option value="4">LEDs gpio 4, gpio 17</option>
-            <option value="10">SSD1306/1309 sda=g18, scl=g19</option>
-            <option value="11">SSD1306/1309 sda=g4, scl=g32</option>
-            <option value="12">SH1106 sda=g18, scl=g19</option>
-            <option value="13">SH1106 sda=g4, scl=g32</option>
           </select>
         </div>
 
@@ -318,7 +259,7 @@ const char *ParaHtml = R"====(
       <div class="form">
 
         <div class="ligne">
-          <label for="ComSurv">Restart si coupure WiFi ou Ethernet de</label>
+          <label for="ComSurv">Restart si coupure WiFi de</label>
           <select id="ComSurv" onclick="checkDisabled();">
             <option value="6" selected>3mn</option>
             <option value="60">30mn</option>
@@ -347,70 +288,50 @@ const char *ParaHtml = R"====(
           <select id="sources" onclick="checkDisabled();"
                   title="Suivant l'interface de mesure choisie.">
             <option value="NotDef" selected>Non définie</option>
-            <option value="UxI">UxI</option>
-            <option value="UxIx2">UxIx2</option>
-            <option value="UxIx3">UxIx3</option>
-            <option value="Linky">Linky</option>
-            <option value="Enphase">Enphase-Envoy</option>
-            <option value="SmartG">SmartGateways</option>
-            <option value="HomeW">HomeWizard</option>
-            <option value="ShellyEm">Shelly Em</option>
-            <option value="ShellyPro">Shelly Pro Em</option>
-            <option value="Ext">ESP Externe</option>
-            <option value="Pmqtt">MQTT</option>
+            <option value="UxI">UxI (transfo + pince ampèremétrique)</option>
+            <option value="UxIx2">UxIx2 (module JSY-MK-194T)</option>
+            <option value="UxIx3">UxIx3 (module JSY-MK-333 triphasé)</option>
           </select>
-        </div>
-
-      </div>
-
-      <div class="form">
-
-        <div class="ligne" id="ligneExt">
-          <label for="RMSextIP">Adresse IP <span id="labExtIp"></span> externe :</label>
-          <input type="text" id="RMSextIP" name="RMSextIP" autocomplete="on">
-        </div>
-        <div class="ligne" id="ligneExtIPauto">
-          <label for="RMSextIPauto">Adresse IP auto par résolution mDNS :</label>
-          <input type="checkbox" id="RMSextIPauto" name="RMSextIPauto" style="width:25px;" >
-        </div>
-        <div class="ligne" id="ligneEnphaseUser">
-          <label for="EnphaseUser">Enphase Envoy-S metered User :
-            <span class="fsize10"><br>Pour firmware Envoy-S V7 seulement</span>
-          </label>
-          <input type="text" id="EnphaseUser" name="EnphaseUser" autocomplete="on">
-        </div>
-
-        <div class="ligne" id="ligneEnphasePwd">
-          <label for="EnphasePwd">Enphase Envoy-S metered Password :
-            <span class="fsize10"><br>Pour firmware Envoy-S V7 seulement</span>
-          </label>
-          <input type="password" id="EnphasePwd" name="EnphasePwd" autocomplete="on">
-        </div>
-
-        <div class="ligne" id="ligneEnphaseSerial">
-          <label for="EnphaseSerial" id="label_enphase_shelly"></label>
-          <input type="text" id="EnphaseSerial" name="EnphaseSerial"
-                onchange="checkDisabled();" autocomplete="on">
-        </div>
-
-        <div class="ligne" id="ligneTopicP">
-          <label for="TopicP">MQTT Topic Puissance :</label>
-          <input type="text" id="TopicP" name="TopicP" autocomplete="on">
         </div>
 
         <div><span class="fsize10">Nécessite un Restart de l'ESP32</span></div>
 
       </div>
 
-      <div id="CACSI" class="form">
-        <div class="ligne">
-          <label for="EstimCACSI">Estimateur injection si CACSI :</label>
-          <input type="checkbox" id="EstimCACSI" name="EstimCACSI" style="width:25px;"
-                onclick="checkDisabled();"
-                title="Estimation des injections basée sur les V*A données par le LINKY">
-        </div>
-      </div>
+    </div>
 
+    <div class="Zone">
+      <div class="boldT">Prévision météo solaire <small>(Open-Meteo, gratuit, sans clé)</small></div>
+      <div class="form">
+
+        <div class="ligne">
+          <label for="MeteoOn">Activer la prévision solaire
+            <span class="fsize10"><br>Permet de conditionner le forçage des actions à la production attendue</span>
+          </label>
+          <input type="checkbox" id="MeteoOn" name="MeteoOn" style="width:25px;" onclick="checkDisabled();">
+        </div>
+
+        <div class="ligne ligneMeteo">
+          <label for="MeteoLat">Latitude <span class="fsize10">(ex : 46.5214)</span></label>
+          <input type="number" id="MeteoLat" name="MeteoLat" step="0.0001" min="-90" max="90">
+        </div>
+
+        <div class="ligne ligneMeteo">
+          <label for="MeteoLon">Longitude <span class="fsize10">(ex : 2.4218)</span></label>
+          <input type="number" id="MeteoLon" name="MeteoLon" step="0.0001" min="-180" max="180">
+        </div>
+
+        <div class="ligne ligneMeteo">
+          <label for="MeteoPVcrete">Puissance crête des panneaux (kWc)</label>
+          <input type="number" id="MeteoPVcrete" name="MeteoPVcrete" step="0.1" min="0.1" max="100">
+        </div>
+
+        <div class="ligne ligneMeteo">
+          <label>Prévision de production</label>
+          <div class="nomR" id="previsionMeteo">-</div>
+        </div>
+
+      </div>
     </div>
 
     <div class="Zone" id="LesSourcesTemp">

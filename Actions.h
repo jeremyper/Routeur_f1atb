@@ -5,6 +5,7 @@ class Action {
 private:
   int Idx;  //Index
   void CallExterne(String host, String url, int port);
+  bool MeteoOk(int i);
   int T_LastAction = 0;
   int tempoTimer = 0;
   int16_t Tseuil = 2000;
@@ -33,8 +34,8 @@ public:
     int Vmax;
   };
   ParaPeriode ParaEnCours(int Heure, float Temperature, int Ltarfbin, int Retard);
-  void InitGpio(int FreqPWM);
-  byte Actif;  //0=Inactif,1=Decoupe ou On/Off, 2=Multi, 3= Train, 4=PWM (sauf Triac)
+  void InitGpio();
+  byte Actif;  //0=Inactif,1=On/Off, 2=Multi-sinus, 3=Train de sinus
   int Port;
   int Repet;
   int Tempo;
@@ -71,7 +72,11 @@ public:
   byte Ooff[8];    //Ouvre Min Action pour Actif. 0 non utilisé
   byte O_on[8];
   byte Tarif[8];
+  byte MeteoCond[8];      //Condition météo : 0=aucune, 1=si prévision demain<seuil, 2=si prévision demain>=seuil, 3=si prévision jour<seuil, 4=si prévision jour>=seuil
+  int16_t MeteoSeuil[8];  //Seuil production estimée en dixièmes de kWh
 };
 
 
 extern void StockMessage(String m);
+extern float Meteo_PrevisionJour;    //Production estimée aujourd'hui en kWh (-1 = pas de donnée)
+extern float Meteo_PrevisionDemain;  //Production estimée demain en kWh (-1 = pas de donnée)

@@ -272,6 +272,11 @@ void DeserializeConfiguration(String json) {
   CalibI = conf["CalibI"];
   Calibration();  //pour UxI
   TempoRTEon = conf["TempoRTEon"];
+  MeteoOn = conf["MeteoOn"] | 0;
+  MeteoLat = conf["MeteoLat"].isNull() ? MeteoLat : conf["MeteoLat"].as<float>();
+  MeteoLon = conf["MeteoLon"].isNull() ? MeteoLon : conf["MeteoLon"].as<float>();
+  MeteoPVcrete = conf["MeteoPVcrete"].isNull() ? MeteoPVcrete : conf["MeteoPVcrete"].as<float>();
+  LastMeteoMillis = 0;  //Forcer une relecture météo après changement de paramètres
   WifiSleep = conf["WifiSleep"];
   ComSurv = conf["ComSurv"];
   pSerial = conf["pSerial"];
@@ -286,6 +291,7 @@ void DeserializeConfiguration(String json) {
   for (JsonObject obj : arr) {
     if (iAct >= NbActions) break;  // éviter de dépasser le tableau
     LesActions[iAct].Actif = obj["Actif"];
+    if (LesActions[iAct].Actif > 3) LesActions[iAct].Actif = 0;  //Modes PWM/Demi-sinus supprimés
     LesActions[iAct].Titre = obj["Titre"].as<String>();
     LesActions[iAct].Host = obj["Host"].as<String>();
     LesActions[iAct].Port = obj["Port"];
@@ -326,6 +332,8 @@ void DeserializeConfiguration(String json) {
       LesActions[iAct].Ooff[i] = objP["Ooff"] | 0;
       LesActions[iAct].O_on[i] = objP["O_on"] | 0;
       LesActions[iAct].Tarif[i] = objP["Tarif"] | 0;
+      LesActions[iAct].MeteoCond[i] = objP["MeteoCond"] | 0;
+      LesActions[iAct].MeteoSeuil[i] = objP["MeteoSeuil"] | 0;
       i++;
     }
     iAct++;
@@ -412,6 +420,10 @@ String SerializeConfiguration() {
   conf["pSerial"] = pSerial;
   conf["Serial2V"] = Serial2V;
   conf["pTriac"] = pTriac;
+  conf["MeteoOn"] = MeteoOn;
+  conf["MeteoLat"] = MeteoLat;
+  conf["MeteoLon"] = MeteoLon;
+  conf["MeteoPVcrete"] = MeteoPVcrete;
   // Enregistrement des Actions
   if (ReacCACSI < 1)
     ReacCACSI = 1;
@@ -462,6 +474,8 @@ String SerializeConfiguration() {
       objP["Ooff"] = LesActions[iAct].Ooff[i];
       objP["O_on"] = LesActions[iAct].O_on[i];
       objP["Tarif"] = LesActions[iAct].Tarif[i];
+      objP["MeteoCond"] = LesActions[iAct].MeteoCond[i];
+      objP["MeteoSeuil"] = LesActions[iAct].MeteoSeuil[i];
     }
   }
   String Json;

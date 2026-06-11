@@ -55,7 +55,6 @@ void JourHeureChange() {
       }
     }
     if (old_Heure == 23 && Int_Heure == 0) {
-      erreurTriac = false;
       if (EnergieActiveValide) {  //Données recues
         int16_t old_HeureCouranteDeci = old_Heure * 100 + old_Minute * 10 / 6;
         Record_Data(oldDateAMJ, oldDateAMJ, old_HeureCouranteDeci);
