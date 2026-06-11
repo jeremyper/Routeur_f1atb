@@ -72,7 +72,7 @@ public:
   byte Ooff[8];    //Ouvre Min Action pour Actif. 0 non utilisé
   byte O_on[8];
   byte Tarif[8];
-  byte MeteoCond[8];      //Condition météo : 0=aucune, 1=si prévision demain<seuil, 2=si prévision demain>=seuil, 3=si prévision jour<seuil, 4=si prévision jour>=seuil
+  byte MeteoCond[8];      //Condition météo : 0=aucune, 1=si prévision demain<seuil, 2=si prévision demain>=seuil, 3=si prévision jour<seuil, 4=si prévision jour>=seuil, 5=adaptatif ballon
   int16_t MeteoSeuil[8];  //Seuil production estimée en dixièmes de kWh
 };
 
@@ -80,3 +80,4 @@ public:
 extern void StockMessage(String m);
 extern float Meteo_PrevisionJour;    //Production estimée aujourd'hui en kWh (-1 = pas de donnée)
 extern float Meteo_PrevisionDemain;  //Production estimée demain en kWh (-1 = pas de donnée)
+extern float Ballon_Deficit;         //Besoin ballon - surplus solaire prévu en kWh (>0 = forçage adaptatif autorisé)

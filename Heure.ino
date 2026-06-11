@@ -66,6 +66,7 @@ void JourHeureChange() {
       PuisMaxS_M = 0;
       PuisMaxI_T = 0;
       PuisMaxI_M = 0;
+      ApprentissageBallon();  //Ajuste le coefficient routable et cale le compteur PV du jour
     }
     old_Heure = Int_Heure;
     old_Minute = Int_Minute;

@@ -661,6 +661,13 @@ void handleParaVar() {
   conf["MeteoOn"] = MeteoOn;
   conf["PrevisionJour"] = serialized(String(Meteo_PrevisionJour, 1));    //Production solaire estimée kWh
   conf["PrevisionDemain"] = serialized(String(Meteo_PrevisionDemain, 1));
+  conf["SmaOn"] = SmaOn;
+  conf["PuissancePV"] = serialized(String(PuissancePV, 0));              //Production onduleur en W
+  conf["EnergieJourPV"] = EnergieJourPV;                                 //Production du jour en Wh
+  conf["BallonCanal"] = BallonCanal;
+  conf["BallonBesoin"] = serialized(String(Ballon_Besoin, 1));           //kWh pour remonter à la cible
+  conf["BallonSurplus"] = serialized(String(Ballon_SurplusPrevu, 1));    //kWh de surplus attendu
+  conf["BallonCoefAuto"] = BallonCoefAuto;                               //Coefficient routable appris en %
   for (int c = 0; c < 4; c++) {
     conf["temperature"][c] = temperature[c];
   }

@@ -624,6 +624,25 @@ float Meteo_PrevisionDemain = -1;  //Production estimée demain en kWh (-1 = pas
 unsigned long LastMeteoMillis = 0;
 WiFiClientSecure clientSecuMeteo;
 
+//Paramètres Onduleur SMA Sunny Boy (Modbus TCP)
+byte SmaOn = 0;             //0=inactif, 1=actif
+String SmaIP = "";          //IP de l'onduleur sur le réseau local
+float PuissancePV = 0;      //Puissance AC instantanée onduleur en W
+long EnergieTotalePV = -1;  //Compteur total onduleur en Wh (-1 = pas de donnée)
+long EnergiePV_J0 = 0;      //Calage compteur à minuit
+long EnergieJourPV = 0;     //Production du jour en Wh
+unsigned long LastSmaMillis = 0;
+
+//Paramètres Ballon - forçage adaptatif (besoin de chauffe vs surplus solaire prévu)
+int16_t BallonVolume = 200;     //Volume cuve en litres
+int16_t BallonTcible = 55;      //Température cible en °C
+int16_t BallonPuissance = 2400; //Puissance résistance en W
+int8_t BallonCanal = -1;        //Canal sonde température ballon (-1 = non configuré)
+int16_t BallonCoefAuto = 70;    //Part du surplus prévu utilisable en % (auto-apprise si SMA actif)
+float Ballon_Besoin = -1;       //kWh nécessaires pour remonter à la cible (-1 = pas de donnée)
+float Ballon_SurplusPrevu = -1; //kWh de surplus solaire attendu
+float Ballon_Deficit = 0;       //Besoin - Surplus : si >0, le forçage adaptatif est autorisé
+
 //Paramètres pour Source Externe
 int8_t RMSextIdx = 0;
 bool RMSextIPauto =true;
@@ -898,6 +917,7 @@ void setup() {
     Serial.println("Système fichiers LittleFS monté");
   }
   delay(1000);
+  LitCoefAuto();  //Coefficient routable appris (forçage adaptatif ballon)
 
   //Hostname par defaut
   hostname = String(HOSTNAME);
@@ -1451,6 +1471,8 @@ void loop() {
       LTARFbin = Ltarf;
       if (LTARF != "") PrintScroll(LTARF);
       Call_Meteo_data();  //Prévision solaire Open-Meteo (rafraichie toutes les 2h)
+      Call_SMA_data();    //Production onduleur SMA via Modbus TCP (toutes les 20s)
+      CalculBallon();     //Besoin de chauffe du ballon vs surplus solaire prévu
     }
     if (ESP32_Type == 0) StockMessage("! Carte ESP32 non définie !");
     if (pSerial == 0 && (Source == "UxIx2" || Source == "UxIx3")) StockMessage("! Port série non défini !");
