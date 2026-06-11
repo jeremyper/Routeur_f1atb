@@ -238,6 +238,27 @@ const char *ActionsHtml = R"====(
             display:flex; align-items:center; justify-content:center;
         }
 
+        /* ── Assistant de création ──────────────────────────── */
+        #assistant {
+            position:fixed; inset:0; z-index:3000;
+            background:rgba(0,0,0,.6); backdrop-filter:blur(3px);
+            display:none; align-items:center; justify-content:center;
+        }
+        #assistantBox {
+            background:var(--popup-bg); border:2px solid var(--popup-border);
+            border-radius:12px; color:#e0e0f0;
+            width:92vw; max-width:480px; max-height:90vh; overflow-y:auto;
+            box-shadow:0 8px 32px rgba(0,0,0,.7); font-size:15px;
+        }
+        .wizBody { padding:4px; }
+        .wizLigne { padding:4px 2px; display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+        .wizLigne input[type=time],.wizLigne input[type=number],.wizLigne input[type=text],.wizLigne select {
+            font-size:14px; border-radius:5px; border:1px solid #555;
+            background:#252538; color:#dde; padding:3px 4px;
+        }
+        .wizLigne input[type=checkbox] { width:17px; height:17px; accent-color:var(--acc); }
+        .tbutWide { width:auto; padding:0 14px; font-size:15px; margin-left:8px; }
+
         /* ── Message flottant ───────────────────────────────── */
         #message {
             position:fixed; border:2px solid #555; border-radius:8px;
@@ -284,6 +305,7 @@ const char *ActionsHtml = R"====(
         </div>
     </div>
 
+    <div id="assistant"><div id="assistantBox"></div></div>
     <div id="message"></div><br>
     <div id="pied"></div>
 

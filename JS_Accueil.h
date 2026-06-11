@@ -509,31 +509,39 @@ function Plot(SVG, Tab, couleur1, titre1, couleur2, titre2) {
   
 
   
-  if (dI === 2 && Pva_valide && dispVA) { 
+  if (dI === 2 && Pva_valide && dispVA) {
     S += "<text x='450' y='40' style='font-size:18px;fill:" + couleur2 + ";'>" + titre2 + "</text>";
     S += "<polyline points='";
-    let j = 0;  
-    for (let i = 1; i < Tab.length; i = i + dI) { 
+    let j = 0;
+    for (let i = 1; i < Tab.length; i = i + dI) {
       Y = Y0 - Yamp * Tab[i] / cadrageMax;
       X = 100 + dX * i;
       S += X + "," + Y + " ";
       TabY1[j] = parseFloat(Tab[i]);
       j++;
     }
-    S += "' style='fill:none;stroke:" + couleur2 + ";stroke-width:2' />";
+    S += "' style='fill:none;stroke:" + couleur2 + ";stroke-width:2.5' stroke-linejoin='round' stroke-linecap='round' />";
   }
-  
+
   S += "<text x='450' y='18' style='font-size:18px;fill:" + couleur1 + ";'>" + titre1 + "</text>";
-  S += "<polyline points='";
-  let j = 0; 
-  for (let i = 0; i < Tab.length; i = i + dI) { 
+  S += "<defs><linearGradient id='grad_" + SVG + "' x1='0' y1='0' x2='0' y2='1'>";
+  S += "<stop offset='0' stop-color='" + couleur1 + "' stop-opacity='0.45'/>";
+  S += "<stop offset='1' stop-color='" + couleur1 + "' stop-opacity='0.03'/>";
+  S += "</linearGradient></defs>";
+  let Pts = "";
+  let j = 0;
+  let Xfirst = 100, Xlast = 100;
+  for (let i = 0; i < Tab.length; i = i + dI) {
     Y = Y0 - Yamp * Tab[i] / cadrageMax;
     X = 100 + dX * i;
-    S += X + "," + Y + " ";
+    if (j === 0) Xfirst = X;
+    Xlast = X;
+    Pts += X + "," + Y + " ";
     TabY0[j] = parseFloat(Tab[i]);
     j++;
   }
-  S += "' style='fill:none;stroke:" + couleur1 + ";stroke-width:2' />";
+  S += "<polygon points='" + Xfirst + "," + Y0 + " " + Pts + Xlast + "," + Y0 + "' fill='url(#grad_" + SVG + ")' stroke='none' />";
+  S += "<polyline points='" + Pts + "' style='fill:none;stroke:" + couleur1 + ";stroke-width:2.5' stroke-linejoin='round' stroke-linecap='round' />";
   S += "</svg>";
   
   GID(SVG).innerHTML = S;
@@ -574,9 +582,9 @@ function PlotWhJour(tabWh){
       let  H1=Yamp * tabWh[i][1] / cadrageMax; //Soutire
       Y = Y0 - H1;
       X = 100 + dX * i;
-      S +="<rect width='" +dX2 +"' height='"+H1 + "' x='"+ X +"' y='"+Y+"'  fill='"+cWh1+"A0' />";
+      S +="<rect width='" +dX2 +"' height='"+H1 + "' x='"+ X +"' y='"+Y+"' rx='2' fill='"+cWh1+"A0' />";
       let  H2=Yamp * tabWh[i][2] / cadrageMax; //Injecté
-      S +="<rect width='" +dX2 +"' height='"+H2 + "' x='"+ X +"' y='"+Y0+"'  fill='"+cWh2+"A0' />";
+      S +="<rect width='" +dX2 +"' height='"+H2 + "' x='"+ X +"' y='"+Y0+"' rx='2' fill='"+cWh2+"A0' />";
       if (Sconso!="" || tabWh[i][3] !=0){ //Données seconde sonde
         let Y3=Y0-Yamp * tabWh[i][3] / cadrageMax;
         Sconso += X+"," + Y3+" "; 
@@ -636,7 +644,7 @@ function PlotCommun(SVG,cT,Vmax,label){
  for (let y = -10; y <= 10; y = y + dy) { // pointillé horizont
     Y2 = Y0 - Yamp * y / 10;
     if (Y2 <= 480) {
-      S += "<line x1='100' y1='" + Y2 + "' x2='1000' y2='" + Y2 + "' style='stroke:" + cT + ";stroke-width:1;stroke-dasharray:2 10;' />";
+      S += "<line x1='100' y1='" + Y2 + "' x2='1000' y2='" + Y2 + "' style='stroke:" + cT + ";stroke-width:1;stroke-dasharray:4 6;opacity:0.35;' />";
       Y2 = Y2 + 7;
       let T = cadrageMax * y / 10; T = T.toString(); 
       X = 90 - 9 * T.length;
@@ -733,14 +741,16 @@ function Plot_ouvertures(Gr) {
     S += "<text x='55' y='" + Y2 + "' style='font-size:16px;fill:" + cT + ";'>100%</text>";
     Y2 = Y00 - 100;
     S += "<line x1='100' y1='" + Y00 + "' x2='100' y2='" + Y2 + "' style='stroke:" + cT + ";stroke-width:1;' />";
-    S += "<polyline points='";
-    
-    for (let j = 0; j < tableau.length; j++) { 
+    let Pts = "";
+    let Xl = 100;
+    for (let j = 0; j < tableau.length; j++) {
        Y = Y00 - tableau[j];
        X = 100 + 1.5 * j;
-      S += X + "," + Y + " ";
+       Xl = X;
+       Pts += X + "," + Y + " ";
     }
-    S += "' style='fill:none;stroke:" + Couls[i % 4] + ";stroke-width:2' />";
+    S += "<polygon points='100," + Y00 + " " + Pts + Xl + "," + Y00 + "' fill='" + Couls[i % 4] + "30' stroke='none' />";
+    S += "<polyline points='" + Pts + "' style='fill:none;stroke:" + Couls[i % 4] + ";stroke-width:2.5' stroke-linejoin='round' stroke-linecap='round' />";
 
     LesVals.push(tableau);
     LesCouls.push(Couls[i % 4]);
@@ -814,13 +824,16 @@ function Plot_ouvertures_2s() {
     S += "<line x1='100' y1='" + Y00 + "' x2='100' y2='" + Y2 + "' style='stroke:" + cT + ";stroke-width:1;' />";
     
     if (tabActOuvre[idxAction] && tabActOuvre[idxAction].length > 0) {
-      S += "<polyline points='";
-      for (let j = 0; j < tabActOuvre[idxAction].length; j++) { 
+      let Pts = "";
+      let Xl = 100;
+      for (let j = 0; j < tabActOuvre[idxAction].length; j++) {
         Y = Y00 - tabActOuvre[idxAction][j];
         X = 100 + 3 * j;
-        S += X + "," + Y + " ";
+        Xl = X;
+        Pts += X + "," + Y + " ";
       }
-      S += "' style='fill:none;stroke:" + Couls[i % 4] + ";stroke-width:2' />";
+      S += "<polygon points='100," + Y00 + " " + Pts + Xl + "," + Y00 + "' fill='" + Couls[i % 4] + "30' stroke='none' />";
+      S += "<polyline points='" + Pts + "' style='fill:none;stroke:" + Couls[i % 4] + ";stroke-width:2.5' stroke-linejoin='round' stroke-linecap='round' />";
       LesVals.push(tabActOuvre[idxAction]);
       LesCouls.push(Couls[i % 4]);
     }

@@ -473,8 +473,7 @@ function NewPosition(t, leftPos, iAct) {
 function AddSub(v, iAct) {
     if (v === 1) {
         // Ajout
-        let type=3; //Pw pour les relais
-        if (iAct==0) type=4; //Pw pour le Triac
+        let type=3; //Pw : routage proportionnel
         if (F.Actions[iAct].Periodes.length < 8) {
             // Crée la nouvelle période avec des valeurs par défaut
             const newPeriod = {
@@ -947,7 +946,10 @@ function TraceActions(rajout) {
             }
 
 
-            if (F.Actions.length<10) S += "<input id='butR' type='button'  class='tbut' value='+' onclick='TraceActions(true);' title='Rajouter une action.'>";
+            if (F.Actions.length<10) {
+                S += "<input id='butR' type='button'  class='tbut' value='+' onclick='TraceActions(true);' title='Rajouter une action (mode expert).'>";
+                S += "<input id='butA' type='button' class='tbut tbutWide' value='&#129668; Assistant' onclick='OuvrirAssistant();' title='Création guidée d&apos;une automatisation.'>";
+            }
             GH("plannings", S);
             for (var iAct = 0; iAct < F.Actions.length; iAct++) {
                 TracePlanning(iAct);
@@ -977,6 +979,145 @@ function UpdateK(iAct) {
         xhttp.open('GET', `/UpdateK?iAct=${iAct}&Kp=${Kp}&Ki=${Ki}&Kd=${Kd}`, true);
         xhttp.send();
     }
+}
+
+/**
+ * Assistant de création guidée d'une automatisation.
+ */
+function OuvrirAssistant() {
+    if (F.Actions.length >= 10) { alert("Maximum de 10 actions atteint."); return; }
+    let S = "<div class='selectZ'>&#129668; Nouvelle automatisation<div class='closeZ' onclick='FermerAssistant()'>X</div></div>";
+    S += "<div class='wizBody'>";
+
+    // 1. Équipement
+    S += "<div class='bord1px'><b>1. L'&eacute;quipement &agrave; piloter</b>";
+    S += "<div class='wizLigne'>Nom : <input type='text' id='wizNom' value='Chauffe-eau' style='width:150px;'></div>";
+    S += "<div class='wizLigne'>Sortie : <select id='wizType'>";
+    S += "<option value='2'>SSR &mdash; puissance variable (chauffe-eau)</option>";
+    S += "<option value='1'>Relais &mdash; tout ou rien</option></select></div>";
+    S += "<div class='wizLigne'>Gpio : <select id='wizPin'>";
+    for (let i = 0; i < Pins.length; i++) {
+        if (Pins[i] > 0) S += "<option value='" + Pins[i] + "'>gpio:" + Pins[i] + "</option>";
+    }
+    S += "</select></div></div>";
+
+    // 2. Routage du surplus
+    S += "<div class='bord1px'><b>2. Router le surplus solaire</b>";
+    S += "<div class='wizLigne'><input type='checkbox' id='wizRout' checked> Envoyer le surplus dans l'&eacute;quipement</div>";
+    S += "<div class='wizLigne'>De <input type='time' id='wizRoutD' value='09:00'> &agrave; <input type='time' id='wizRoutF' value='17:00'></div></div>";
+
+    // 3. Forçage conditionnel
+    S += "<div class='bord1px'><b>3. Marche forc&eacute;e (optionnel)</b>";
+    S += "<div class='wizLigne'><input type='checkbox' id='wizForce'> Forcer la marche sur une plage horaire</div>";
+    S += "<div class='wizLigne'>De <input type='time' id='wizForceD' value='02:00'> &agrave; <input type='time' id='wizForceF' value='06:00'></div>";
+    S += "<div class='wizLigne'>Seulement si temp&eacute;rature <select id='wizTcanal'><option value='-1'>(ignorer)</option>";
+    if (V.temperature) {
+        for (let c = 0; c < V.temperature.length; c++) {
+            if (V.temperature[c] > -100) S += "<option value='" + c + "'>canal " + c + " (" + V.temperature[c] + "&deg;)</option>";
+        }
+    }
+    S += "</select> &le; <input type='number' id='wizTseuil' value='50' style='width:60px;'> &deg;C</div>";
+    if (V.MeteoOn == 1) {
+        S += "<div class='wizLigne'><input type='checkbox' id='wizMeteo' checked> Seulement si pr&eacute;vision solaire demain &lt; <input type='number' id='wizMeteoS' value='8' step='0.5' style='width:60px;'> kWh</div>";
+    }
+    if (V.LTARFbin > 0 && V.LTARFbin <= 3) {
+        S += "<div class='wizLigne'><input type='checkbox' id='wizHC' checked> Seulement en Heures Creuses</div>";
+    } else if (V.LTARFbin > 3) {
+        S += "<div class='wizLigne'><input type='checkbox' id='wizPasRouge' checked> Pas les jours Tempo Rouge</div>";
+    }
+    S += "</div>";
+
+    S += "<div style='text-align:center;padding:8px;'><input type='button' class='bouton' value='Cr&eacute;er l&apos;automatisation' onclick='CreerWizard()'></div>";
+    S += "</div>";
+    GH("assistantBox", S);
+    GID("assistant").style.display = "flex";
+}
+
+function FermerAssistant() {
+    GID("assistant").style.display = "none";
+}
+
+// "09:30" -> 950 (centièmes d'heure)
+function WizH(id) {
+    const v = GID(id).value.split(":");
+    return Math.floor(parseInt(v[0], 10) * 100 + parseInt(v[1], 10) * 100 / 60);
+}
+
+function WizPeriode(Hfin, type) {
+    return { Hfin: Hfin, Type: type, Vmin: 0, Vmax: 100, ONouvre: 100, Tinf: 1600, Tsup: 1600,
+             Hmin: 0, Hmax: 0, CanalTemp: -1, SelAct: 255, Ooff: 0, O_on: 0, Tarif: 31,
+             MeteoCond: 0, MeteoSeuil: 0 };
+}
+
+function CreerWizard() {
+    const iAct = F.Actions.length;
+    const act = CreerAction(iAct, GID("wizNom").value.trim() || ("Action " + iAct));
+    act.Actif = parseInt(GID("wizType").value, 10);
+    act.OrdreOn = GID("wizPin").value + IS + "1";
+
+    // Construit la liste des plages demandées
+    const segs = [];
+    if (GID("wizRout").checked) {
+        const h1 = WizH("wizRoutD"), h2 = WizH("wizRoutF");
+        if (h2 > h1) segs.push({ h1: h1, h2: h2, t: 3, c: false });
+    }
+    if (GID("wizForce").checked) {
+        const h1 = WizH("wizForceD"), h2 = WizH("wizForceF");
+        if (h1 < h2) {
+            segs.push({ h1: h1, h2: h2, t: 2, c: true });
+        } else { // plage à cheval sur minuit : 2 segments
+            if (h2 > 0) segs.push({ h1: 0, h2: h2, t: 2, c: true });
+            if (h1 < 2400) segs.push({ h1: h1, h2: 2400, t: 2, c: true });
+        }
+    }
+    segs.sort((a, b) => a.h1 - b.h1);
+    for (let i = 1; i < segs.length; i++) {
+        if (segs[i].h1 < segs[i - 1].h2) { alert("Les plages horaires se chevauchent. Corrigez les heures."); return; }
+    }
+
+    // Remplit la journée : OFF entre les plages
+    const periodes = [];
+    let H = 0;
+    for (const sg of segs) {
+        if (sg.h1 > H) periodes.push(WizPeriode(sg.h1, 1)); // OFF
+        const p = WizPeriode(sg.h2, sg.t);
+        if (sg.c) { // conditions du forçage
+            const canal = parseInt(GID("wizTcanal").value, 10);
+            if (canal >= 0) {
+                p.CanalTemp = canal;
+                p.Tinf = Math.round(parseFloat(GID("wizTseuil").value) * 10);
+            }
+            const wm = GID("wizMeteo");
+            if (wm && wm.checked) {
+                p.MeteoCond = 1; // prévision demain < seuil
+                p.MeteoSeuil = Math.round(parseFloat(GID("wizMeteoS").value) * 10);
+            }
+            const hc = GID("wizHC");
+            if (hc && hc.checked) p.Tarif = 2;       // HC uniquement
+            const pr = GID("wizPasRouge");
+            if (pr && pr.checked) p.Tarif = 12;      // Tempo Bleu + Blanc
+        }
+        periodes.push(p);
+        H = sg.h2;
+    }
+    if (H < 2400) {
+        periodes.push(WizPeriode(2400, 1)); // OFF jusqu'à minuit
+    } else if (periodes.length > 0) {
+        periodes[periodes.length - 1].Hfin = 2400;
+    }
+    if (periodes.length === 0) periodes.push(WizPeriode(2400, 1));
+    if (periodes.length > 8) { alert("Trop de p&eacute;riodes (max 8). Simplifiez les plages."); return; }
+
+    act.Periodes = periodes;
+    act.NbPeriode = periodes.length;
+    F.Actions[iAct] = act;
+    FermerAssistant();
+    TraceActions(false);
+    GH("message", "Automatisation cr&eacute;&eacute;e.<br>V&eacute;rifiez puis cliquez <b>Sauvegarder</b>.");
+    GID("message").style.display = "block";
+    setTimeout(() => { GID("message").style.display = "none"; }, 8000);
+    const el = GID("planning" + iAct);
+    if (el) el.scrollIntoView({ behavior: "smooth" });
 }
 )====";
 
