@@ -6,7 +6,9 @@ bool opened = false;
 String ConfImport;
 void Init_Server() {
   // Init Web Server on port 80
-  server.on("/", handleRoot);
+  server.on("/", handleRoot);          //Tableau de bord Soleo
+  server.on("/DashJS", handleDashJS);
+  server.on("/mesures", handleMesures);  //Ancienne page d'accueil : mesures détaillées
   server.on("/MainJS1", handleMainJS1);
   server.on("/MainJS2", handleMainJS2);
   server.on("/MainJS3", handleMainJS3);
@@ -150,7 +152,15 @@ void Init_Server() {
   server.begin();
 }
 
-void handleRoot() {  // Pages principales
+void handleRoot() {  // Page d'accueil : tableau de bord Soleo
+
+  server.send(200, "text/html", DashHtml);
+}
+void handleDashJS() {  // Code Javascript du tableau de bord
+  CacheEtClose(300);
+  server.send(200, "text/javascript", DashJS);
+}
+void handleMesures() {  // Ancienne page d'accueil : mesures détaillées et graphiques
 
   server.send(200, "text/html", MainHtml);
 }

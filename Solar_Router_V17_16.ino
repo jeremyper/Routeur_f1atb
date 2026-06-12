@@ -333,6 +333,8 @@
 // Pages WEB
 #include "PageAccueil.h"
 #include "JS_Accueil.h"
+#include "PageDash.h"
+#include "JS_Dash.h"
 #include "PageActions.h"
 #include "JS_Actions.h"
 #include "PagePara.h"
