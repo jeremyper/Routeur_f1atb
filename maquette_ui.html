@@ -1,591 +1,963 @@
 <!doctype html>
 <html lang="fr" data-theme="dark">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Maquette — Routeur Solaire</title>
-<style>
-/* ════════════════════════════════════════════════════════════════
-   MAQUETTE D'ÉTUDE — page d'accueil repensée du routeur F1ATB
-   Fichier autonome, données factices. Mobile-first, dark mode.
-   ════════════════════════════════════════════════════════════════ */
-:root{
-  --bg:#0e1118;
-  --bg2:#131725;
-  --card:#191e2e;
-  --card2:#1f2538;
-  --line:#2a3147;
-  --txt:#e8ecf6;
-  --txt2:#9aa3b8;
-  --txt3:#6b7388;
-  --sun:#ffb74d;      /* production */
-  --sun2:#ff9800;
-  --home:#4ab3f4;     /* maison / conso */
-  --grid:#b39ddb;     /* réseau */
-  --ok:#4caf7d;
-  --ok-bg:rgba(76,175,125,.14);
-  --warn:#ffb74d;
-  --warn-bg:rgba(255,183,77,.13);
-  --off:#5c6478;
-  --danger:#ef6e6e;
-  --rad:16px;
-  --shadow:0 4px 18px rgba(0,0,0,.35);
-}
-html[data-theme=light]{
-  --bg:#f2f4f9; --bg2:#e9edf5; --card:#ffffff; --card2:#f4f6fb;
-  --line:#dde2ee; --txt:#1c2233; --txt2:#5a6379; --txt3:#8a92a6;
-  --shadow:0 4px 14px rgba(30,40,80,.10);
-  --ok-bg:rgba(76,175,125,.16); --warn-bg:rgba(255,152,0,.14);
-}
-*,*::before,*::after{box-sizing:border-box}
-body{
-  margin:0; background:var(--bg); color:var(--txt);
-  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
-  font-size:15px; line-height:1.45;
-  padding-bottom:76px; /* place pour la nav basse mobile */
-}
-button{font-family:inherit}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Soleo — mon énergie solaire</title>
+  <style>
+    /* ============================================================
+       SOLEO — maquette UX refondue (routeur solaire F1ATB / ESP32)
+       Conçue à partir des scénarios d'usage, pas des pages existantes.
+       Un seul fichier autonome, mobile-first, dark mode par défaut.
+    ============================================================ */
 
-/* ── En-tête ─────────────────────────────────────────────────── */
-header{
-  position:sticky; top:0; z-index:50;
-  background:color-mix(in srgb,var(--bg) 86%,transparent);
-  backdrop-filter:blur(10px);
-  border-bottom:1px solid var(--line);
-}
-.head-in{
-  max-width:1060px; margin:auto; padding:10px 16px;
-  display:flex; align-items:center; gap:10px;
-}
-.logo{width:34px;height:34px;flex-shrink:0}
-.head-tit{flex:1;min-width:0}
-.head-tit b{font-size:17px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.head-tit span{font-size:12px;color:var(--txt3)}
-.pill{
-  display:inline-flex;align-items:center;gap:6px;
-  font-size:12px;font-weight:600;padding:4px 10px;border-radius:99px;
-  background:var(--ok-bg);color:var(--ok);white-space:nowrap;
-}
-.pill .dot{width:7px;height:7px;border-radius:50%;background:var(--ok);animation:pulse 2s infinite}
-@keyframes pulse{50%{opacity:.35}}
-.tarif{
-  font-size:12px;font-weight:700;padding:4px 10px;border-radius:99px;
-  background:rgba(76,175,125,.18);color:var(--ok);white-space:nowrap;
-}
-.icon-btn{
-  background:none;border:1px solid var(--line);color:var(--txt2);
-  width:36px;height:36px;border-radius:10px;cursor:pointer;font-size:17px;
-  display:flex;align-items:center;justify-content:center;flex-shrink:0;
-}
-.icon-btn:hover{border-color:var(--home);color:var(--txt)}
+    :root {
+      --bg:        #0d1117;
+      --bg-soft:   #161b22;
+      --card:      #1c2230;
+      --card-2:    #232b3b;
+      --line:      #2c3444;
+      --txt:       #e8edf6;
+      --txt-soft:  #9aa6b8;
+      --txt-dim:   #6b7585;
+      --sun:       #ffb547;
+      --sun-soft:  #ffd27d;
+      --home:      #4ab3f4;
+      --water:     #ff6f91;
+      --grid-imp:  #e5604d;
+      --grid-exp:  #4cd28b;
+      --accent:    #6ee7c7;
+      --shadow:    0 10px 30px rgba(0,0,0,.35);
+      --radius:    20px;
+      --radius-s:  14px;
+    }
 
-/* ── Bandeau flux d'énergie ──────────────────────────────────── */
-main{max-width:1060px;margin:auto;padding:14px 14px 0}
-.flux{
-  display:flex;align-items:stretch;justify-content:space-between;gap:4px;
-  background:linear-gradient(160deg,var(--card),var(--bg2));
-  border:1px solid var(--line);border-radius:var(--rad);
-  padding:14px 8px;box-shadow:var(--shadow);
-}
-.flux-node{flex:1;text-align:center;min-width:0}
-.flux-node .ico{font-size:26px;line-height:1}
-.flux-node .lbl{font-size:11.5px;color:var(--txt3);margin-top:2px;text-transform:uppercase;letter-spacing:.6px}
-.flux-node .val{font-size:clamp(17px,4.5vw,24px);font-weight:700;margin-top:1px;white-space:nowrap}
-.flux-node .sub{font-size:11.5px;color:var(--txt2)}
-.v-sun .val{color:var(--sun)} .v-home .val{color:var(--home)} .v-grid .val{color:var(--grid)}
-.flux-link{display:flex;flex-direction:column;justify-content:center;align-items:center;width:42px;flex-shrink:0}
-.flux-link svg{width:40px;height:14px;overflow:visible}
-.flux-link .fl-lbl{font-size:10px;color:var(--txt3);margin-top:2px;white-space:nowrap}
-.dashmove{stroke-dasharray:5 6;animation:flow 1.2s linear infinite}
-@keyframes flow{to{stroke-dashoffset:-11}}
+    html[data-theme="light"] {
+      --bg:       #eef2f8;
+      --bg-soft:  #ffffff;
+      --card:     #ffffff;
+      --card-2:   #f3f6fb;
+      --line:     #e0e6f0;
+      --txt:      #1a2230;
+      --txt-soft: #586273;
+      --txt-dim:  #8a93a4;
+      --shadow:   0 10px 30px rgba(40,60,90,.10);
+    }
 
-/* ── Grille de tuiles ────────────────────────────────────────── */
-.tiles{display:grid;grid-template-columns:1fr;gap:14px;margin-top:14px}
-@media(min-width:640px){.tiles{grid-template-columns:1fr 1fr}}
-@media(min-width:980px){.tiles{grid-template-columns:1fr 1fr 1fr}.t-graph,.t-autom{grid-column:span 3}}
-@media(min-width:640px) and (max-width:979px){.t-graph,.t-autom{grid-column:span 2}}
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
-.tile{
-  background:var(--card);border:1px solid var(--line);
-  border-radius:var(--rad);padding:16px;box-shadow:var(--shadow);
-  display:flex;flex-direction:column;gap:8px;min-width:0;
-}
-.tile-head{display:flex;align-items:center;gap:8px}
-.tile-head .ico{font-size:18px}
-.tile-head h2{font-size:13px;margin:0;color:var(--txt2);font-weight:600;text-transform:uppercase;letter-spacing:.8px;flex:1}
-.tile-head a{font-size:12px;color:var(--txt3);text-decoration:none}
-.tile-head a:hover{color:var(--home)}
-.big{font-size:32px;font-weight:750;line-height:1.05}
-.big small{font-size:16px;font-weight:600;color:var(--txt2)}
-.kv{display:flex;justify-content:space-between;font-size:13.5px;color:var(--txt2);padding:3px 0;border-top:1px dashed var(--line)}
-.kv b{color:var(--txt);font-weight:600;font-variant-numeric:tabular-nums}
-.badge{
-  display:inline-flex;align-items:center;gap:7px;
-  font-size:13px;font-weight:600;border-radius:10px;padding:7px 10px;width:fit-content;max-width:100%;
-}
-.badge.ok{background:var(--ok-bg);color:var(--ok)}
-.badge.warn{background:var(--warn-bg);color:var(--warn)}
-.badge.idle{background:rgba(140,148,170,.12);color:var(--txt2)}
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--txt);
+      line-height: 1.45;
+      transition: background .4s, color .4s;
+      padding-bottom: 88px;
+    }
 
-/* ── Tuile chauffe-eau : cuve + jauge ────────────────────────── */
-.ballon-row{display:flex;gap:16px;align-items:center}
-.tank{
-  width:62px;height:118px;flex-shrink:0;position:relative;
-  border:2px solid var(--line);border-radius:18px;overflow:hidden;
-  background:var(--bg2);
-}
-.tank-fill{
-  position:absolute;bottom:0;left:0;right:0;height:78%;
-  background:linear-gradient(to top,#ff7043,#ffb74d 70%,#ffd54f);
-  transition:height .6s ease;
-}
-.tank-fill::before{ /* petite vague */
-  content:"";position:absolute;top:-5px;left:-10%;width:120%;height:10px;
-  background:inherit;border-radius:50%;
-  filter:brightness(1.15);
-}
-.tank-target{
-  position:absolute;left:0;right:0;height:0;border-top:2px dashed color-mix(in srgb,var(--txt) 55%,transparent);
-}
-.tank-target span{
-  position:absolute;right:3px;top:-15px;font-size:9.5px;color:var(--txt2);
-  background:color-mix(in srgb,var(--card) 80%,transparent);padding:0 3px;border-radius:4px;
-}
-.ballon-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:7px}
-.temp-now{font-size:34px;font-weight:750;line-height:1}
-.temp-now small{font-size:14px;color:var(--txt2);font-weight:600}
-.routage-bar{height:8px;border-radius:99px;background:var(--bg2);overflow:hidden;border:1px solid var(--line)}
-.routage-bar>div{height:100%;width:74%;border-radius:99px;background:linear-gradient(90deg,var(--sun2),var(--sun));transition:width .4s}
-.routage-lbl{font-size:12.5px;color:var(--txt2)}
-.routage-lbl b{color:var(--sun)}
+    h1,h2,h3,h4 { margin: 0; font-weight: 700; letter-spacing: -.01em; }
+    .muted { color: var(--txt-soft); }
+    .dim   { color: var(--txt-dim); }
 
-/* ── Boutons de forçage ──────────────────────────────────────── */
-.force-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:2px}
-.fbtn{
-  flex:1;min-width:90px;border:1px solid var(--line);border-radius:11px;
-  background:var(--card2);color:var(--txt);padding:9px 8px;font-size:13.5px;font-weight:600;
-  cursor:pointer;transition:border-color .15s,background .15s;
-}
-.fbtn:hover{border-color:var(--home)}
-.fbtn.on{background:var(--warn-bg);border-color:var(--warn);color:var(--warn)}
-.fbtn.stop.on{background:rgba(239,110,110,.14);border-color:var(--danger);color:var(--danger)}
+    /* ---------- App shell ---------- */
+    .app { max-width: 760px; margin: 0 auto; padding: 0 16px; }
 
-/* ── Tuile météo ─────────────────────────────────────────────── */
-.meteo-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.meteo-day{
-  background:var(--card2);border:1px solid var(--line);border-radius:12px;
-  padding:10px;text-align:center;
-}
-.meteo-day .ic{font-size:30px}
-.meteo-day .d{font-size:12px;color:var(--txt3);text-transform:uppercase;letter-spacing:.6px}
-.meteo-day .v{font-size:20px;font-weight:700;margin-top:1px}
-.meteo-day .v small{font-size:12px;color:var(--txt2);font-weight:600}
-.meteo-note{font-size:12.5px;color:var(--txt2);display:flex;gap:7px;align-items:flex-start}
-.meteo-note .ic{flex-shrink:0}
+    header.top {
+      position: sticky; top: 0; z-index: 40;
+      background: color-mix(in srgb, var(--bg) 88%, transparent);
+      backdrop-filter: blur(14px);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 16px; max-width: 760px; margin: 0 auto;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 19px; }
+    .brand .logo {
+      width: 30px; height: 30px; border-radius: 9px;
+      background: radial-gradient(circle at 35% 30%, var(--sun-soft), var(--sun) 65%, #e98a1a);
+      box-shadow: 0 0 18px rgba(255,181,71,.45);
+    }
+    .top-actions { display: flex; gap: 8px; }
+    .iconbtn {
+      width: 40px; height: 40px; border-radius: 12px;
+      border: 1px solid var(--line); background: var(--card);
+      color: var(--txt); font-size: 18px; cursor: pointer;
+      display: grid; place-items: center;
+      transition: transform .12s, background .2s, border-color .2s;
+    }
+    .iconbtn:hover { background: var(--card-2); border-color: var(--accent); }
+    .iconbtn:active { transform: scale(.92); }
 
-/* ── Tuile automatisations ───────────────────────────────────── */
-.autom-list{display:flex;flex-direction:column;gap:8px}
-.autom{
-  display:flex;align-items:center;gap:12px;
-  background:var(--card2);border:1px solid var(--line);border-radius:12px;
-  padding:11px 12px;cursor:pointer;transition:border-color .15s;
-}
-.autom:hover{border-color:var(--home)}
-.autom .st{width:11px;height:11px;border-radius:50%;flex-shrink:0;margin-top:1px}
-.st.run{background:var(--sun);box-shadow:0 0 8px var(--sun);animation:pulse 1.8s infinite}
-.st.sched{background:var(--home)}
-.st.off{background:var(--off)}
-.autom .tx{flex:1;min-width:0}
-.autom .tx b{display:block;font-size:14.5px}
-.autom .tx span{font-size:12.5px;color:var(--txt2);display:block}
-.autom .chev{color:var(--txt3);font-size:18px;flex-shrink:0}
-.mini-bar{height:5px;border-radius:99px;background:var(--bg);margin-top:5px;overflow:hidden;max-width:220px}
-.mini-bar>div{height:100%;background:linear-gradient(90deg,var(--sun2),var(--sun));border-radius:99px}
+    /* ---------- Section rythm ---------- */
+    section { margin: 30px 0; }
+    .sec-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+    .sec-head h2 { font-size: 20px; }
+    .sec-head .sub { font-size: 13px; color: var(--txt-soft); }
+    .gear {
+      background: none; border: none; cursor: pointer; color: var(--txt-dim);
+      font-size: 18px; padding: 6px; border-radius: 10px; transition: color .2s, background .2s;
+    }
+    .gear:hover { color: var(--accent); background: var(--card); }
 
-/* ── Tuile graphique ─────────────────────────────────────────── */
-.t-graph .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--txt2)}
-.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
-.graph-wrap{position:relative;width:100%}
-.graph-wrap svg{width:100%;height:auto;display:block;border-radius:10px;background:var(--bg2);border:1px solid var(--line);touch-action:pan-y}
-.gtip{
-  position:absolute;pointer-events:none;display:none;
-  background:var(--card);border:1px solid var(--line);border-radius:9px;
-  font-size:12px;padding:6px 9px;box-shadow:var(--shadow);white-space:nowrap;z-index:5;
-}
-.gtip b{font-variant-numeric:tabular-nums}
-.range-row{display:flex;gap:6px}
-.rbtn{
-  border:1px solid var(--line);background:none;color:var(--txt2);
-  font-size:12px;font-weight:600;border-radius:99px;padding:4px 12px;cursor:pointer;
-}
-.rbtn.sel{background:var(--home);border-color:var(--home);color:#fff}
+    /* ---------- Hero: status one-liner ---------- */
+    .hero {
+      background: linear-gradient(155deg, var(--card) 0%, var(--card-2) 100%);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 20px 22px; box-shadow: var(--shadow);
+      display: flex; align-items: center; gap: 16px;
+    }
+    .hero .pulse {
+      flex-shrink: 0; width: 52px; height: 52px; border-radius: 50%;
+      background: radial-gradient(circle, var(--grid-exp), #2faa6c);
+      display: grid; place-items: center; font-size: 26px;
+      animation: breathe 3.5s ease-in-out infinite;
+    }
+    @keyframes breathe { 0%,100%{box-shadow:0 0 0 0 rgba(76,210,139,.45)} 50%{box-shadow:0 0 0 12px rgba(76,210,139,0)} }
+    .hero h1 { font-size: 19px; line-height: 1.3; }
+    .hero p  { margin: 4px 0 0; font-size: 13.5px; color: var(--txt-soft); }
 
-/* ── Navigation basse (mobile) / haute (desktop) ─────────────── */
-nav{
-  position:fixed;bottom:0;left:0;right:0;z-index:60;
-  background:color-mix(in srgb,var(--card) 92%,transparent);
-  backdrop-filter:blur(12px);
-  border-top:1px solid var(--line);
-  display:flex;justify-content:space-around;
-  padding:6px 4px calc(6px + env(safe-area-inset-bottom));
-}
-nav a{
-  text-decoration:none;color:var(--txt3);font-size:10.5px;font-weight:600;
-  display:flex;flex-direction:column;align-items:center;gap:2px;
-  padding:4px 12px;border-radius:12px;min-width:62px;
-}
-nav a .ni{font-size:20px;line-height:1}
-nav a.sel{color:var(--home);background:rgba(74,179,244,.10)}
-@media(min-width:980px){
-  body{padding-bottom:20px}
-  nav{position:static;border-top:none;max-width:1060px;margin:18px auto 0;background:none;backdrop-filter:none;justify-content:center;gap:18px}
-  nav a{flex-direction:row;font-size:13px}
-}
-.foot{
-  max-width:1060px;margin:22px auto 0;padding:0 16px;
-  font-size:12px;color:var(--txt3);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;
-}
-.maq-note{
-  max-width:1060px;margin:10px auto 0;padding:0 16px;font-size:11.5px;color:var(--txt3);
-  text-align:center;font-style:italic;
-}
-</style>
+    /* ---------- Energy flow (anneau central animé) ---------- */
+    .flow-wrap { position: relative; display: grid; place-items: center; padding: 6px 0 2px; }
+    .flow-svg { width: 100%; max-width: 360px; height: auto; }
+    .flow-center { position: absolute; text-align: center; pointer-events: none; }
+    .flow-center .big { font-size: 30px; font-weight: 800; line-height: 1; }
+    .flow-center .unit { font-size: 14px; color: var(--txt-soft); }
+    .flow-center .euros { margin-top: 6px; font-size: 14px; color: var(--accent); font-weight: 700; }
+
+    .flow-node { font-size: 11px; }
+    .flow-dot { animation: dash 1.1s linear infinite; }
+    @keyframes dash { to { stroke-dashoffset: -22; } }
+
+    .flow-legend {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+      margin-top: 14px;
+    }
+    .leg {
+      background: var(--card); border: 1px solid var(--line);
+      border-radius: var(--radius-s); padding: 12px; text-align: center;
+    }
+    .leg .lbl { font-size: 12px; color: var(--txt-soft); display: flex; align-items: center; justify-content: center; gap: 6px; }
+    .leg .val { font-size: 19px; font-weight: 800; margin-top: 3px; }
+    .swatch { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+
+    /* ---------- Tuiles équipements (cards) ---------- */
+    .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .tile {
+      background: var(--card); border: 1px solid var(--line);
+      border-radius: var(--radius-s); padding: 16px; position: relative;
+      transition: transform .12s, border-color .2s;
+    }
+    .tile:hover { border-color: color-mix(in srgb, var(--accent) 60%, var(--line)); }
+    .tile .gear { position: absolute; top: 8px; right: 6px; }
+    .tile .ttl { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 15px; }
+    .tile .emo { font-size: 20px; }
+    .tile .reading { font-size: 26px; font-weight: 800; margin: 8px 0 2px; }
+    .tile .state { font-size: 12.5px; color: var(--txt-soft); }
+    .chip-status {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 11.5px; font-weight: 700; padding: 3px 9px; border-radius: 999px;
+      margin-top: 8px;
+    }
+    .chip-status.on  { background: rgba(76,210,139,.16); color: var(--grid-exp); }
+    .chip-status.idle{ background: rgba(154,166,184,.16); color: var(--txt-soft); }
+    .chip-status.force{ background: rgba(255,181,71,.18); color: var(--sun); }
+    .dotpulse { width: 8px; height: 8px; border-radius: 50%; background: currentColor; animation: blink 1.4s infinite; }
+    @keyframes blink { 50% { opacity: .25; } }
+
+    /* progress bar (chauffe ballon) */
+    .bar { height: 8px; border-radius: 999px; background: var(--card-2); overflow: hidden; margin-top: 10px; }
+    .bar > span { display: block; height: 100%; border-radius: 999px;
+      background: linear-gradient(90deg, var(--water), var(--sun)); transition: width 1s ease; }
+
+    /* ---------- Savings / zoom temporel ---------- */
+    .saving-card {
+      background: linear-gradient(160deg, #14352b, #103047);
+      border: 1px solid var(--line); border-radius: var(--radius);
+      padding: 20px; box-shadow: var(--shadow);
+    }
+    html[data-theme="light"] .saving-card { background: linear-gradient(160deg, #e3f7ee, #e4f1fb); }
+    .saving-top { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+    .saving-amount { font-size: 38px; font-weight: 800; color: var(--accent); }
+    .saving-sub { font-size: 13px; color: var(--txt-soft); }
+
+    .timezoom { display: flex; gap: 6px; background: var(--card-2); padding: 4px; border-radius: 14px; margin: 16px 0 4px; }
+    .timezoom button {
+      flex: 1; border: none; background: none; color: var(--txt-soft);
+      font-size: 13.5px; font-weight: 700; padding: 8px 4px; border-radius: 11px;
+      cursor: pointer; transition: all .2s;
+    }
+    .timezoom button.active { background: var(--card); color: var(--txt); box-shadow: 0 2px 8px rgba(0,0,0,.2); }
+
+    .chart { width: 100%; height: 150px; }
+    .chart-legend { display: flex; gap: 16px; margin-top: 8px; font-size: 12px; color: var(--txt-soft); }
+    .chart-legend span { display: flex; align-items: center; gap: 6px; }
+
+    /* ---------- Règles (phrases à trous) ---------- */
+    .rule {
+      background: var(--card); border: 1px solid var(--line);
+      border-radius: var(--radius-s); padding: 16px 18px; margin-bottom: 12px;
+      position: relative; line-height: 2.1; font-size: 15.5px;
+    }
+    .rule .gear { position: absolute; top: 10px; right: 8px; }
+    .rule .toggle { position: absolute; top: 12px; right: 44px; }
+    .slot {
+      display: inline-block; padding: 2px 11px; border-radius: 999px;
+      font-weight: 700; cursor: pointer; border: 1px dashed transparent;
+      transition: filter .15s;
+    }
+    .slot:hover { filter: brightness(1.15); }
+    .slot.subject { background: rgba(74,179,244,.18); color: var(--home); }
+    .slot.cond    { background: rgba(255,181,71,.18); color: var(--sun); }
+    .slot.fallback{ background: rgba(110,231,199,.16); color: var(--accent); }
+    .rule.off { opacity: .5; }
+
+    .addrule {
+      width: 100%; border: 1.5px dashed var(--line); background: transparent;
+      color: var(--txt-soft); border-radius: var(--radius-s); padding: 14px;
+      font-size: 15px; font-weight: 700; cursor: pointer; transition: all .2s;
+    }
+    .addrule:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* switch */
+    .sw { position: relative; width: 42px; height: 24px; display: inline-block; }
+    .sw input { display: none; }
+    .sw span {
+      position: absolute; inset: 0; border-radius: 999px; background: var(--card-2);
+      transition: background .2s; cursor: pointer;
+    }
+    .sw span::after {
+      content: ""; position: absolute; width: 18px; height: 18px; border-radius: 50%;
+      background: #fff; top: 3px; left: 3px; transition: transform .2s;
+    }
+    .sw input:checked + span { background: var(--grid-exp); }
+    .sw input:checked + span::after { transform: translateX(18px); }
+
+    /* ---------- Journal (feed langage naturel) ---------- */
+    .feed { list-style: none; margin: 0; padding: 0; }
+    .feed li {
+      display: flex; gap: 12px; padding: 12px 4px; border-bottom: 1px solid var(--line);
+      animation: slideIn .4s ease;
+    }
+    @keyframes slideIn { from { opacity: 0; transform: translateY(-6px); } }
+    .feed li:last-child { border-bottom: none; }
+    .feed .ic { flex-shrink: 0; width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; font-size: 17px; background: var(--card-2); }
+    .feed .txt { font-size: 14px; }
+    .feed .when { font-size: 11.5px; color: var(--txt-dim); margin-bottom: 1px; }
+
+    /* ---------- Bottom nav ---------- */
+    .botnav {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
+      background: color-mix(in srgb, var(--bg-soft) 92%, transparent);
+      backdrop-filter: blur(16px); border-top: 1px solid var(--line);
+      display: flex; justify-content: space-around; padding: 8px 4px env(safe-area-inset-bottom);
+    }
+    .botnav button {
+      background: none; border: none; color: var(--txt-dim); cursor: pointer;
+      display: flex; flex-direction: column; align-items: center; gap: 2px;
+      font-size: 10.5px; font-weight: 600; padding: 6px 14px; border-radius: 12px;
+      transition: color .2s;
+    }
+    .botnav button .ni { font-size: 20px; }
+    .botnav button.active { color: var(--accent); }
+
+    /* ---------- Modals ---------- */
+    .overlay {
+      position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,.55);
+      backdrop-filter: blur(4px); display: none; align-items: flex-end; justify-content: center;
+    }
+    .overlay.open { display: flex; animation: fade .25s; }
+    @keyframes fade { from { opacity: 0; } }
+    .sheet {
+      width: 100%; max-width: 560px; background: var(--bg-soft);
+      border-radius: 24px 24px 0 0; border: 1px solid var(--line); border-bottom: none;
+      padding: 8px 20px 28px; max-height: 88vh; overflow-y: auto;
+      animation: up .3s cubic-bezier(.2,.9,.3,1);
+    }
+    @keyframes up { from { transform: translateY(100%); } }
+    .grabber { width: 42px; height: 5px; border-radius: 999px; background: var(--line); margin: 8px auto 16px; }
+    .sheet h3 { font-size: 19px; margin-bottom: 4px; }
+    .sheet .lead { color: var(--txt-soft); font-size: 14px; margin-bottom: 18px; }
+
+    .optgrid { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0 18px; }
+    .opt {
+      border: 1px solid var(--line); background: var(--card); color: var(--txt);
+      border-radius: 999px; padding: 9px 15px; font-size: 14px; font-weight: 600; cursor: pointer;
+      transition: all .15s;
+    }
+    .opt:hover { border-color: var(--accent); }
+    .opt.sel { background: var(--accent); color: #06241c; border-color: var(--accent); }
+
+    .field { margin-bottom: 16px; }
+    .field label { display: block; font-size: 13px; color: var(--txt-soft); margin-bottom: 6px; font-weight: 600; }
+    .field input, .field select {
+      width: 100%; background: var(--card); border: 1px solid var(--line); color: var(--txt);
+      border-radius: 12px; padding: 12px 14px; font-size: 15px;
+    }
+    .field .with-unit { display: flex; align-items: center; gap: 10px; }
+    .field .with-unit input { flex: 1; }
+    .field .with-unit b { color: var(--txt-soft); font-weight: 600; }
+
+    .btn {
+      width: 100%; border: none; border-radius: 14px; padding: 15px; font-size: 16px;
+      font-weight: 800; cursor: pointer; transition: transform .1s, filter .2s;
+    }
+    .btn:active { transform: scale(.98); }
+    .btn-primary { background: var(--accent); color: #06241c; }
+    .btn-ghost { background: var(--card); color: var(--txt); border: 1px solid var(--line); margin-top: 10px; }
+
+    .rule-builder { font-size: 18px; line-height: 2.3; padding: 6px 0 4px; }
+
+    /* ---------- Onboarding ---------- */
+    .steps { display: flex; gap: 8px; margin: 4px 0 20px; }
+    .steps .s { flex: 1; height: 5px; border-radius: 999px; background: var(--card-2); transition: background .3s; }
+    .steps .s.done { background: var(--accent); }
+    .onbig { font-size: 40px; text-align: center; margin: 10px 0; }
+    .onb-list { list-style: none; padding: 0; margin: 0 0 8px; }
+    .onb-list li { display: flex; align-items: center; gap: 10px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; font-size: 14.5px; }
+    .wifi-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--grid-exp); box-shadow: 0 0 8px var(--grid-exp); }
+
+    /* ---------- Toast ---------- */
+    .toast {
+      position: fixed; left: 50%; bottom: 100px; transform: translate(-50%, 20px);
+      background: var(--grid-exp); color: #06241c; font-weight: 700; font-size: 14px;
+      padding: 12px 20px; border-radius: 999px; box-shadow: var(--shadow);
+      opacity: 0; pointer-events: none; transition: all .35s; z-index: 200; display: flex; gap: 8px; align-items: center;
+    }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+    /* tabs visibility */
+    .view { display: none; }
+    .view.active { display: block; animation: fade .3s; }
+
+    @media (min-width: 700px) {
+      .tiles { grid-template-columns: repeat(4, 1fr); }
+      .overlay { align-items: center; }
+      .sheet { border-radius: 24px; border-bottom: 1px solid var(--line); }
+      @keyframes up { from { transform: translateY(20px); opacity: 0; } }
+    }
+  </style>
 </head>
+
 <body>
-
-<header>
-  <div class="head-in">
-    <svg class="logo" viewBox="13 18 46 44"><rect width="64" height="64" fill="#4caf7d" rx="14"/><path d="m16 36h19l16 20h-20z" fill="#92d3f5"/><circle cx="48" cy="28" fill="#fcea2b" r="8"/><g fill="none" stroke="#10241a" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="m16 36h19l16 20h-20z"/><path d="m17 43v13h10"/><path d="m24 46h19"/><path d="m26 36 16 20"/><circle cx="48" cy="28" r="8"/></g></svg>
-    <div class="head-tit">
-      <b>Routeur Solaire — Maison</b>
-      <span id="horloge">mercredi 11 juin · 14:32</span>
+  <header class="top">
+    <div class="brand"><span class="logo"></span> Soleo</div>
+    <div class="top-actions">
+      <button class="iconbtn" id="btnJournal" title="Journal">🔔</button>
+      <button class="iconbtn" id="btnTheme" title="Thème">🌙</button>
+      <button class="iconbtn" id="btnOnboard" title="Première installation">＋</button>
     </div>
-    <div class="pill"><span class="dot"></span>En ligne</div>
-    <div class="tarif" title="Tarif en cours">HC</div>
-    <button class="icon-btn" id="themeBtn" title="Basculer clair / sombre">◐</button>
-  </div>
-</header>
+  </header>
 
-<main>
+  <main class="app">
 
-  <!-- ═══ Bandeau flux : que se passe-t-il maintenant ? ═══ -->
-  <section class="flux" aria-label="Flux d'énergie en temps réel">
-    <div class="flux-node v-sun">
-      <div class="ico">☀️</div>
-      <div class="lbl">Production</div>
-      <div class="val">2,43 kW</div>
-      <div class="sub">panneaux</div>
-    </div>
-    <div class="flux-link">
-      <svg viewBox="0 0 40 14"><line x1="0" y1="7" x2="32" y2="7" stroke="var(--sun)" stroke-width="2.5" class="dashmove"/><path d="M31 2l8 5-8 5z" fill="var(--sun)"/></svg>
-      <span class="fl-lbl">2,43 kW</span>
-    </div>
-    <div class="flux-node v-home">
-      <div class="ico">🏠</div>
-      <div class="lbl">Maison</div>
-      <div class="val">1,12 kW</div>
-      <div class="sub">consommés</div>
-    </div>
-    <div class="flux-link">
-      <svg viewBox="0 0 40 14"><line x1="0" y1="7" x2="32" y2="7" stroke="var(--grid)" stroke-width="2.5" class="dashmove"/><path d="M31 2l8 5-8 5z" fill="var(--grid)"/></svg>
-      <span class="fl-lbl">0,11 kW</span>
-    </div>
-    <div class="flux-node v-grid">
-      <div class="ico">⚡</div>
-      <div class="lbl">Réseau</div>
-      <div class="val">injecte</div>
-      <div class="sub">0,11 kW</div>
-    </div>
-  </section>
+    <!-- ====================== VUE ACCUEIL ====================== -->
+    <div class="view active" id="view-home">
 
-  <div class="tiles">
-
-    <!-- ═══ Tuile Production ═══ -->
-    <section class="tile">
-      <div class="tile-head"><span class="ico">☀️</span><h2>Production solaire</h2><a href="#">Détails ›</a></div>
-      <div class="big" style="color:var(--sun)">2,43 <small>kW</small></div>
-      <div class="badge ok">▲ 11,2 kWh produits aujourd'hui</div>
-      <div>
-        <div class="kv"><span>Pic du jour</span><b>2,91 kW à 13:05</b></div>
-        <div class="kv"><span>Hier</span><b>13,4 kWh</b></div>
-        <div class="kv"><span>Ce mois</span><b>164 kWh</b></div>
-      </div>
-    </section>
-
-    <!-- ═══ Tuile Maison ═══ -->
-    <section class="tile">
-      <div class="tile-head"><span class="ico">🏠</span><h2>Maison</h2><a href="#">Détails ›</a></div>
-      <div class="big" style="color:var(--home)">1,12 <small>kW</small></div>
-      <div class="badge ok">✓ 100 % solaire en ce moment</div>
-      <div>
-        <div class="kv"><span>Pris au réseau aujourd'hui</span><b>1,9 kWh</b></div>
-        <div class="kv"><span>Renvoyé au réseau</span><b>0,8 kWh</b></div>
-        <div class="kv"><span>Autoconsommation</span><b>93 %</b></div>
-      </div>
-    </section>
-
-    <!-- ═══ Tuile Chauffe-eau ═══ -->
-    <section class="tile">
-      <div class="tile-head"><span class="ico">🚿</span><h2>Chauffe-eau</h2><a href="#">Régler ›</a></div>
-      <div class="ballon-row">
-        <div class="tank" title="Température du ballon">
-          <div class="tank-fill" id="tankFill"></div>
-          <div class="tank-target" id="tankTarget"><span>cible 55°</span></div>
-        </div>
-        <div class="ballon-info">
-          <div class="temp-now">52,4° <small>/ 55°C</small></div>
-          <div class="badge ok" id="ballonEtat">☀️ Le soleil suffira aujourd'hui</div>
+      <!-- Scénario : « Je rentre du travail, tout va bien ? » -->
+      <section>
+        <div class="hero">
+          <div class="pulse" id="heroIcon">☀️</div>
           <div>
-            <div class="routage-lbl">Surplus routé : <b>1 310 W</b> · ouverture 74 %</div>
-            <div class="routage-bar"><div id="routBar"></div></div>
+            <h1 id="heroTitle">Tout roule.</h1>
+            <p id="heroMsg">Le soleil couvre toute la maison et chauffe votre eau. Vous ne payez rien au réseau en ce moment.</p>
           </div>
         </div>
-      </div>
-      <div class="force-row">
-        <button class="fbtn" data-force="ce" onclick="forcer(this,'Chauffe-eau forcé 1 h')">▶ Forcer 1 h</button>
-        <button class="fbtn stop" data-force="ce-stop" onclick="forcer(this,'Chauffe-eau arrêté 1 h')">⏸ Arrêter 1 h</button>
-      </div>
-    </section>
+      </section>
 
-    <!-- ═══ Tuile Météo / prévision ═══ -->
-    <section class="tile">
-      <div class="tile-head"><span class="ico">🌤️</span><h2>Prévision solaire</h2><a href="#">Open-Meteo</a></div>
-      <div class="meteo-grid">
-        <div class="meteo-day">
-          <div class="ic">☀️</div>
-          <div class="d">Aujourd'hui</div>
-          <div class="v">12,8 <small>kWh</small></div>
-        </div>
-        <div class="meteo-day">
-          <div class="ic">🌧️</div>
-          <div class="d">Demain</div>
-          <div class="v">3,1 <small>kWh</small></div>
-        </div>
-      </div>
-      <div class="meteo-note"><span class="ic">🌙</span><span>Demain s'annonce couvert : une <b>chauffe forcée est prévue cette nuit (02:00 → 06:00)</b> en heures creuses pour garantir l'eau chaude.</span></div>
-    </section>
-
-    <!-- ═══ Tuile Automatisations (langage clair) ═══ -->
-    <section class="tile t-autom">
-      <div class="tile-head"><span class="ico">🤖</span><h2>Automatisations</h2><a href="#">Tout gérer ›</a></div>
-      <div class="autom-list">
-
-        <div class="autom" onclick="alert('Maquette : ouvrirait le réglage de l\'automatisation Chauffe-eau')">
-          <span class="st run"></span>
-          <span class="tx">
-            <b>Chauffe-eau</b>
-            <span>Routage du surplus en cours — actif depuis 2 h 41</span>
-            <span class="mini-bar"><div style="width:74%"></div></span>
-          </span>
-          <span class="chev">›</span>
+      <!-- Flux d'énergie central animé -->
+      <section>
+        <div class="sec-head">
+          <h2>En direct</h2>
+          <span class="sub" id="liveClock">—</span>
         </div>
 
-        <div class="autom" onclick="alert('Maquette : ouvrirait le réglage de l\'automatisation Chauffe-eau nuit')">
-          <span class="st sched"></span>
-          <span class="tx">
-            <b>Chauffe-eau — secours nuit</b>
-            <span>Prévu cette nuit 02:00 → 06:00 · car demain &lt; 5 kWh de soleil</span>
-          </span>
-          <span class="chev">›</span>
+        <div class="flow-wrap">
+          <svg class="flow-svg" viewBox="0 0 320 320" id="flowSvg" aria-label="Flux d'énergie">
+            <circle cx="160" cy="160" r="120" fill="none" stroke="var(--line)" stroke-width="14"/>
+            <circle id="arcSun" cx="160" cy="160" r="120" fill="none" stroke="var(--sun)" stroke-width="14"
+                    stroke-linecap="round" transform="rotate(-90 160 160)"
+                    stroke-dasharray="754" stroke-dashoffset="200" style="transition:stroke-dashoffset 1s"/>
+
+            <g transform="translate(160 36)">
+              <circle r="22" fill="var(--sun)"/>
+              <text y="6" text-anchor="middle" font-size="22">☀️</text>
+            </g>
+            <g transform="translate(58 250)">
+              <circle r="22" fill="var(--home)"/>
+              <text y="6" text-anchor="middle" font-size="20">🏠</text>
+            </g>
+            <g transform="translate(262 250)">
+              <circle r="22" fill="var(--water)"/>
+              <text y="6" text-anchor="middle" font-size="20">🚿</text>
+            </g>
+
+            <path d="M160 60 L72 232" stroke="var(--sun)" stroke-width="3" fill="none" opacity=".4"/>
+            <line class="flow-dot" x1="160" y1="60" x2="72" y2="232" stroke="var(--sun-soft)" stroke-width="3.5"
+                  stroke-dasharray="2 9" stroke-linecap="round"/>
+            <path d="M160 60 L248 232" stroke="var(--water)" stroke-width="3" fill="none" opacity=".4"/>
+            <line class="flow-dot" x1="160" y1="60" x2="248" y2="232" stroke="var(--water)" stroke-width="3.5"
+                  stroke-dasharray="2 9" stroke-linecap="round"/>
+          </svg>
+          <div class="flow-center">
+            <div class="big" id="flowKw">3,4</div>
+            <div class="unit">kW produits</div>
+            <div class="euros" id="flowEur">+0,42 €/h économisés</div>
+          </div>
         </div>
 
-        <div class="autom" onclick="alert('Maquette : ouvrirait le réglage de l\'automatisation Radiateur')">
-          <span class="st off"></span>
-          <span class="tx">
-            <b>Sèche-serviettes</b>
-            <span>Arrêté · prochaine plage 18:00 → 21:00 si salle de bain &lt; 19°</span>
-          </span>
-          <span class="chev">›</span>
+        <div class="flow-legend">
+          <div class="leg">
+            <div class="lbl"><span class="swatch" style="background:var(--home)"></span> Maison</div>
+            <div class="val" id="legHome">1,1 kW</div>
+          </div>
+          <div class="leg">
+            <div class="lbl"><span class="swatch" style="background:var(--water)"></span> Eau chaude</div>
+            <div class="val" id="legWater">2,1 kW</div>
+          </div>
+          <div class="leg">
+            <div class="lbl"><span class="swatch" style="background:var(--grid-exp)"></span> Réseau</div>
+            <div class="val" id="legGrid">0,2 kW</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tuiles équipements -->
+      <section>
+        <div class="sec-head"><h2>Mes équipements</h2></div>
+        <div class="tiles">
+          <div class="tile">
+            <button class="gear" data-gear="Eau chaude">⚙</button>
+            <div class="ttl"><span class="emo">🚿</span> Eau chaude</div>
+            <div class="reading" id="tileTemp">54°</div>
+            <div class="state">Chauffée par le soleil</div>
+            <div class="bar"><span id="tileBar" style="width:78%"></span></div>
+            <span class="chip-status on" id="tileWaterChip"><span class="dotpulse"></span> En chauffe · 2,1 kW</span>
+          </div>
+
+          <div class="tile">
+            <button class="gear" data-gear="Sèche-serviette">⚙</button>
+            <div class="ttl"><span class="emo">♨️</span> Sèche-serviette</div>
+            <div class="reading">Veille</div>
+            <div class="state">Attend du surplus</div>
+            <span class="chip-status idle">En attente</span>
+          </div>
+
+          <div class="tile">
+            <button class="gear" data-gear="Production">⚙</button>
+            <div class="ttl"><span class="emo">🌤️</span> Panneaux</div>
+            <div class="reading" id="tilePv">3,4 kW</div>
+            <div class="state" id="tilePvSub">Pic du jour : 4,1 kW</div>
+            <span class="chip-status on"><span class="dotpulse"></span> Plein soleil</span>
+          </div>
+
+          <div class="tile">
+            <button class="gear" data-gear="Réseau">⚙</button>
+            <div class="ttl"><span class="emo">🔌</span> Réseau</div>
+            <div class="reading" id="tileGrid">Export</div>
+            <div class="state" id="tileGridSub">0,2 kW renvoyés</div>
+            <span class="chip-status force" id="tileTarif">Heures pleines</span>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- ====================== VUE ÉCONOMIES ====================== -->
+    <div class="view" id="view-savings">
+      <section>
+        <div class="sec-head">
+          <h2>Mes économies</h2>
+          <button class="gear" data-gear="Prix du kWh">⚙ prix</button>
+        </div>
+        <div class="saving-card">
+          <div class="saving-top">
+            <div>
+              <div class="saving-amount" id="savAmount">38,40 €</div>
+              <div class="saving-sub" id="savSub">économisés ce mois grâce au solaire</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:20px;font-weight:800" id="savKwh">192 kWh</div>
+              <div class="saving-sub">auto-consommés</div>
+            </div>
+          </div>
+
+          <div class="timezoom" id="timezoom">
+            <button data-z="day">Auj.</button>
+            <button data-z="week">Semaine</button>
+            <button data-z="month" class="active">Mois</button>
+            <button data-z="year">Année</button>
+          </div>
+
+          <svg class="chart" id="chart" viewBox="0 0 320 150" preserveAspectRatio="none"></svg>
+          <div class="chart-legend">
+            <span><span class="swatch" style="background:var(--sun)"></span> Solaire utilisé</span>
+            <span><span class="swatch" style="background:var(--grid-imp)"></span> Acheté au réseau</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Scénario météo : « Il fera gris demain ? » -->
+      <section>
+        <div class="sec-head"><h2>Demain</h2></div>
+        <div class="hero">
+          <div class="pulse" style="background:radial-gradient(circle,#7c8aa3,#4a5568);animation:none">🌥️</div>
+          <div>
+            <h1 style="font-size:17px">Ciel couvert prévu</h1>
+            <p>Seulement 1,8 kWh solaire attendu. Soleo lancera une chauffe de nuit en heures creuses pour garantir votre eau chaude au meilleur coût.</p>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ====================== VUE RÈGLES ====================== -->
+    <div class="view" id="view-rules">
+      <section>
+        <div class="sec-head">
+          <h2>Mes automatismes</h2>
+          <span class="sub">Soleo agit pour vous</span>
         </div>
 
-      </div>
-    </section>
+        <div id="rulesList">
+          <div class="rule" data-rule="0">
+            <button class="gear" data-gear="Règle eau chaude">⚙</button>
+            <label class="sw toggle"><input type="checkbox" checked><span></span></label>
+            Chauffer <span class="slot subject">l'eau chaude</span>
+            quand <span class="slot cond">il y a du surplus solaire</span>
+            sinon <span class="slot fallback">la nuit en heures creuses</span>
+            si <span class="slot cond">demain sera nuageux</span>.
+          </div>
 
-    <!-- ═══ Tuile Graphique du jour ═══ -->
-    <section class="tile t-graph">
-      <div class="tile-head"><span class="ico">📈</span><h2>Aujourd'hui</h2>
-        <div class="range-row">
-          <button class="rbtn sel">Jour</button><button class="rbtn" onclick="alert('Maquette : vue 48 h')">48 h</button><button class="rbtn" onclick="alert('Maquette : vue Année')">Année</button>
+          <div class="rule" data-rule="1">
+            <button class="gear" data-gear="Règle sèche-serviette">⚙</button>
+            <label class="sw toggle"><input type="checkbox" checked><span></span></label>
+            Allumer <span class="slot subject">le sèche-serviette</span>
+            quand <span class="slot cond">le surplus dépasse 800 W</span>
+            entre <span class="slot fallback">7h et 22h</span>.
+          </div>
+        </div>
+
+        <button class="addrule" id="addRule">＋ Créer un automatisme</button>
+      </section>
+    </div>
+
+    <!-- ====================== VUE JOURNAL ====================== -->
+    <div class="view" id="view-journal">
+      <section>
+        <div class="sec-head"><h2>Journal</h2><span class="sub">ce qui se passe chez vous</span></div>
+        <ul class="feed" id="feed"></ul>
+      </section>
+    </div>
+
+  </main>
+
+  <!-- ====================== BOTTOM NAV ====================== -->
+  <nav class="botnav">
+    <button class="active" data-view="home"><span class="ni">⚡</span> Accueil</button>
+    <button data-view="savings"><span class="ni">💶</span> Économies</button>
+    <button data-view="rules"><span class="ni">✨</span> Automatismes</button>
+    <button data-view="journal"><span class="ni">📜</span> Journal</button>
+  </nav>
+
+  <!-- ====================== MODALS ====================== -->
+  <div class="overlay" id="ovGear">
+    <div class="sheet">
+      <div class="grabber"></div>
+      <h3 id="gearTitle">Réglage</h3>
+      <p class="lead" id="gearLead">Ajustez ce réglage pour cette section.</p>
+      <div class="field">
+        <label>Nom affiché</label>
+        <input type="text" id="gearName" value="Eau chaude">
+      </div>
+      <div class="field">
+        <label>Température cible</label>
+        <div class="with-unit"><input type="number" value="55"><b>°C</b></div>
+      </div>
+      <div class="field">
+        <label>Priorité au surplus solaire</label>
+        <div class="optgrid">
+          <button class="opt sel">Élevée</button>
+          <button class="opt">Normale</button>
+          <button class="opt">Basse</button>
         </div>
       </div>
-      <div class="legend">
-        <span><i style="background:var(--sun)"></i>Production</span>
-        <span><i style="background:var(--home)"></i>Consommation maison</span>
-        <span><i style="background:var(--ok)"></i>Surplus → chauffe-eau</span>
-      </div>
-      <div class="graph-wrap">
-        <svg id="gJour" viewBox="0 0 720 270" preserveAspectRatio="none" aria-label="Production et consommation du jour"></svg>
-        <div class="gtip" id="gTip"></div>
-      </div>
-    </section>
-
+      <button class="btn btn-primary" data-save>Enregistrer</button>
+      <button class="btn btn-ghost" data-close>Annuler</button>
+    </div>
   </div>
 
-  <div class="foot">
-    <span>Routeur V17.16 · source UxIx2 · 192.168.1.245</span>
-    <span>Basé sur RMS F1ATB</span>
+  <!-- Modal prix du kWh -->
+  <div class="overlay" id="ovPrice">
+    <div class="sheet">
+      <div class="grabber"></div>
+      <h3>Mon prix de l'électricité</h3>
+      <p class="lead">Sert à calculer vos économies en euros.</p>
+      <div class="field">
+        <label>Heures pleines</label>
+        <div class="with-unit"><input type="number" step="0.01" value="0.27"><b>€ / kWh</b></div>
+      </div>
+      <div class="field">
+        <label>Heures creuses</label>
+        <div class="with-unit"><input type="number" step="0.01" value="0.20"><b>€ / kWh</b></div>
+      </div>
+      <button class="btn btn-primary" data-save>Enregistrer</button>
+      <button class="btn btn-ghost" data-close>Annuler</button>
+    </div>
   </div>
-  <div class="maq-note">Maquette d'étude — données factices, aucun appel réseau.</div>
-</main>
 
-<!-- ═══ Navigation ═══ -->
-<nav>
-  <a href="#" class="sel"><span class="ni">🏠</span>Accueil</a>
-  <a href="#" onclick="alert('Maquette : page Historique (graphiques 48 h / an, export)');return false"><span class="ni">📊</span>Historique</a>
-  <a href="#" onclick="alert('Maquette : page Automatisations (plannings, assistant)');return false"><span class="ni">🤖</span>Autom.</a>
-  <a href="#" onclick="alert('Maquette : page Réglages (WiFi, sondes, MQTT, avancé)');return false"><span class="ni">⚙️</span>Réglages</a>
-</nav>
+  <!-- Modal création de règle (phrases à trous) -->
+  <div class="overlay" id="ovRule">
+    <div class="sheet">
+      <div class="grabber"></div>
+      <h3>Nouvel automatisme</h3>
+      <p class="lead">Composez votre règle en touchant les mots colorés.</p>
 
-<script>
-/* ── Données factices ───────────────────────────────────────── */
-const NOW_H = 14.53;          // heure courante simulée
-const T_BALLON = 52.4, T_CIBLE = 55, T_MIN = 15, T_MAX = 65;
+      <div class="rule-builder">
+        Faire profiter <span class="slot subject" id="rbSubject">le sèche-serviette</span>
+        du surplus quand <span class="slot cond" id="rbCond">le surplus dépasse 500 W</span>,
+        sinon le forcer <span class="slot fallback" id="rbFallback">jamais</span>.
+      </div>
 
-/* ── Thème clair / sombre ───────────────────────────────────── */
-const themeBtn = document.getElementById('themeBtn');
-if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches)
-  document.documentElement.dataset.theme = 'light';
-themeBtn.onclick = () => {
-  const h = document.documentElement;
-  h.dataset.theme = (h.dataset.theme === 'dark') ? 'light' : 'dark';
-  drawGraph(); // re-rendu avec les couleurs du thème
-};
+      <div class="field" style="margin-top:18px">
+        <label>Quel équipement ?</label>
+        <div class="optgrid" data-target="rbSubject">
+          <button class="opt sel">le sèche-serviette</button>
+          <button class="opt">l'eau chaude</button>
+          <button class="opt">la pompe</button>
+          <button class="opt">le radiateur</button>
+        </div>
+      </div>
 
-/* ── Horloge factice ────────────────────────────────────────── */
-setInterval(() => {
-  const d = new Date();
-  document.getElementById('horloge').textContent =
-    d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'}) +
-    ' · ' + d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
-}, 1000);
+      <div class="field">
+        <label>Quand l'activer ?</label>
+        <div class="optgrid" data-target="rbCond">
+          <button class="opt sel">le surplus dépasse 500 W</button>
+          <button class="opt">le surplus dépasse 1 kW</button>
+          <button class="opt">il fait soleil</button>
+          <button class="opt">le tarif est bleu</button>
+        </div>
+      </div>
 
-/* ── Jauge du ballon ────────────────────────────────────────── */
-(function(){
-  const pct  = Math.max(0, Math.min(1,(T_BALLON - T_MIN)/(T_MAX - T_MIN)));
-  const pctC = Math.max(0, Math.min(1,(T_CIBLE  - T_MIN)/(T_MAX - T_MIN)));
-  document.getElementById('tankFill').style.height = (pct*100).toFixed(0)+'%';
-  document.getElementById('tankTarget').style.bottom = (pctC*100).toFixed(0)+'%';
-})();
+      <div class="field">
+        <label>Repli si pas de soleil</label>
+        <div class="optgrid" data-target="rbFallback">
+          <button class="opt sel">jamais</button>
+          <button class="opt">la nuit en heures creuses</button>
+          <button class="opt">tous les matins</button>
+        </div>
+      </div>
 
-/* ── Boutons de forçage (simulation) ────────────────────────── */
-function forcer(btn, msg){
-  document.querySelectorAll('.fbtn').forEach(b => { if(b!==btn) b.classList.remove('on'); });
-  btn.classList.toggle('on');
-  const etat = document.getElementById('ballonEtat');
-  if (btn.classList.contains('on')) {
-    etat.className = 'badge warn';
-    etat.textContent = '✋ ' + msg + ' (manuel)';
-  } else {
-    etat.className = 'badge ok';
-    etat.textContent = '☀️ Le soleil suffira aujourd’hui';
-  }
-}
+      <button class="btn btn-primary" id="saveRule">Créer l'automatisme</button>
+      <button class="btn btn-ghost" data-close>Annuler</button>
+    </div>
+  </div>
 
-/* ── Graphique du jour (SVG vanilla, données factices) ──────── */
-const H_STEP = 0.25;                       // un point / 15 mn
-let PROD = [], CONSO = [], ROUTE = [];
-(function genData(){
-  // nuages pseudo-aléatoires reproductibles
-  let seed = 42; const rnd = () => (seed = (seed*9301+49297)%233280) / 233280;
-  for (let h = 0; h <= 24; h += H_STEP) {
-    // production : cloche entre 6h30 et 21h, pic ~2900 W vers 13h
-    let p = 0;
-    if (h > 6.5 && h < 21) {
-      p = 2900 * Math.exp(-Math.pow((h-13.4)/3.4, 2));
-      if (h > 9.2 && h < 10.1) p *= 0.45;       // passage nuageux
-      if (h > 15.6 && h < 16.3) p *= 0.6;
-      p *= 0.92 + rnd()*0.16;
+  <!-- Onboarding -->
+  <div class="overlay" id="ovOnboard">
+    <div class="sheet">
+      <div class="grabber"></div>
+      <div class="steps" id="onbSteps">
+        <div class="s done"></div><div class="s"></div><div class="s"></div>
+      </div>
+      <div id="onbBody"></div>
+      <button class="btn btn-primary" id="onbNext">Continuer</button>
+      <button class="btn btn-ghost" data-close>Plus tard</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">✓ Enregistré</div>
+
+  <script>
+  /* ============================================================
+     SOLEO — logique de maquette (données factices vivantes)
+  ============================================================ */
+  (function () {
+    "use strict";
+    const $  = (s, c) => (c || document).querySelector(s);
+    const $$ = (s, c) => Array.from((c || document).querySelectorAll(s));
+
+    /* ---------- Thème ---------- */
+    const html = document.documentElement;
+    $("#btnTheme").addEventListener("click", function () {
+      const light = html.getAttribute("data-theme") === "light";
+      html.setAttribute("data-theme", light ? "dark" : "light");
+      $("#btnTheme").textContent = light ? "🌙" : "☀️";
+    });
+
+    /* ---------- Navigation ---------- */
+    function showView(name) {
+      $$(".view").forEach(function (v) { v.classList.toggle("active", v.id === "view-" + name); });
+      $$(".botnav button").forEach(function (b) { b.classList.toggle("active", b.dataset.view === name); });
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
-    // conso maison : talon + pics matin / midi
-    let c = 260 + rnd()*120;
-    if (h > 6.8 && h < 8.3)  c += 1500*Math.exp(-Math.pow((h-7.5)/0.5,2));
-    if (h > 11.8 && h < 13.6) c += 900*Math.exp(-Math.pow((h-12.6)/0.6,2));
-    if (h > 19 && h < 22)    c += 1100*Math.exp(-Math.pow((h-20.3)/0.9,2));
-    if (h >= 2 && h < 6)     c += 2400;          // chauffe forcée HC (exemple)
-    if (h > NOW_H) { p = NaN; c = NaN; }         // futur : pas de données
-    PROD.push(p); CONSO.push(c);
-    ROUTE.push(isNaN(p) ? NaN : Math.max(0, Math.min(p - c, 2400) * (h>8.4&&h<19?1:0)));
-  }
-})();
+    $$(".botnav button").forEach(function (b) { b.addEventListener("click", function () { showView(b.dataset.view); }); });
+    $("#btnJournal").addEventListener("click", function () { showView("journal"); });
 
-const svg = document.getElementById('gJour'), tip = document.getElementById('gTip');
-const W=720, H=270, ML=44, MR=10, MT=12, MB=26, VMAX=3200;
-const X = i => ML + (W-ML-MR) * (i*H_STEP)/24;
-const Y = v => MT + (H-MT-MB) * (1 - v/VMAX);
+    /* ---------- Données factices vivantes ---------- */
+    let pv = 3.4, house = 1.1, water = 2.1;
+    function rand(a, b) { return a + Math.random() * (b - a); }
+    function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+    function fmt(n) { return n.toFixed(1).replace(".", ","); }
+    function eur(n) { return n.toFixed(2).replace(".", ","); }
 
-function pathArea(tab){
-  let dM='', first=-1, last=-1;
-  tab.forEach((v,i)=>{ if(!isNaN(v)){ if(first<0)first=i; last=i;
-    dM += (dM?'L':'M') + X(i).toFixed(1) + ',' + Y(v).toFixed(1); }});
-  if(first<0) return {line:'',area:''};
-  const area = dM + 'L'+X(last).toFixed(1)+','+Y(0).toFixed(1)
-                  + 'L'+X(first).toFixed(1)+','+Y(0).toFixed(1)+'Z';
-  return {line:dM, area};
-}
-function cssVar(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+    function tickLive() {
+      pv    = clamp(pv    + rand(-0.4, 0.4), 0.2, 4.6);
+      house = clamp(house + rand(-0.3, 0.3), 0.3, 2.6);
+      const surplus = pv - house;
+      water = clamp(surplus > 0.3 ? Math.min(surplus, 2.2) : 0, 0, 2.2);
+      const grid = pv - house - water; // >0 export, <0 import
 
-function drawGraph(){
-  const cSun=cssVar('--sun'), cHome=cssVar('--home'), cOk=cssVar('--ok'),
-        cTxt=cssVar('--txt3'), cLine=cssVar('--line');
-  let s = '';
-  // grille horizontale + libellés kW
-  for (let v=0; v<=VMAX; v+=1000){
-    s += `<line x1="${ML}" y1="${Y(v)}" x2="${W-MR}" y2="${Y(v)}" stroke="${cLine}" stroke-width="1" stroke-dasharray="3 5"/>`;
-    s += `<text x="${ML-6}" y="${Y(v)+4}" text-anchor="end" font-size="11" fill="${cTxt}">${v/1000} kW</text>`;
-  }
-  // libellés heures
-  for (let h=0; h<=24; h+=4)
-    s += `<text x="${X(h/H_STEP)}" y="${H-8}" text-anchor="middle" font-size="11" fill="${cTxt}">${h}h</text>`;
-  // surplus routé (aire verte)
-  const r = pathArea(ROUTE);
-  s += `<path d="${r.area}" fill="${cOk}" opacity="0.25"/>`;
-  // production (aire + ligne)
-  const p = pathArea(PROD);
-  s += `<path d="${p.area}" fill="${cSun}" opacity="0.16"/>`;
-  s += `<path d="${p.line}" fill="none" stroke="${cSun}" stroke-width="2.4" stroke-linejoin="round"/>`;
-  // consommation (ligne)
-  const c = pathArea(CONSO);
-  s += `<path d="${c.line}" fill="none" stroke="${cHome}" stroke-width="2" stroke-linejoin="round"/>`;
-  // repère "maintenant"
-  const xn = X(NOW_H/H_STEP);
-  s += `<line x1="${xn}" y1="${MT}" x2="${xn}" y2="${H-MB}" stroke="${cTxt}" stroke-width="1.4" stroke-dasharray="4 4"/>`;
-  s += `<text x="${xn+5}" y="${MT+11}" font-size="11" fill="${cTxt}">maintenant</text>`;
-  // curseur de survol (rempli au pointage)
-  s += `<line id="gCursor" x1="0" y1="${MT}" x2="0" y2="${H-MB}" stroke="${cTxt}" stroke-width="1" visibility="hidden"/>`;
-  svg.innerHTML = s;
-}
-drawGraph();
+      $("#flowKw").textContent   = fmt(pv);
+      $("#legHome").textContent  = fmt(house) + " kW";
+      $("#legWater").textContent = fmt(water) + " kW";
+      $("#legGrid").textContent  = fmt(Math.abs(grid)) + " kW";
+      $("#tilePv").textContent   = fmt(pv) + " kW";
 
-/* survol / toucher : valeurs au point */
-function showTip(evt){
-  const r = svg.getBoundingClientRect();
-  const cx = (evt.touches ? evt.touches[0].clientX : evt.clientX) - r.left;
-  const xv = cx * W / r.width;
-  const i  = Math.round(((xv-ML)/(W-ML-MR))*24/H_STEP);
-  if (i<0 || i>=PROD.length || isNaN(PROD[i])) { hideTip(); return; }
-  const h  = i*H_STEP, hh = Math.floor(h), mm = Math.round((h-hh)*60);
-  document.getElementById('gCursor').setAttribute('x1', X(i));
-  document.getElementById('gCursor').setAttribute('x2', X(i));
-  document.getElementById('gCursor').setAttribute('visibility','visible');
-  tip.innerHTML = `<b>${hh}h${String(mm).padStart(2,'0')}</b><br>` +
-    `<span style="color:var(--sun)">☀ ${Math.round(PROD[i])} W</span><br>` +
-    `<span style="color:var(--home)">🏠 ${Math.round(CONSO[i])} W</span><br>` +
-    `<span style="color:var(--ok)">→ ballon ${Math.round(ROUTE[i]||0)} W</span>`;
-  tip.style.display='block';
-  const left = Math.min(Math.max(cx-50, 0), r.width-110);
-  tip.style.left = left+'px';
-  tip.style.top  = '8px';
-}
-function hideTip(){
-  tip.style.display='none';
-  const cur=document.getElementById('gCursor');
-  if(cur) cur.setAttribute('visibility','hidden');
-}
-svg.addEventListener('mousemove', showTip);
-svg.addEventListener('mouseleave', hideTip);
-svg.addEventListener('touchstart', showTip, {passive:true});
-svg.addEventListener('touchmove',  showTip, {passive:true});
-svg.addEventListener('touchend',   hideTip);
-</script>
+      const ratio = pv / 4.6;
+      $("#arcSun").setAttribute("stroke-dashoffset", String(754 * (1 - ratio)));
+
+      const auto = Math.min(pv, house + water);
+      $("#flowEur").textContent = "+" + eur(auto * 0.27) + " €/h économisés";
+
+      const exporting = grid >= 0;
+      $("#tileGrid").textContent    = exporting ? "Export" : "Import";
+      $("#tileGridSub").textContent = fmt(Math.abs(grid)) + (exporting ? " kW renvoyés" : " kW achetés");
+
+      const hero = $("#heroTitle"), msg = $("#heroMsg"), ic = $("#heroIcon");
+      if (exporting && water > 0.5) {
+        hero.textContent = "Tout roule.";
+        msg.textContent  = "Le soleil couvre la maison et chauffe votre eau. Vous ne payez rien au réseau.";
+        ic.textContent = "☀️"; ic.style.background = "radial-gradient(circle,var(--grid-exp),#2faa6c)";
+      } else if (!exporting) {
+        hero.textContent = "Petit coup de pouce du réseau.";
+        msg.textContent  = "Le solaire ne suffit pas tout à fait : " + fmt(Math.abs(grid)) + " kW sont achetés au réseau.";
+        ic.textContent = "🔌"; ic.style.background = "radial-gradient(circle,#e8a14a,#cf7d1a)";
+      } else {
+        hero.textContent = "Surplus disponible.";
+        msg.textContent  = "Vous produisez plus que vous ne consommez. Soleo cherche où placer ce surplus.";
+        ic.textContent = "✨"; ic.style.background = "radial-gradient(circle,var(--sun),#e98a1a)";
+      }
+
+      const wc = $("#tileWaterChip");
+      if (water > 0.4) { wc.className = "chip-status on"; wc.innerHTML = '<span class="dotpulse"></span> En chauffe · ' + fmt(water) + " kW"; }
+      else { wc.className = "chip-status idle"; wc.textContent = "Au repos"; }
+    }
+
+    function tickTemp() {
+      let t = parseInt($("#tileTemp").textContent, 10) || 54;
+      t = clamp(t + (water > 0.4 ? 1 : -1) * (Math.random() < 0.5 ? 1 : 0), 38, 62);
+      $("#tileTemp").textContent = t + "°";
+      $("#tileBar").style.width = Math.round(((t - 30) / 30) * 100) + "%";
+    }
+
+    function tickClock() {
+      const d = new Date();
+      $("#liveClock").textContent = d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    }
+
+    tickLive(); tickTemp(); tickClock();
+    setInterval(tickLive, 3500);
+    setInterval(tickTemp, 4000);
+    setInterval(tickClock, 1000);
+
+    /* ---------- Graphique zoom temporel ---------- */
+    const datasets = {
+      day:   { solar: [0,0,0.2,0.8,1.6,2.3,2.9,3.2,3.4,3.1,2.4,1.3], grid: [0.4,0.4,0.3,0.2,0.1,0,0,0,0,0.1,0.2,0.5] },
+      week:  { solar: [9,12,7,4,11,14,13], grid: [3,2,5,8,2,1,1] },
+      month: { solar: [42,55,48,47], grid: [18,12,15,11] },
+      year:  { solar: [90,120,160,210,260,290,310,295,230,160,100,70], grid: [60,52,40,30,20,14,12,15,28,44,58,68] }
+    };
+    const savData = {
+      day:   { eur: "1,80 €",  kwh: "9 kWh",    sub: "économisés aujourd'hui" },
+      week:  { eur: "11,20 €", kwh: "56 kWh",   sub: "économisés cette semaine" },
+      month: { eur: "38,40 €", kwh: "192 kWh",  sub: "économisés ce mois" },
+      year:  { eur: "412 €",   kwh: "2 060 kWh",sub: "économisés cette année" }
+    };
+
+    function drawChart(zoom) {
+      const d = datasets[zoom];
+      const svg = $("#chart");
+      const W = 320, H = 150, pad = 6;
+      const n = d.solar.length;
+      const max = Math.max.apply(null, d.solar.concat(d.grid)) * 1.15;
+      const bw = (W - pad * 2) / n;
+      let out = "";
+      for (let i = 0; i < n; i++) {
+        const x = pad + i * bw + bw * 0.18;
+        const w = bw * 0.64;
+        const sh = (d.solar[i] / max) * (H - 16);
+        const gh = (d.grid[i]  / max) * (H - 16);
+        out += '<rect x="' + x.toFixed(1) + '" y="' + (H - sh).toFixed(1) + '" width="' + w.toFixed(1) +
+               '" height="' + sh.toFixed(1) + '" rx="3" fill="var(--sun)">' +
+               '<animate attributeName="height" from="0" to="' + sh.toFixed(1) + '" dur="0.5s"/></rect>';
+        out += '<rect x="' + (x + w * 0.5).toFixed(1) + '" y="' + (H - gh).toFixed(1) + '" width="' +
+               (w * 0.5).toFixed(1) + '" height="' + gh.toFixed(1) + '" rx="2" fill="var(--grid-imp)" opacity="0.85"/>';
+      }
+      svg.innerHTML = out;
+      const s = savData[zoom];
+      animateNum($("#savAmount"), s.eur);
+      $("#savKwh").textContent = s.kwh;
+      $("#savSub").textContent = s.sub;
+    }
+
+    function animateNum(el, target) {
+      el.style.opacity = 0.2;
+      el.textContent = target;
+      requestAnimationFrame(function () { el.style.transition = "opacity .4s"; el.style.opacity = 1; });
+    }
+
+    $$("#timezoom button").forEach(function (b) {
+      b.addEventListener("click", function () {
+        $$("#timezoom button").forEach(function (x) { x.classList.remove("active"); });
+        b.classList.add("active");
+        drawChart(b.dataset.z);
+      });
+    });
+    drawChart("month");
+
+    /* ---------- Journal (feed langage naturel) ---------- */
+    const feedSeed = [
+      { ic: "🚿", t: "Le surplus solaire chauffe l'eau chaude (2,1 kW).", when: "à l'instant" },
+      { ic: "💶", t: "Vous avez économisé 1,80 € aujourd'hui grâce au solaire.", when: "13h10" },
+      { ic: "🌥️", t: "Chauffe de nuit programmée — demain sera couvert (1,8 kWh prévus).", when: "ce matin · 8h02" },
+      { ic: "☀️", t: "Première production de la journée détectée.", when: "7h41" },
+      { ic: "🌙", t: "Chauffe de nuit terminée — eau à 55°, 3,2 kWh en heures creuses.", when: "hier · 5h30" }
+    ];
+    function renderFeed() {
+      $("#feed").innerHTML = feedSeed.map(function (f) {
+        return '<li><span class="ic">' + f.ic + '</span><div class="txt"><div class="when">' +
+               f.when + '</div>' + f.t + '</div></li>';
+      }).join("");
+    }
+    renderFeed();
+
+    const liveEvents = [
+      { ic: "🔆", t: "Pic de production atteint — 4,1 kW." },
+      { ic: "♨️", t: "Le sèche-serviette profite du surplus (0,7 kW)." },
+      { ic: "🔌", t: "Léger appoint réseau pendant un passage nuageux." },
+      { ic: "🚿", t: "Eau chaude : cible de 55° atteinte." }
+    ];
+    setInterval(function () {
+      const e = liveEvents[Math.floor(Math.random() * liveEvents.length)];
+      feedSeed.unshift({ ic: e.ic, t: e.t, when: new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) });
+      if (feedSeed.length > 8) feedSeed.pop();
+      renderFeed();
+    }, 9000);
+
+    /* ---------- Modals utilitaires ---------- */
+    function open(id)  { $(id).classList.add("open"); }
+    function close(el) { el.closest(".overlay").classList.remove("open"); }
+    $$("[data-close]").forEach(function (b) { b.addEventListener("click", function () { close(b); }); });
+    $$(".overlay").forEach(function (o) {
+      o.addEventListener("click", function (e) { if (e.target === o) o.classList.remove("open"); });
+    });
+
+    /* gear contextuels */
+    $$("[data-gear]").forEach(function (g) {
+      g.addEventListener("click", function () {
+        const name = g.dataset.gear;
+        if (name === "Prix du kWh") { open("#ovPrice"); return; }
+        $("#gearTitle").textContent = "Réglage · " + name;
+        $("#gearName").value = name;
+        $("#gearLead").textContent = "Ces réglages s'appliquent uniquement à « " + name + " ».";
+        open("#ovGear");
+      });
+    });
+
+    /* options génériques (sélection exclusive dans un optgrid) */
+    document.addEventListener("click", function (e) {
+      const opt = e.target.closest(".opt");
+      if (!opt) return;
+      const grid = opt.parentElement;
+      $$(".opt", grid).forEach(function (o) { o.classList.remove("sel"); });
+      opt.classList.add("sel");
+      const tgt = grid.dataset.target;
+      if (tgt) $("#" + tgt).textContent = opt.textContent;
+    });
+
+    /* toast de sauvegarde */
+    const toast = $("#toast");
+    function showToast(msg) {
+      toast.textContent = "✓ " + msg;
+      toast.classList.add("show");
+      setTimeout(function () { toast.classList.remove("show"); }, 1800);
+    }
+    $$("[data-save]").forEach(function (b) {
+      b.addEventListener("click", function () { close(b); showToast("Enregistré"); });
+    });
+
+    /* création de règle */
+    $("#addRule").addEventListener("click", function () { open("#ovRule"); });
+    $("#saveRule").addEventListener("click", function () {
+      const subj = $("#rbSubject").textContent, cond = $("#rbCond").textContent, fb = $("#rbFallback").textContent;
+      const div = document.createElement("div");
+      div.className = "rule";
+      div.innerHTML =
+        '<button class="gear" data-gear="Nouvel automatisme">⚙</button>' +
+        '<label class="sw toggle"><input type="checkbox" checked><span></span></label>' +
+        'Faire profiter <span class="slot subject">' + subj + '</span> du surplus quand ' +
+        '<span class="slot cond">' + cond + '</span> sinon <span class="slot fallback">' + fb + '</span>.';
+      $("#rulesList").appendChild(div);
+      div.querySelector("[data-gear]").addEventListener("click", function () {
+        $("#gearTitle").textContent = "Réglage · automatisme";
+        $("#gearLead").textContent = "Affinez cet automatisme.";
+        open("#ovGear");
+      });
+      close($("#saveRule"));
+      showToast("Automatisme créé");
+    });
+
+    /* ---------- Onboarding 3 étapes ---------- */
+    const onbScreens = [
+      {
+        big: "📶",
+        title: "Connexion WiFi",
+        body: '<p class="lead">Connectons votre boîtier Soleo à votre maison.</p>' +
+              '<ul class="onb-list">' +
+              '<li><span class="wifi-dot"></span> Livebox-Maison <b style="margin-left:auto">connecté</b></li>' +
+              '<li>FreeWifi_Secure</li>' +
+              '<li>Voisin_5G</li></ul>',
+        cta: "Continuer"
+      },
+      {
+        big: "🏷️",
+        title: "Nommez vos équipements",
+        body: '<p class="lead">Donnez des noms simples à ce que Soleo pilote.</p>' +
+              '<div class="field"><label>Sortie 1</label><input type="text" value="Eau chaude"></div>' +
+              '<div class="field"><label>Sortie 2</label><input type="text" value="Sèche-serviette"></div>',
+        cta: "Continuer"
+      },
+      {
+        big: "✨",
+        title: "Votre première règle",
+        body: '<p class="lead">Une règle simple pour démarrer :</p>' +
+              '<div class="rule" style="margin:6px 0 4px">Chauffer <span class="slot subject">l\'eau chaude</span> ' +
+              'dès qu\'<span class="slot cond">il y a du surplus solaire</span>.</div>' +
+              '<p class="dim" style="font-size:13px">Vous pourrez tout modifier ensuite.</p>',
+        cta: "C'est parti !"
+      }
+    ];
+    let onbStep = 0;
+    function renderOnb() {
+      const s = onbScreens[onbStep];
+      $("#onbBody").innerHTML = '<div class="onbig">' + s.big + '</div><h3 style="text-align:center">' + s.title + '</h3>' + s.body;
+      $("#onbNext").textContent = s.cta;
+      $$("#onbSteps .s").forEach(function (el, i) { el.classList.toggle("done", i <= onbStep); });
+    }
+    $("#btnOnboard").addEventListener("click", function () { onbStep = 0; renderOnb(); open("#ovOnboard"); });
+    $("#onbNext").addEventListener("click", function () {
+      if (onbStep < onbScreens.length - 1) { onbStep++; renderOnb(); }
+      else { $("#ovOnboard").classList.remove("open"); showToast("Boîtier configuré"); showView("home"); }
+    });
+
+    /* auto-onboarding au 1er chargement simulé */
+    try {
+      if (!sessionStorage.getItem("soleo_seen")) {
+        sessionStorage.setItem("soleo_seen", "1");
+        setTimeout(function () { onbStep = 0; renderOnb(); open("#ovOnboard"); }, 900);
+      }
+    } catch (err) { /* sessionStorage indisponible : pas d'auto-onboarding */ }
+  })();
+  </script>
 </body>
 </html>
