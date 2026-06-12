@@ -1026,7 +1026,19 @@ function OuvrirAssistant() {
     }
     S += "</select> &le; <input type='number' id='wizTseuil' value='50' style='width:60px;'> &deg;C</div>";
     if (V.MeteoOn == 1) {
-        S += "<div class='wizLigne'><input type='checkbox' id='wizMeteo' checked> Seulement si pr&eacute;vision solaire demain &lt; <input type='number' id='wizMeteoS' value='8' step='0.5' style='width:60px;'> kWh</div>";
+        if (V.BallonCanal >= 0) {  //Ballon configuré : choix entre 3 modes météo
+            S += "<div class='wizLigne'>M&eacute;t&eacute;o : <select id='wizMeteoMode' onchange='WizMeteoMode()'>";
+            S += "<option value='0'>pas de condition m&eacute;t&eacute;o</option>";
+            S += "<option value='1'>si pr&eacute;vision solaire demain &lt; seuil</option>";
+            S += "<option value='5' selected>Adaptatif ballon (auto-apprentissage)</option>";
+            S += "</select></div>";
+            S += "<div class='wizLigne' id='wizMeteoSeuilZ' style='display:none;'>Seuil : <input type='number' id='wizMeteoS' value='8' step='0.5' style='width:60px;'> kWh</div>";
+            let etatBallon = "";
+            if (V.BallonBesoin >= 0) etatBallon = "<br>Actuellement : besoin " + V.BallonBesoin + " kWh, surplus pr&eacute;vu " + V.BallonSurplus + " kWh";
+            S += "<div class='wizLigne' id='wizMeteoInfo'><small>Forcer uniquement si le besoin du ballon d&eacute;passe le surplus solaire pr&eacute;vu (auto-apprentissage)." + etatBallon + "</small></div>";
+        } else {
+            S += "<div class='wizLigne'><input type='checkbox' id='wizMeteo' checked> Seulement si pr&eacute;vision solaire demain &lt; <input type='number' id='wizMeteoS' value='8' step='0.5' style='width:60px;'> kWh</div>";
+        }
     }
     if (V.LTARFbin > 0 && V.LTARFbin <= 3) {
         S += "<div class='wizLigne'><input type='checkbox' id='wizHC' checked> Seulement en Heures Creuses</div>";
@@ -1043,6 +1055,13 @@ function OuvrirAssistant() {
 
 function FermerAssistant() {
     GID("assistant").style.display = "none";
+}
+
+// Affichage du seuil / de l'état ballon selon le mode météo choisi dans l'assistant
+function WizMeteoMode() {
+    const mode = GID("wizMeteoMode").value;
+    GID("wizMeteoSeuilZ").style.display = (mode == "1") ? "block" : "none";
+    GID("wizMeteoInfo").style.display = (mode == "5") ? "block" : "none";
 }
 
 // "09:30" -> 950 (centièmes d'heure)
@@ -1095,10 +1114,16 @@ function CreerWizard() {
                 p.CanalTemp = canal;
                 p.Tinf = Math.round(parseFloat(GID("wizTseuil").value) * 10);
             }
-            const wm = GID("wizMeteo");
-            if (wm && wm.checked) {
-                p.MeteoCond = 1; // prévision demain < seuil
-                p.MeteoSeuil = Math.round(parseFloat(GID("wizMeteoS").value) * 10);
+            const wmm = GID("wizMeteoMode");
+            if (wmm) {  //Ballon configuré : select à 3 modes (0=aucun, 1=demain<seuil, 5=adaptatif ballon)
+                p.MeteoCond = parseInt(wmm.value, 10) || 0;
+                if (p.MeteoCond === 1) p.MeteoSeuil = Math.round(parseFloat(GID("wizMeteoS").value) * 10);
+            } else {  //Pas de ballon : checkbox historique
+                const wm = GID("wizMeteo");
+                if (wm && wm.checked) {
+                    p.MeteoCond = 1; // prévision demain < seuil
+                    p.MeteoSeuil = Math.round(parseFloat(GID("wizMeteoS").value) * 10);
+                }
             }
             const hc = GID("wizHC");
             if (hc && hc.checked) p.Tarif = 2;       // HC uniquement

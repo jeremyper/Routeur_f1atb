@@ -100,19 +100,15 @@ void CalculBallon() {
 //Compare la production SMA du jour à l'énergie réellement routée vers le ballon
 //(H_Ouvre de la première action SSR x puissance résistance).
 void ApprentissageBallon() {
-  if (SmaOn != 1 || BallonCanal < 0 || EnergieJourPV <= 0) {
-    EnergiePV_J0 = EnergieTotalePV;  //Calage minuit même sans apprentissage
-    return;
-  }
-  float prodJour = float(EnergieJourPV) / 1000.0;  //kWh
-  if (prodJour > 1.0) {
-    float routee = 0;
-    for (int i = 0; i < NbActions; i++) {
-      if (LesActions[i].Actif == MODE_MULTISINUS || LesActions[i].Actif == MODE_TRAINSINUS) {
-        routee = LesActions[i].H_Ouvre * float(BallonPuissance) / 1000.0;  //kWh routés depuis 6h
-        break;                                                             //Première action SSR = ballon
-      }
+  float prodJour = (SmaOn == 1 && EnergieJourPV > 0) ? float(EnergieJourPV) / 1000.0 : -1;  //kWh (-1 = pas de donnée)
+  float routee = 0;
+  for (int i = 0; i < NbActions; i++) {
+    if (LesActions[i].Actif == MODE_MULTISINUS || LesActions[i].Actif == MODE_TRAINSINUS) {
+      routee = LesActions[i].H_Ouvre * float(BallonPuissance) / 1000.0;  //kWh routés depuis 6h
+      break;                                                             //Première action SSR = ballon
     }
+  }
+  if (SmaOn == 1 && BallonCanal >= 0 && prodJour > 1.0) {
     if (Ballon_Besoin > 0.5) {
       //Le ballon n'a pas atteint sa cible : le ratio mesuré reflète le surplus réellement disponible
       float ratio = routee / prodJour * 100.0;
@@ -125,7 +121,41 @@ void ApprentissageBallon() {
     SauveCoefAuto();
     StockMessage("Ballon : prod " + String(prodJour, 1) + " kWh, routé " + String(routee, 1) + " kWh, coef " + String(BallonCoefAuto) + "%");
   }
+  //Historique prévision/production : une ligne par jour si au moins une donnée valide
+  if (prodJour >= 0 || Meteo_PrevisionJourMemo >= 0) HistMeteoAjoute(prodJour, routee);
   EnergiePV_J0 = EnergieTotalePV;  //Calage du compteur jour à minuit
+}
+
+//Ajoute la ligne du jour écoulé dans /histmeteo.csv : date;prevision_kWh;production_kWh;routee_kWh;coef
+//Le fichier est limité aux 60 derniers jours (1 écriture par jour, usure LittleFS négligeable).
+void HistMeteoAjoute(float prodJour, float routee) {
+  if (oldDateAMJ.length() < 8) return;  //Pas de date valide
+  String dateJM = oldDateAMJ.substring(6, 8) + "/" + oldDateAMJ.substring(4, 6) + "/" + oldDateAMJ.substring(0, 4);
+  String ligne = dateJM + ";" + String(Meteo_PrevisionJourMemo, 1) + ";" + String(prodJour, 1) + ";" + String(routee, 1) + ";" + String(BallonCoefAuto);
+  String contenu = "";
+  if (LittleFS.exists("/histmeteo.csv")) {
+    File f = LittleFS.open("/histmeteo.csv", "r");
+    if (f) {
+      contenu = f.readString();
+      f.close();
+    }
+  }
+  contenu += ligne + "\n";
+  int nb = 0;
+  for (unsigned int i = 0; i < contenu.length(); i++) {
+    if (contenu[i] == '\n') nb++;
+  }
+  while (nb > 60) {  //On ne garde que les 60 dernières lignes
+    int p = contenu.indexOf('\n');
+    if (p < 0) break;
+    contenu = contenu.substring(p + 1);
+    nb--;
+  }
+  File f = LittleFS.open("/histmeteo.csv", "w");
+  if (f) {
+    f.print(contenu);
+    f.close();
+  }
 }
 
 //Persistance du coefficient appris (petit fichier dédié, 1 écriture/jour max)
