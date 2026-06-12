@@ -644,6 +644,13 @@ float Ballon_Besoin = -1;       //kWh nécessaires pour remonter à la cible (-1
 float Ballon_SurplusPrevu = -1; //kWh de surplus solaire attendu
 float Ballon_Deficit = 0;       //Besoin - Surplus : si >0, le forçage adaptatif est autorisé
 
+//Tarif électricité et économies (fondations UI Soleo)
+float PrixHP = 0.25;      //€/kWh Heure Pleine (ou tarif unique)
+float PrixHC = 0.15;      //€/kWh Heure Creuse
+float EconomieJour = 0;   //€ économisés aujourd'hui (production autoconsommée x tarif HP)
+float EconomieMois = 0;   //€ économisés depuis le début du mois (persisté)
+float EconomieTotal = 0;  //€ économisés depuis l'installation (persisté)
+
 //Paramètres pour Source Externe
 int8_t RMSextIdx = 0;
 bool RMSextIPauto =true;

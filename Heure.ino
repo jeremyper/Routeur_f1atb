@@ -53,6 +53,9 @@ void JourHeureChange() {
       for (int i = 0; i < LES_ACTIONS_LENGTH; i++) {
         LesActions[i].H_Ouvre = 0;  //RAZ temps equivalent ouverture à 6h du matin
       }
+      if (MeteoOn == 1 && Meteo_PrevisionJour >= 0) {
+        JournalAjoute("Début de journée — prévision solaire : " + String(Meteo_PrevisionJour, 1) + " kWh");
+      }
     }
     if (old_Heure == 23 && Int_Heure == 0) {
       if (EnergieActiveValide) {  //Données recues
@@ -66,7 +69,16 @@ void JourHeureChange() {
       PuisMaxS_M = 0;
       PuisMaxI_T = 0;
       PuisMaxI_M = 0;
+      //Bilan des économies du jour écoulé : production autoconsommée x tarif HP de référence
+      if (SmaOn == 1 && EnergieJourPV > 0) {
+        EconomieJour = float(EnergieJourPV) / 1000.0 * PrixHP;
+        if (DateAMJ.substring(6, 8) == "01") EconomieMois = 0;  //Premier du mois : nouveau compteur mensuel
+        EconomieMois += EconomieJour;
+        EconomieTotal += EconomieJour;
+        RecordFichierParametres();  //Persistance des compteurs (1 écriture par jour)
+      }
       ApprentissageBallon();  //Ajuste le coefficient routable et cale le compteur PV du jour
+      EconomieJour = 0;       //Nouvelle journée
     }
     old_Heure = Int_Heure;
     old_Minute = Int_Minute;

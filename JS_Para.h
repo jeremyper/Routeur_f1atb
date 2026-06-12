@@ -133,6 +133,8 @@ function SetParaFixe() {
     GID("pLED").value = F.LEDgroupe;
     GID("pUxI").value = F.pUxI;
     GID("PTemp").value = F.pTemp;
+    GID("PrixHP").value = F.PrixHP !== undefined ? F.PrixHP : 0.25;
+    GID("PrixHC").value = F.PrixHC !== undefined ? F.PrixHC : 0.15;
     GID("MeteoOn").checked = F.MeteoOn == 1;
     GID("MeteoLat").value = F.MeteoLat !== undefined ? F.MeteoLat : 46.5;
     GID("MeteoLon").value = F.MeteoLon !== undefined ? F.MeteoLon : 2.4;
@@ -190,6 +192,8 @@ function SendValues() {
   F.masque = ip2int(GID("masque").value);
   F.dns = ip2int(GID("dns").value);
 
+  F.PrixHP = parseFloat(GID("PrixHP").value) || 0.25;
+  F.PrixHC = parseFloat(GID("PrixHC").value) || 0.15;
   F.MeteoOn = GID("MeteoOn").checked ? 1 : 0;
   F.MeteoLat = parseFloat(GID("MeteoLat").value) || 0;
   F.MeteoLon = parseFloat(GID("MeteoLon").value) || 0;

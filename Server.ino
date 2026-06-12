@@ -32,6 +32,7 @@ void Init_Server() {
   server.on("/ajax_histo48h", handleAjaxHisto48h);
   server.on("/ajax_histo1an", handleAjaxHisto1an);
   server.on("/ajax_histmeteo", handleAjaxHistMeteo);  //Historique prévision météo / production
+  server.on("/ajax_journal", handleAjaxJournal);      //Journal d'événements en langage naturel
   server.on("/ajax_dataRMS", handleAjaxRMS);
   server.on("/ajax_dataESP32", handleAjaxESP32);
   server.on("/ajax_data", handleAjaxData);
@@ -461,7 +462,11 @@ void handleAjax_etatActionX() {
 void handleForceAction() {
   int Force = server.arg("Force").toInt();
   int NumAction = server.arg("NumAction").toInt();
-  if (NumAction < NbActions) {
+  if (NumAction >= 0 && NumAction < NbActions) {
+    if (Force > 0 && LesActions[NumAction].tOnOff <= 0) {
+      String titre = (LesActions[NumAction].Titre != "") ? LesActions[NumAction].Titre : "Action " + String(NumAction);
+      JournalAjoute(titre + " : marche forcée démarrée (" + String(Force) + " mn)");
+    }
     LesActions[NumAction].tOnOff = Force;
   }
 
@@ -669,6 +674,13 @@ void handleParaVar() {
   conf["BallonBesoin"] = serialized(String(Ballon_Besoin, 1));           //kWh pour remonter à la cible
   conf["BallonSurplus"] = serialized(String(Ballon_SurplusPrevu, 1));    //kWh de surplus attendu
   conf["BallonCoefAuto"] = BallonCoefAuto;                               //Coefficient routable appris en %
+  MajEconomieJour();
+  conf["PrixHP"] = serialized(String(PrixHP, 3));                        //€/kWh Heure Pleine (ou tarif unique)
+  conf["PrixHC"] = serialized(String(PrixHC, 3));                        //€/kWh Heure Creuse
+  conf["PrixActuel"] = serialized(String(PrixKwhActuel(), 3));           //€/kWh du tarif en cours
+  conf["EconomieJour"] = serialized(String(EconomieJour, 2));            //€ économisés aujourd'hui
+  conf["EconomieMois"] = serialized(String(EconomieMois, 2));            //€ économisés ce mois
+  conf["EconomieTotal"] = serialized(String(EconomieTotal, 2));          //€ économisés au total
   for (int c = 0; c < 4; c++) {
     conf["temperature"][c] = temperature[c];
   }
@@ -683,6 +695,17 @@ void handleParaVar() {
   String Json;
   serializeJson(conf, Json);
   server.send(200, "application/json", Json);
+}
+void handleAjaxJournal() {  //Journal d'événements : "HH:MM;message", le plus récent en premier (30 lignes max)
+  String S = "";
+  if (LittleFS.exists("/journal.txt")) {
+    File f = LittleFS.open("/journal.txt", "r");
+    if (f) {
+      S = f.readString();
+      f.close();
+    }
+  }
+  server.send(200, "text/plain", S);
 }
 void handleAjaxHistMeteo() {  //Historique quotidien : date;prevision_kWh;production_kWh;routee_kWh;coef
   String S = "";

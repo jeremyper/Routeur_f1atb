@@ -284,6 +284,10 @@ void DeserializeConfiguration(String json) {
   BallonPuissance = conf["BallonPuissance"].isNull() ? BallonPuissance : conf["BallonPuissance"].as<int16_t>();
   BallonCanal = conf["BallonCanal"].isNull() ? BallonCanal : conf["BallonCanal"].as<int8_t>();
   LastSmaMillis = 0;  //Forcer une relecture SMA après changement de paramètres
+  PrixHP = conf["PrixHP"].isNull() ? PrixHP : conf["PrixHP"].as<float>();
+  PrixHC = conf["PrixHC"].isNull() ? PrixHC : conf["PrixHC"].as<float>();
+  EconomieMois = conf["EconomieMois"].isNull() ? EconomieMois : conf["EconomieMois"].as<float>();
+  EconomieTotal = conf["EconomieTotal"].isNull() ? EconomieTotal : conf["EconomieTotal"].as<float>();
   WifiSleep = conf["WifiSleep"];
   ComSurv = conf["ComSurv"];
   pSerial = conf["pSerial"];
@@ -437,6 +441,10 @@ String SerializeConfiguration() {
   conf["BallonTcible"] = BallonTcible;
   conf["BallonPuissance"] = BallonPuissance;
   conf["BallonCanal"] = BallonCanal;
+  conf["PrixHP"] = serialized(String(PrixHP, 3));
+  conf["PrixHC"] = serialized(String(PrixHC, 3));
+  conf["EconomieMois"] = serialized(String(EconomieMois, 2));
+  conf["EconomieTotal"] = serialized(String(EconomieTotal, 2));
   // Enregistrement des Actions
   if (ReacCACSI < 1)
     ReacCACSI = 1;

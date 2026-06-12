@@ -215,6 +215,8 @@ void sendMQTTDiscoveryMsg_global() {
   if (SmaOn == 1) {
     DeviceToDiscover("Production_PV", "Production PV", "W", "power", "0");
     DeviceToDiscover("Production_PV_Jour", "Production PV Jour", "kWh", "energy", "2");
+    DeviceToDiscover("Economie_Jour", "Economie Jour", "€", "monetary", "2");
+    DeviceToDiscover("Economie_Mois", "Economie Mois", "€", "monetary", "2");
   }
   if (BallonCanal >= 0 && MeteoOn == 1) {
     DeviceToDiscover("Ballon_Besoin", "Ballon Besoin Chauffe", "kWh", "energy", "1");
@@ -397,7 +399,9 @@ void SendDataToHomeAssistant() {
     len += snprintf(value + len, sizeof(value) - len, ",\"Prevision_Solaire_Jour\":%.1f, \"Prevision_Solaire_Demain\":%.1f", Meteo_PrevisionJour, Meteo_PrevisionDemain);
   }
   if (SmaOn == 1 && EnergieTotalePV >= 0) {
+    MajEconomieJour();
     len += snprintf(value + len, sizeof(value) - len, ",\"Production_PV\":%.0f, \"Production_PV_Jour\":%.2f", PuissancePV, float(EnergieJourPV) / 1000.0);
+    len += snprintf(value + len, sizeof(value) - len, ",\"Economie_Jour\":%.2f, \"Economie_Mois\":%.2f", EconomieJour, EconomieMois);
   }
   if (BallonCanal >= 0 && MeteoOn == 1 && Ballon_Besoin >= 0) {
     len += snprintf(value + len, sizeof(value) - len, ",\"Ballon_Besoin\":%.1f, \"Ballon_Surplus_Prevu\":%.1f", Ballon_Besoin, Ballon_SurplusPrevu);

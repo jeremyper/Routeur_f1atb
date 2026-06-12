@@ -301,6 +301,23 @@ const char *ParaHtml = R"====(
     </div>
 
     <div class="Zone">
+      <div class="boldT">Votre tarif électrique</div>
+      <div class="form">
+
+        <div class="ligne">
+          <label for="PrixHP">Prix kWh HP (€) <span class="fsize10">(ou tarif unique si pas d'heures creuses)</span></label>
+          <input type="number" id="PrixHP" name="PrixHP" step="0.001" min="0" max="2">
+        </div>
+
+        <div class="ligne">
+          <label for="PrixHC">Prix kWh HC (€)</label>
+          <input type="number" id="PrixHC" name="PrixHC" step="0.001" min="0" max="2">
+        </div>
+
+      </div>
+    </div>
+
+    <div class="Zone">
       <div class="boldT">Prévision météo solaire <small>(Open-Meteo, gratuit, sans clé)</small></div>
       <div class="form">
 

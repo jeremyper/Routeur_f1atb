@@ -94,6 +94,17 @@ void CalculBallon() {
   if (prevision < 0) prevision = 0;  //Pas de météo : on considère 0 => on autorise la chauffe (fail-safe confort)
   Ballon_SurplusPrevu = prevision * float(BallonCoefAuto) / 100.0;
   Ballon_Deficit = Ballon_Besoin - Ballon_SurplusPrevu;
+
+  //Journal : on signale une seule fois le passage en "besoin détecté"
+  static bool besoinSignale = false;
+  if (Ballon_Deficit > 0.05) {
+    if (!besoinSignale) {
+      JournalAjoute("Ballon : besoin détecté (" + String(Ballon_Besoin, 1) + " kWh), chauffe autorisée");
+      besoinSignale = true;
+    }
+  } else {
+    besoinSignale = false;
+  }
 }
 
 //Apprentissage du coefficient routable, appelé une fois par jour à minuit.
@@ -120,6 +131,7 @@ void ApprentissageBallon() {
     }
     SauveCoefAuto();
     StockMessage("Ballon : prod " + String(prodJour, 1) + " kWh, routé " + String(routee, 1) + " kWh, coef " + String(BallonCoefAuto) + "%");
+    JournalAjoute("Bilan du jour : " + String(routee, 1) + " kWh envoyés au ballon sur " + String(prodJour, 1) + " kWh produits");
   }
   //Historique prévision/production : une ligne par jour si au moins une donnée valide
   if (prodJour >= 0 || Meteo_PrevisionJourMemo >= 0) HistMeteoAjoute(prodJour, routee);
