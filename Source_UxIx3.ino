@@ -41,10 +41,10 @@ void Lecture_JSY333() {
   Requete_JSY333();
 
   int a = 0;
-  while (MySerial.available()) {
-    Lecture333[a] = MySerial.read();
-    a++;
+  while (MySerial.available() && a < (int)sizeof(Lecture333)) {
+    Lecture333[a++] = MySerial.read();
   }
+  while (MySerial.available()) MySerial.read();  // vider le surplus pour éviter tout débordement
 
   if (a == 141) {                                               //message complet reçu
     delta_temps = (unsigned long)(millis() - Temps_precedent);  // temps écoulé depuis le dernier appel

@@ -6,7 +6,7 @@ private:
   int Idx;  //Index
   void CallExterne(String host, String url, int port);
   bool MeteoOk(int i);
-  int T_LastAction = 0;
+  unsigned long T_LastAction = 0;  //Horodatage en secondes (millis()/1000) ; unsigned pour gérer le wrap de millis()
   int tempoTimer = 0;
   int16_t Tseuil = 2000;
 
