@@ -323,16 +323,14 @@ void handleAjaxHisto48h() {  // Envoi Historique de 50h (600points) toutes les 5
     U += String(temperature[canal]) + "|";
   }
   for (int i = 0; i < NbActions; i++) {
-    if ((LesActions[i].Actif > 0) && (ITmode > 0 || i > 0)) {
+    if (LesActions[i].Actif > 0) {  //Action 0 incluse : la condition triac/zéro-cross (ITmode>0||i>0) n'a plus lieu d'être
       iS = IdxStockPW;
-      if (LesActions[i].Actif > 0) {
-        Ouverture += GS;
-        for (int j = 0; j < 600; j++) {
-          Ouverture += String(tab_histo_ouverture[i][iS]) + RS;
-          iS = (1 + iS) % 600;
-        }
-        Ouverture += LesActions[i].Titre;
+      Ouverture += GS;
+      for (int j = 0; j < 600; j++) {
+        Ouverture += String(tab_histo_ouverture[i][iS]) + RS;
+        iS = (1 + iS) % 600;
       }
+      Ouverture += LesActions[i].Titre;
     }
   }
 
@@ -413,7 +411,7 @@ void handleAjax_etatActions() {
   int Force = server.arg("Force").toInt();
   int NumAction = server.arg("NumAction").toInt();
   ExtraitCookie();
-  if (Force != 0 && NumAction < NbActions && CleAccesRef == CleAcces) {
+  if (Force != 0 && NumAction >= 0 && NumAction < NbActions && CleAccesRef == CleAcces) {
     if (Force > 0) {
       if (LesActions[NumAction].tOnOff < 0) {
         LesActions[NumAction].tOnOff = 0;
@@ -433,9 +431,9 @@ void handleAjax_etatActions() {
   String S = "";
   String On_;
   for (int i = 0; i < NbActions; i++) {
-    if ((LesActions[i].Actif > 0) && (ITmode > 0 || i > 0)) {  // Pas de Triac en synchro horloge interne
+    if (LesActions[i].Actif > 0) {  //Action 0 incluse : la condition triac/zéro-cross (ITmode>0||i>0) n'a plus lieu d'être
       S += String(i) + RS + LesActions[i].Titre + RS;
-      if (LesActions[i].Actif == 1 && i > 0) {
+      if (LesActions[i].Actif == 1) {  //Relais On/Off (action 0 comprise)
         if (LesActions[i].On) {
           S += "On" + RS;
         } else {
@@ -460,7 +458,7 @@ void handleAjax_etatActionX() {
   byte Actif = 0;
   int Ouvre = 0;
   int Hequiv = 0;
-  if (NumAction < NbActions) {
+  if (NumAction >= 0 && NumAction < NbActions) {
     Actif = LesActions[NumAction].Actif;
     Ouvre = 100 - Retard[NumAction];
     Hequiv = int(100 * LesActions[NumAction].H_Ouvre);
@@ -484,12 +482,19 @@ void handleForceAction() {
 }
 void handleShowAction() {
   int NumAction = server.arg("NumAction").toInt();
-
+  if (NumAction < 0 || NumAction >= NbActions) {
+    server.send(400, "text/plain", "Bad NumAction");
+    return;
+  }
   server.send(200, "text/html", String(round(LastErrorPw[NumAction])) + RS + String(Propor[NumAction]) + RS + String(IntegrErrorPw[NumAction]) + RS + String(DeriveF[NumAction]));
   LastShowActionMillis = millis();
 }
 void handleUpdateK() {
   int iAct = server.arg("iAct").toInt();
+  if (iAct < 0 || iAct >= NbActions) {
+    server.send(400, "text/plain", "Bad iAct");
+    return;
+  }
   LesActions[iAct].Kp = server.arg("Kp").toInt();
   LesActions[iAct].Ki = server.arg("Ki").toInt();
   LesActions[iAct].Kd = server.arg("Kd").toInt();
@@ -587,10 +592,6 @@ void handlePara() {
   previousTempMillis = millis() - 120000;
 }
 void handleParaNew() {
-  String EtatGpioInitial = String(Fpwm);
-  for (int i = 0; i < NbActions; i++) {
-    EtatGpioInitial += String(LesActions[i].Gpio) + String(LesActions[i].OutOn) + String(LesActions[i].OutOff);
-  }
   DeserializeConfiguration(server.arg("plain"));
   server.send(200, "application/json", "{\"new_config\":\"ok\"}");
   int j = 1;
@@ -609,12 +610,9 @@ void handleParaNew() {
   }
 
   LastHeureRTE = -1;
-  //Test si modifs sur GPIOs
-  String EtatGpioFinal = String(Fpwm);
-  for (int i = 0; i < NbActions; i++) {
-    EtatGpioFinal += String(LesActions[i].Gpio) + String(LesActions[i].OutOn) + String(LesActions[i].OutOff);
-  }
-  if (EtatGpioFinal != EtatGpioInitial) InitGPIOs();
+  //La désérialisation ne met pas à jour les membres Gpio/OutOn/OutOff (seul InitGpio() le fait),
+  //donc l'ancienne comparaison ne détectait jamais un changement de GPIO. On réinitialise toujours.
+  InitGPIOs();
   // Recherche des Noms (routeurs, températures,actions) des RMS partenaires
   Liste_des_Noms();
 }
@@ -732,7 +730,10 @@ void handleSetGpio() {
   int gpio = server.arg("gpio").toInt();
   int out = server.arg("out").toInt();
   String S = "Refut : gpio =" + String(gpio) + " out =" + String(out);
-  if (gpio >= 0 && gpio <= 33 && out >= 0 && out <= 1) {
+  // GPIO 6 à 11 = flash SPI interne : ne jamais piloter sous peine de planter l'ESP32.
+  // GPIO 34 à 39 = entrées seules (impossible en sortie). On reste donc dans [0,33] hors flash.
+  bool gpioOk = (gpio >= 0 && gpio <= 33 && (gpio < 6 || gpio > 11));
+  if (gpioOk && out >= 0 && out <= 1) {
     pinMode(gpio, OUTPUT);
     digitalWrite(gpio, out);
     S = "OK : gpio =" + String(gpio) + " out =" + String(out);

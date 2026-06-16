@@ -14,7 +14,7 @@ Action::Action() {
 Action::Action(int aIdx) {
   Gpio = -1;  // si le n° de pin n'est pas valid, on ne fait rien
   Idx = aIdx;
-  T_LastAction = int(millis() / 1000);
+  T_LastAction = millis() / 1000;
   On = false;
   Actif = 0;  //0=Inactif,1=Decoupe ou On/Off, 2=Multi, 3= Train , 4=PWM
   Kp = 10;
@@ -67,13 +67,13 @@ bool Action::MeteoOk(int i) {
 
 
 void Action::Arreter() {
-  int Tseconde = int(millis() / 1000);
-  if ((Tseconde - T_LastAction) >= Tempo || Actif != 1) {
+  unsigned long Tseconde = millis() / 1000;
+  if ((Tseconde - T_LastAction) >= (unsigned long)Tempo || Actif != 1) {
     if (Gpio > 0) {
       digitalWrite(Gpio, OutOff);
       T_LastAction = Tseconde;
     } else {
-      if (On || ((Tseconde - T_LastAction) > Repet && Repet != 0)) {
+      if (On || ((Tseconde - T_LastAction) > (unsigned long)Repet && Repet != 0)) {
         if (Actif > 0) CallExterne(Host, OrdreOff, Port);
         T_LastAction = Tseconde;
       }
@@ -82,15 +82,15 @@ void Action::Arreter() {
   }
 }
 void Action::RelaisOn() {
-  int Tseconde = int(millis() / 1000);
-  if ((Tseconde - T_LastAction) >= Tempo) {
+  unsigned long Tseconde = millis() / 1000;
+  if ((Tseconde - T_LastAction) >= (unsigned long)Tempo) {
     if (Gpio > 0) {
       digitalWrite(Gpio, OutOn);
       T_LastAction = Tseconde;
       On = true;
     } else {
       if (Actif == 1) {
-        if (!On || ((Tseconde - T_LastAction) > Repet && Repet != 0)) {
+        if (!On || ((Tseconde - T_LastAction) > (unsigned long)Repet && Repet != 0)) {
           CallExterne(Host, OrdreOn, Port);
           T_LastAction = Tseconde;
         }

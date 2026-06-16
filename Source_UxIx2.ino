@@ -30,10 +30,10 @@ void LectureUxIx2() {  //Ecriture et Lecture port série du JSY-MK-194  .
 
   //Réponse en général à l'appel précédent (seulement 4800bauds)
   int a = 0;
-  while (MySerial.available()) {
-    ByteArray[a] = MySerial.read();
-    a++;
+  while (MySerial.available() && a < (int)sizeof(ByteArray)) {
+    ByteArray[a++] = MySerial.read();
   }
+  while (MySerial.available()) MySerial.read();  // vider le surplus pour éviter tout débordement
 
 
   if (a == 61) {  //Message complet reçu

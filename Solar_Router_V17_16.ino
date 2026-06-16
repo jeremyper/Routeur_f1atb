@@ -693,6 +693,7 @@ unsigned long previousMQTTMillis;
 unsigned long LastPwMQTTMillis = 0;
 unsigned long PeriodeMQTTMillis = 500;
 unsigned long LastShowActionMillis = 0;
+unsigned long LastMesureMillis = 0;  //Horodatage de la dernière mesure de puissance reçue (sécurité fermeture SSR)
 
 //Actions et Triac(action 0)
 float RetardF[LES_ACTIONS_LENGTH];        //Floating value of retard
@@ -1235,7 +1236,6 @@ void Task_LectureRMS(void *pvParameters) {
     //******************************
     if (tps - LastRMS_Millis > PeriodeProgMillis) {  //Attention delicat pour eviter pb overflow
       LastRMS_Millis = tps;
-      unsigned long ralenti = long(PuissanceS_M / 10);  // On peut ralentir échange sur Wifi si grosse puissance soutirée en cours
       if (Source == "NotDef") {
         LectureNotDef();
         PeriodeProgMillis = 600;
@@ -1537,33 +1537,36 @@ void GestionOverproduction() {  // chaque 200ms (adaptation 5 fois par seconde)
         RetardF[i] = 100.0 - MaxTriacPw;  //On avec ouverture limitée en forcé prioritaire ou suivant la période
       } else {                            // régulation 3 (PW) ou 4 (Triac)
 
-        //Coef Integral ou réactivité
-        if (Puissance < SeuilPw && ReacCACSI > 1 && ReacCACSI < 100) Ki = Ki * GainCACSI;  //On boost si besoin l'écart (*2, 4 ou 8)
-        if (Actif[i] == MODE_DECOUPE_ONOFF) {                                              //Les relais en On/Off
-          if (Puissance > MaxTriacPw) { RetardF[i] = 100; }                                //OFF
-          if (Puissance < SeuilPw) { RetardF[i] = 0; }                                     //On
+        if (Actif[i] == MODE_DECOUPE_ONOFF) {                 //Les relais en On/Off
+          if (Puissance > MaxTriacPw) { RetardF[i] = 100; }   //OFF
+          if (Puissance < SeuilPw) { RetardF[i] = 0; }        //On
         } else {
           ErrorPw = Puissance - SeuilPw;
           //Integration de l'erreur
-          Ki = float(LesActions[i].Ki) / 10000.0;
-          IntegrErrorPw[i] += 0.0001;  //On ferme très légèrement si pas de message reçu. Sécurité
-          IntegrErrorPw[i] += ErrorPw * Ki;
-          IntegrErrorPw[i] = constrain(IntegrErrorPw[i], 0.0, 100.0);  //Ne pas accumuler des valeurs enormes
-          if (LesActions[i].PID && ModePara == 1) {
-            Kp = float(LesActions[i].Kp) / 1000.0;  //Coef proportionnel
-            Kd = float(LesActions[i].Kd) / 1000.0;  //Coef/derivé
-            Propor[i] = Kp * ErrorPw;
-            if (LesActions[i].Ki == 0 && LesActions[i].Kp > 0) IntegrErrorPw[i] = 50.0;  //Cas particulier avec régulation uniquement de P
-            Derive = Kd * (ErrorPw - LastErrorPw[i]);
-            DeriveF[i] = 0.2 * Derive + 0.8 * DeriveF[i];            // Filtrage car manque de mesure donne Derive=0
-            RetardF[i] = Propor[i] + IntegrErrorPw[i] + DeriveF[i];  //Mode PID
+          Ki = float(LesActions[i].Ki) / 10000.0;  //Coef Integral calculé AVANT le boost CACSI
+          if (Puissance < SeuilPw && ReacCACSI > 1 && ReacCACSI < 100) Ki *= GainCACSI;  //Boost réactivité CACSI (*2, 4 ou 8)
+          if (millis() - LastMesureMillis > 5000UL) {  //Mesure de puissance périmée : on ferme rapidement (sécurité ~4s)
+            RetardF[i] = min(100.0f, RetardF[i] + 5.0f);
+            IntegrErrorPw[i] = RetardF[i];  //On ne fait pas confiance à une mesure vieille de plus de 5s
           } else {
-            // le Triac ou les relais en sinus
-            RetardF[i] = IntegrErrorPw[i];  // Gain de boucle de l'asservissement en mode Integral only
-            Propor[i] = 0;
-            DeriveF[i] = 0;
+            IntegrErrorPw[i] += ErrorPw * Ki;
+            IntegrErrorPw[i] = constrain(IntegrErrorPw[i], 0.0, 100.0);  //Ne pas accumuler des valeurs enormes
+            if (LesActions[i].PID && ModePara == 1) {
+              Kp = float(LesActions[i].Kp) / 1000.0;  //Coef proportionnel
+              Kd = float(LesActions[i].Kd) / 1000.0;  //Coef/derivé
+              Propor[i] = Kp * ErrorPw;
+              if (LesActions[i].Ki == 0 && LesActions[i].Kp > 0) IntegrErrorPw[i] = 50.0;  //Cas particulier avec régulation uniquement de P
+              Derive = Kd * (ErrorPw - LastErrorPw[i]);
+              DeriveF[i] = 0.2 * Derive + 0.8 * DeriveF[i];            // Filtrage car manque de mesure donne Derive=0
+              RetardF[i] = Propor[i] + IntegrErrorPw[i] + DeriveF[i];  //Mode PID
+            } else {
+              // le Triac ou les relais en sinus
+              RetardF[i] = IntegrErrorPw[i];  // Gain de boucle de l'asservissement en mode Integral only
+              Propor[i] = 0;
+              DeriveF[i] = 0;
+            }
+            LastErrorPw[i] = ErrorPw;
           }
-          LastErrorPw[i] = ErrorPw;
           if (RetardF[i] < 100 - MaxTriacPw) { RetardF[i] = 100 - MaxTriacPw; }
         }
 

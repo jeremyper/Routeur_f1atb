@@ -14,20 +14,22 @@ WiFiClient clientSma;
 
 //Lecture d'un registre 32 bits (2 registres Modbus) en FC3. ok passe à false en cas d'échec.
 long SMA_Read32(uint16_t reg, bool &ok) {
+  while (clientSma.available()) clientSma.read();  //Vider le buffer avant la requête (résidus d'un échange précédent)
   uint8_t trame[12] = { 0x00, 0x01, 0x00, 0x00, 0x00, 0x06, 0x03, 0x03,
                         (uint8_t)(reg >> 8), (uint8_t)(reg & 0xFF), 0x00, 0x02 };
   clientSma.write(trame, 12);
   unsigned long timeout = millis();
-  while (clientSma.available() < 13) {
+  while (clientSma.available() < 9) {  //9 octets = taille minimale d'une réponse valide (y compris exception Modbus)
     if (millis() - timeout > 3000 || !clientSma.connected()) {
       ok = false;
       return 0;
     }
     yield();
   }
-  uint8_t rep[13];
-  clientSma.read(rep, 13);
-  if (rep[7] != 0x03 || rep[8] != 4) {  //Exception ou réponse inattendue
+  uint8_t rep[13] = { 0 };
+  int n = min(clientSma.available(), 13);
+  clientSma.read(rep, n);
+  if (n < 9 || rep[7] == 0x83 || rep[8] != 4) {  //Exception Modbus (FC|0x80) ou réponse inattendue
     ok = false;
     return 0;
   }

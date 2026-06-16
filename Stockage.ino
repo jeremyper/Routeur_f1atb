@@ -43,6 +43,7 @@ void init_puissance() {
   PVA_M_moy = 0.0;
 }
 void filtre_puissance() {  //Filtre RC
+  LastMesureMillis = millis();  //Horodatage : toutes les sources de puissance passent ici (sécurité fermeture SSR)
 
   float A = 0.3;  //Coef pour un lissage en multi-sinus et train de sinus sur les mesures de puissance courte
   float B = 0.7;
@@ -518,16 +519,18 @@ void Record_Data(String dateAMJ, String MesSage, int16_t HeureCouranteDeci_) {
     while (file) {
       FileName = String(file.name());
       p = FileName.indexOf(".csv");
-      if (p > 6) {
+      //On ne purge QUE les fichiers de données mensuels "Mois_Wh_AAAAMM.csv".
+      //Sinon "histmeteo.csv" donnait dateJ=0 (chaîne non numérique) et était toujours supprimé en premier.
+      if (p > 6 && FileName.indexOf("Mois_Wh_") >= 0) {
         dateJ = FileName.substring(p - 6, p).toInt();
-        if (dateJ < LePlusVieux) {
+        if (dateJ >= 200000 && dateJ < LePlusVieux) {  //AAAAMM valide, on exclut les valeurs aberrantes
           LePlusVieux = dateJ;
           S = FileName;
         }
       }
       file = root.openNextFile();
     }
-    LittleFS.remove("/" + S);  //On retire le fichier du mois le plus vieux
+    if (S != "") LittleFS.remove("/" + S);  //On retire le fichier du mois le plus vieux (s'il existe)
   }
   String AM_file = "/Mois_Wh_" + dateAMJ.substring(0, 6) + ".csv";
   bool biSonde = false;
