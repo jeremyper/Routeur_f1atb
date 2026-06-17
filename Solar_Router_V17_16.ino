@@ -792,6 +792,7 @@ byte arrIP[4];
 
 //Multicoeur - Processeur 0 - Collecte données RMS local ou distant
 TaskHandle_t Task1;
+TaskHandle_t Task2;  // Tâche réseau (RTE/Météo/SMA) déportée sur core 0
 esp_err_t ESP32_ERROR;
 bool PuissanceRecue = false;
 int PuissanceValide = 5;
@@ -1179,6 +1180,15 @@ void setup() {
     &Task1,                 /* Task handle to keep track of created task */
     0);                     /* pin task to core 0 */
 
+  xTaskCreatePinnedToCore(  // Appels réseau bloquants déportés sur core 0
+    Task_Reseau,
+    "Task_Reseau",
+    8192,   /* Stack : appels HTTP/Modbus nécessitent de la place */
+    NULL,
+    1,      /* Priorité basse : en dessous de Task_LectureRMS (10) */
+    &Task2,
+    0);     /* core 0 */
+
 
   //Hardware timer 10ms
   timer10ms = timerBegin(1000000);  //Clock 1MHz
@@ -1262,6 +1272,29 @@ void Task_LectureRMS(void *pvParameters) {
 
 
 
+
+// Tâche réseau sur core 0 : appels bloquants RTE/Météo/SMA toutes les 30s
+// Isolés ici pour ne pas perturber la régulation 200ms sur core 1
+void Task_Reseau(void *pvParameters) {
+  vTaskDelay(pdMS_TO_TICKS(5000));  // Laisser le WiFi s'établir
+  for (;;) {
+    if (ModeReseau == 0) {
+      Call_RTE_data();
+      int Ltarf = 0;
+      if (LTARF.indexOf("PLEINE") >= 0) Ltarf += 1;
+      if (LTARF.indexOf("CREUSE") >= 0) Ltarf += 2;
+      if (LTARF.indexOf("BLEU") >= 0) Ltarf += 4;
+      if (LTARF.indexOf("BLANC") >= 0) Ltarf += 8;
+      if (LTARF.indexOf("ROUGE") >= 0) Ltarf += 16;
+      LTARFbin = Ltarf;
+      if (LTARF != "") PrintScroll(LTARF);
+      Call_Meteo_data();
+      Call_SMA_data();
+      CalculBallon();
+    }
+    vTaskDelay(pdMS_TO_TICKS(30000));
+  }
+}
 
 /* **********************
    * ****************** *
@@ -1361,8 +1394,9 @@ void loop() {
     }
 
     if (tps - previousOverProdMillis >= 200) {
+      unsigned long dtOverProd = tps - previousOverProdMillis;
       previousOverProdMillis = tps;
-      GestionOverproduction();
+      GestionOverproduction(dtOverProd);
     }
   }
   LireSerial();
@@ -1469,21 +1503,7 @@ void loop() {
     TelnetPrintln("Mémoire RAM libre minimum: " + String(esp_get_minimum_free_heap_size()) + " byte");
     float DureeOn = float(T_On_seconde) / 3600.0;
     TelnetPrintln("ESP32 ON depuis : " + String(DureeOn) + " heures");
-    //RTE
-    if (ModeReseau == 0) {  //Valabe pour Ethernet également
-      Call_RTE_data();
-      int Ltarf = 0;  //Code binaire Tarif
-      if (LTARF.indexOf("PLEINE") >= 0) Ltarf += 1;
-      if (LTARF.indexOf("CREUSE") >= 0) Ltarf += 2;
-      if (LTARF.indexOf("BLEU") >= 0) Ltarf += 4;
-      if (LTARF.indexOf("BLANC") >= 0) Ltarf += 8;
-      if (LTARF.indexOf("ROUGE") >= 0) Ltarf += 16;
-      LTARFbin = Ltarf;
-      if (LTARF != "") PrintScroll(LTARF);
-      Call_Meteo_data();  //Prévision solaire Open-Meteo (rafraichie toutes les 2h)
-      Call_SMA_data();    //Production onduleur SMA via Modbus TCP (toutes les 20s)
-      CalculBallon();     //Besoin de chauffe du ballon vs surplus solaire prévu
-    }
+    // RTE/Météo/SMA/Ballon : déportés sur Task_Reseau (core 0) pour ne pas bloquer la régulation
     if (ESP32_Type == 0) StockMessage("! Carte ESP32 non définie !");
     if (pSerial == 0 && (Source == "UxIx2" || Source == "UxIx3")) StockMessage("! Port série non défini !");
   }
@@ -1496,7 +1516,7 @@ void loop() {
 // ************
 // *  ACTIONS *
 // ************
-void GestionOverproduction() {  // chaque 200ms (adaptation 5 fois par seconde)
+void GestionOverproduction(unsigned long dt) {  // appelée à ~200ms, dt = durée réelle en ms
   float SeuilPw, ErrorPw = 0, Derive = 0;
   float MaxTriacPw;
   float Kp, Ki, Kd;
@@ -1549,7 +1569,7 @@ void GestionOverproduction() {  // chaque 200ms (adaptation 5 fois par seconde)
             RetardF[i] = min(100.0f, RetardF[i] + 5.0f);
             IntegrErrorPw[i] = RetardF[i];  //On ne fait pas confiance à une mesure vieille de plus de 5s
           } else {
-            IntegrErrorPw[i] += ErrorPw * Ki;
+            IntegrErrorPw[i] += ErrorPw * Ki * (float(dt) / 200.0f);  // normalisé à 200ms pour Ki invariant
             IntegrErrorPw[i] = constrain(IntegrErrorPw[i], 0.0, 100.0);  //Ne pas accumuler des valeurs enormes
             if (LesActions[i].PID && ModePara == 1) {
               Kp = float(LesActions[i].Kp) / 1000.0;  //Coef proportionnel
