@@ -1425,3 +1425,253 @@ function AdaptationSource() {
 
 }
 )====";
+
+// ActionsJS5 — append at end of JS_Actions.h
+//************************************************
+// Refonte Soleo : vue cartes en langage naturel,
+// editeur plein ecran, badges live, theme.
+//************************************************
+
+const char *ActionsJS5 = R"====(
+
+// ---- Heure courante en echelle Hdeci (0..2400) ----
+function _NowHdeci(){
+  var d = new Date();
+  return d.getHours() * 100 + Math.round(d.getMinutes() / 0.6);
+}
+
+// ---- Libelles ----
+var _ModeNoms  = ["Inactif", "Tout ou rien", "Multi-sinus", "Train de sinus"];
+var _MeteoNoms = ["", "si prevision demain < seuil", "si prevision demain suffisante",
+                  "si prevision aujourd'hui < seuil", "si prevision aujourd'hui suffisante",
+                  "si besoin ballon non couvert (adaptatif)"];
+
+function _TarifPhrase(t){
+  var p = [];
+  if (t & 1)  p.push("Heures Pleines");
+  if (t & 2)  p.push("Heures Creuses");
+  if (t & 4)  p.push("jours Bleus");
+  if (t & 8)  p.push("jours Blancs");
+  if (t & 16) p.push("jours Rouges");
+  return p.length ? "en " + p.join(", ") : "";
+}
+
+// ---- ActionToPhrase : description en francais courant ----
+function ActionToPhrase(act){
+  if (!act) return "";
+  if (act.Actif == 0) return "Automatisme inactif";
+  var morceaux = [];
+  var H0 = 0;
+  for (var i = 0; i < act.Periodes.length; i++){
+    var p = act.Periodes[i];
+    var hd = parseInt(p.Hfin);
+    var deb = Hdeci2Hmn(H0);
+    var fin = Hdeci2Hmn(hd);
+    H0 = hd;
+    if (p.Type == 0 || p.Type == 1) continue; // pas de controle / OFF : ignore
+    var phrase = "";
+    if (p.Type == 3){
+      phrase = "Surplus solaire de " + deb + " a " + fin;
+    } else if (p.Type == 2){
+      phrase = "Marche forcee de " + deb + " a " + fin;
+    } else {
+      continue;
+    }
+    var cond = [];
+    if (typeof p.CanalTemp != "undefined" && p.CanalTemp >= 0){
+      var tinf = parseFloat(p.Tinf), tsup = parseFloat(p.Tsup);
+      if (tinf < 1500 && tinf > -500) cond.push("T < " + (tinf/10).toFixed(0) + "deg");
+      if (tsup < 1500 && tsup > -500) cond.push("T > " + (tsup/10).toFixed(0) + "deg");
+    }
+    if (p.MeteoCond > 0 && _MeteoNoms[p.MeteoCond]){
+      cond.push(_MeteoNoms[p.MeteoCond]);
+    }
+    var tarif = parseInt(p.Tarif) || 0;
+    if (tarif > 0 && tarif < 31){   // 31 = toutes les cases cochees = pas de restriction
+      var tp = _TarifPhrase(tarif);
+      if (tp) cond.push(tp);
+    }
+    if (cond.length) phrase += " — " + cond.join(", ");
+    morceaux.push(phrase);
+  }
+  if (morceaux.length == 0){
+    return "Mode " + (_ModeNoms[act.Actif] || "");
+  }
+  return morceaux.join(" · ");
+}
+
+// ---- RenderMiniTimeline : barre coloree 24h + aiguille ----
+function RenderMiniTimeline(act){
+  var s = "<div class='mini-tl'>";
+  if (act && act.Actif != 0){
+    var H0 = 0;
+    for (var i = 0; i < act.Periodes.length; i++){
+      var p = act.Periodes[i];
+      var hd = parseInt(p.Hfin);
+      var w = ((hd - H0) / 2400) * 100;
+      if (w < 0) w = 0;
+      var cls = "tl-off";
+      if (p.Type == 3) cls = "tl-route";
+      else if (p.Type == 2) cls = "tl-on";
+      s += "<div class='tl-seg " + cls + "' style='width:" + w.toFixed(2) + "%'></div>";
+      H0 = hd;
+    }
+  }
+  var now = (_NowHdeci() / 2400) * 100;
+  s += "<div class='tl-now' style='left:" + now.toFixed(2) + "%'></div>";
+  s += "</div>";
+  return s;
+}
+
+// ---- RenderCardView : toutes les actions en cartes ----
+function RenderCardView(){
+  var cont = GID("action-cards");
+  if (!cont) return;
+  if (!F || !F.Actions || F.Actions.length == 0){
+    cont.innerHTML = "<div class='empty-state'><div class='emo'>☀️</div>" +
+      "<div>Aucun automatisme pour l'instant.</div>" +
+      "<div>Appuyez sur <b>+ Automatisme</b> pour commencer.</div></div>";
+    GH("act-count", "");
+    return;
+  }
+  var s = "";
+  var nbActifs = 0;
+  for (var i = 0; i < F.Actions.length; i++){
+    var act = F.Actions[i];
+    if (act.Actif > 0) nbActifs++;
+    var icone = (act.Actif == 0) ? "⏸" : (act.Actif == 1 ? "🔌" : "⚡");
+    var icls  = (act.Actif == 0) ? "inactive" : (act.Actif == 1 ? "relay" : "routing");
+    var sub   = _ModeNoms[act.Actif] || "";
+    var titre = act.Titre ? act.Titre : ("Action " + i);
+    s += "<div class='act-card' id='actcard" + i + "'>";
+    s += "<div class='act-card-head'>";
+    s += "<div class='act-icon " + icls + "'>" + icone + "</div>";
+    s += "<div><div class='act-name'>" + titre + "</div><div class='act-sub'>" + sub + "</div></div>";
+    s += "<div class='act-status status-idle' id='actstatus" + i + "'>⏸ Veille</div>";
+    s += "</div>";
+    s += RenderMiniTimeline(act);
+    s += "<div class='act-phrase'>" + ActionToPhrase(act) + "</div>";
+    s += "<div class='act-btns'>";
+    if (act.Actif > 0){
+      s += "<button class='btn-s btn-force' onclick='ForceAction(" + i + ",1)'>Forcer +30mn</button>";
+      s += "<button class='btn-s btn-stop' onclick='ForceAction(" + i + ",-1)'>Stopper 30mn</button>";
+    }
+    s += "<button class='btn-s' onclick='OuvrirDetail(" + i + ")'>Modifier</button>";
+    s += "<span style='flex:1 1 auto'></span>";
+    s += "<button class='btn-s' title='Modifier / supprimer dans l editeur' onclick='OuvrirDetail(" + i + ")'>🗑</button>";
+    s += "</div>";
+    s += "</div>";
+  }
+  cont.innerHTML = s;
+  GH("act-count", nbActifs + " actif" + (nbActifs > 1 ? "s" : ""));
+}
+
+// ---- Wrap TraceActions pour rafraichir les cartes ----
+var _TA = typeof TraceActions === 'function' ? TraceActions : null;
+if (_TA) window.TraceActions = function(r){ _TA(r); RenderCardView(); };
+
+// ---- Bascule vue cartes <-> editeur ----
+function OuvrirDetail(iAct){
+  GID("cards-section").style.display = "none";
+  GID("editor-section").style.display = "block";
+  var fab = GID("fab"); if (fab) fab.style.display = "none";
+  var sb = GID("save-bar"); if (sb) sb.style.display = "none";
+  var pls = document.querySelectorAll(".planning");
+  for (var k = 0; k < pls.length; k++) pls[k].classList.remove("active-edit");
+  if (iAct >= 0){
+    var el0 = GID("planning" + iAct);
+    if (el0) el0.classList.add("active-edit");
+  }
+  setTimeout(function(){
+    var el = GID("planning" + iAct);
+    if (el) el.scrollIntoView({behavior:"smooth", block:"start"});
+  }, 100);
+}
+
+function FermerDetail(){
+  GID("cards-section").style.display = "block";
+  GID("editor-section").style.display = "none";
+  var fab = GID("fab"); if (fab) fab.style.display = "block";
+  RenderCardView();
+}
+
+// ---- Forcage marche / arret ----
+function ForceAction(iAct, dir){
+  fetch("/ajax_etatActions?Force=" + dir + "&NumAction=" + iAct)
+    .then(function(r){ return r.text(); })
+    .catch(function(){})
+    .finally(function(){ setTimeout(PollStatuses, 500); });
+}
+
+// ---- PollStatuses : rafraichit les badges live ----
+function PollStatuses(){
+  fetch("/ajax_etatActions?Force=0&NumAction=0")
+    .then(function(r){ return r.text(); })
+    .then(function(txt){
+      var champs = txt.split(GS);
+      // champs[0..3] = temps, source, RMSextIP, NbActifs ; puis 1 par action
+      for (var c = 4; c < champs.length; c++){
+        var d = champs[c].split(RS);
+        if (d.length < 3) continue;
+        var idx = parseInt(d[0]);
+        if (isNaN(idx)) continue;
+        var state = d.length > 2 ? d[2] : "";   // d[0]=idx d[1]=titre d[2]=state d[3]=tOnOff
+        var tOnOff = d.length > 3 ? parseFloat(d[3]) : 0;
+        var badge = GID("actstatus" + idx);
+        var card = GID("actcard" + idx);
+        if (!badge) continue;
+        var cls = "act-status status-idle";
+        var lbl = "⏸ Veille";
+        var actifCard = false;
+        if (tOnOff > 0){
+          cls = "act-status status-forced";
+          lbl = "🔥 Force " + Math.round(tOnOff) + "mn";
+          actifCard = true;
+        } else if (tOnOff < 0){
+          cls = "act-status status-idle";
+          lbl = "⏹ Stop " + Math.round(-tOnOff) + "mn";
+        } else if (state == "On"){
+          cls = "act-status status-on status-routing";
+          lbl = "⚡ Marche";
+          actifCard = true;
+        } else if (state == "Off"){
+          cls = "act-status status-idle";
+          lbl = "⏸ Arret";
+        } else if (state !== "" && !isNaN(parseFloat(state))){
+          cls = "act-status status-routing";
+          lbl = "☀️ " + Math.round(parseFloat(state)) + "%";
+          actifCard = parseFloat(state) > 0;
+        }
+        badge.className = cls;
+        badge.innerHTML = lbl;
+        if (card){
+          if (actifCard) card.classList.add("active-card");
+          else card.classList.remove("active-card");
+        }
+      }
+    })
+    .catch(function(){})
+    .finally(function(){ setTimeout(PollStatuses, 4000); });
+}
+
+// ---- Theme ----
+function toggleTheme(){
+  var el = document.documentElement;
+  var cur = el.getAttribute("data-theme") == "light" ? "dark" : "light";
+  el.setAttribute("data-theme", cur);
+  try { localStorage.setItem("soleo-theme", cur); } catch(e){}
+}
+(function(){
+  try {
+    var t = localStorage.getItem("soleo-theme");
+    if (t) document.documentElement.setAttribute("data-theme", t);
+  } catch(e){}
+})();
+
+// ---- Override Init : doit etre defini APRES l'original ----
+window.Init = function(){
+  LoadParaFixe();
+  setTimeout(PollStatuses, 3000);
+};
+
+)====";

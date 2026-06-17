@@ -25,6 +25,7 @@ void Init_Server() {
   server.on("/ActionsJS2", handleActionsJS2);
   server.on("/ActionsJS3", handleActionsJS3);
   server.on("/ActionsJS4", handleActionsJS4);
+  server.on("/ActionsJS5", handleActionsJS5);
   server.on("/PinsActionsJS", handlePinsActionsJS);
   server.on("/ShowAction", handleShowAction);
   server.on("/UpdateK", handleUpdateK);
@@ -562,6 +563,10 @@ void handleActionsJS3() {
 void handleActionsJS4() {
   CacheEtClose(300);
   server.send(200, "text/javascript", ActionsJS4);
+}
+void handleActionsJS5() {
+  CacheEtClose(300);
+  server.send(200, "text/javascript", ActionsJS5);
 }
 
 
