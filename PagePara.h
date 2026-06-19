@@ -265,6 +265,26 @@ body{padding-bottom:90px}
 </div>
 </details>
 
+<details class="acc" id="accAbsence">
+<summary><span class="aico">🏨</span><span class="atit">Mode absence<small>Coupe les actions quand vous êtes parti</small></span><span class="chev">▼</span></summary>
+<div class="abody">
+<div class="info">Quand le mode absence est actif, toutes les actions (chauffe-eau…) sont coupées. Une chauffe de sécurité anti-légionelle est déclenchée automatiquement si le ballon reste froid trop longtemps. Activez aussi le mode d'un simple bouton depuis l'accueil.</div>
+<div class="rowh"><label for="AbsenceManuel">Je suis absent maintenant<span class="hint">activation manuelle immédiate</span></label><label class="sw"><input type="checkbox" id="AbsenceManuel" name="AbsenceManuel"><span class="kn"></span></label></div>
+<div class="subt">Absence programmée (optionnel)</div>
+<div class="row"><label for="AbsenceDebut">Date de départ</label><input type="date" id="AbsenceDebut" name="AbsenceDebut"></div>
+<div class="row"><label for="AbsenceFin">Date de retour</label><input type="date" id="AbsenceFin" name="AbsenceFin"></div>
+<div class="subt">Sécurité sanitaire</div>
+<div class="row"><label for="AbsenceAntiLegio">Chauffe anti-légionelle<span class="hint">force une chauffe complète du ballon si sa température cible n'est pas atteinte depuis ce nombre de jours (0 = désactivé). Nécessite une sonde ballon configurée.</span></label>
+<select id="AbsenceAntiLegio" name="AbsenceAntiLegio">
+<option value="0">Désactivée</option>
+<option value="3">Tous les 3 jours</option>
+<option value="5">Tous les 5 jours</option>
+<option value="7">Toutes les semaines</option>
+<option value="14">Toutes les 2 semaines</option>
+</select></div>
+</div>
+</details>
+
 <details class="acc" id="accReseau">
 <summary><span class="aico">🌐</span><span class="atit">Réseau &amp; domotique<small>WiFi, adresse IP, MQTT</small></span><span class="chev">▼</span></summary>
 <div class="abody">

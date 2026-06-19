@@ -285,6 +285,11 @@ void DeserializeConfiguration(String json) {
   BallonPuissance = conf["BallonPuissance"].isNull() ? BallonPuissance : conf["BallonPuissance"].as<int16_t>();
   BallonCanal = conf["BallonCanal"].isNull() ? BallonCanal : conf["BallonCanal"].as<int8_t>();
   LastSmaMillis = 0;  //Forcer une relecture SMA après changement de paramètres
+  AbsenceManuel = conf["AbsenceManuel"] | 0;
+  AbsenceDebut = conf["AbsenceDebut"].isNull() ? AbsenceDebut : conf["AbsenceDebut"].as<String>();
+  AbsenceFin = conf["AbsenceFin"].isNull() ? AbsenceFin : conf["AbsenceFin"].as<String>();
+  AbsenceAntiLegio = conf["AbsenceAntiLegio"].isNull() ? AbsenceAntiLegio : conf["AbsenceAntiLegio"].as<byte>();
+  AbsenceJoursSansChauffe = conf["AbsenceJoursSansChauffe"] | 0;
   FanGpio = conf["FanGpio"].isNull() ? FanGpio : conf["FanGpio"].as<int8_t>();
   FanCanalTemp = conf["FanCanalTemp"].isNull() ? FanCanalTemp : conf["FanCanalTemp"].as<int8_t>();
   FanTdemarrage = conf["FanTdemarrage"].isNull() ? FanTdemarrage : conf["FanTdemarrage"].as<int16_t>();
@@ -453,6 +458,11 @@ String SerializeConfiguration() {
   conf["BallonTcible"] = BallonTcible;
   conf["BallonPuissance"] = BallonPuissance;
   conf["BallonCanal"] = BallonCanal;
+  conf["AbsenceManuel"] = AbsenceManuel;
+  conf["AbsenceDebut"] = AbsenceDebut;
+  conf["AbsenceFin"] = AbsenceFin;
+  conf["AbsenceAntiLegio"] = AbsenceAntiLegio;
+  conf["AbsenceJoursSansChauffe"] = AbsenceJoursSansChauffe;
   conf["FanGpio"] = FanGpio;
   conf["FanCanalTemp"] = FanCanalTemp;
   conf["FanTdemarrage"] = FanTdemarrage;

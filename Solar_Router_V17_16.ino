@@ -642,6 +642,15 @@ int16_t BallonTcible = 55;      //Température cible en °C
 int16_t BallonPuissance = 2400; //Puissance résistance en W
 int8_t BallonCanal = -1;        //Canal sonde température ballon (-1 = non configuré)
 
+//Mode absence (vacances / hôtel) : coupe les actions, avec sécurité anti-légionelle sur le ballon
+byte AbsenceManuel = 0;          //Interrupteur manuel (0/1) persisté
+String AbsenceDebut = "";        //Date début programmée "AAAAMMJJ" (vide = pas de programmation)
+String AbsenceFin = "";          //Date fin programmée "AAAAMMJJ"
+byte AbsenceAntiLegio = 7;       //Intervalle anti-légionelle en jours (0 = désactivé)
+int AbsenceJoursSansChauffe = 0; //Nb de jours sans que le ballon atteigne sa cible (persisté)
+bool ModeAbsenceActif = false;   //Calculé : absence réellement active en ce moment
+bool AntiLegioEnCours = false;   //Cycle de chauffe anti-légionelle en cours
+
 //Paramètres ventilateur SSR (refroidissement thermorégulé)
 int8_t FanGpio = 0;          //GPIO PWM du ventilateur (0 = désactivé)
 int8_t FanCanalTemp = -1;    //Canal sonde température SSR (-1 = désactivé)
@@ -1410,6 +1419,7 @@ void loop() {
       JourHeureChange();
       EnergieQuotidienne();
       H_Ouvre_Equivalent(dt);
+      GestionAbsence();  //État mode absence + sécurité anti-légionelle
       // Ventilateur SSR thermorégulé (rampe linéaire Tdemarrage → Tmax)
       if (FanGpio > 0 && FanCanalTemp >= 0 && TemperatureValide[FanCanalTemp] > 0) {
         float tSsr = temperature[FanCanalTemp];
@@ -1546,6 +1556,37 @@ void loop() {
   delay(1);
 }  // Fin du loop core 1
 
+// ****************
+// *  MODE ABSENCE *
+// ****************
+// Évalue si le mode absence est actif (manuel ou plage de dates) et gère le
+// déclenchement du cycle anti-légionelle. Appelé périodiquement (boucle 2s).
+void GestionAbsence() {
+  bool actif = (AbsenceManuel == 1);
+  //Programmation par dates : actif si aujourd'hui est dans [début, fin] (comparaison "AAAAMMJJ")
+  if (AbsenceDebut.length() == 8 && AbsenceFin.length() == 8 && DateAMJ.length() == 8) {
+    if (DateAMJ >= AbsenceDebut && DateAMJ <= AbsenceFin) actif = true;
+  }
+  if (actif != ModeAbsenceActif) {  //Trace du changement d'état
+    JournalAjoute(actif ? "Mode absence activé" : "Mode absence désactivé");
+  }
+  ModeAbsenceActif = actif;
+
+  //Sécurité anti-légionelle : suit la température du ballon
+  if (BallonCanal >= 0 && TemperatureValide[BallonCanal] > 0) {
+    if (temperature[BallonCanal] >= float(BallonTcible)) {
+      AbsenceJoursSansChauffe = 0;   //Cible atteinte : compteur remis à zéro
+      if (AntiLegioEnCours) JournalAjoute("Anti-légionelle : chauffe complète terminée");
+      AntiLegioEnCours = false;
+    } else if (ModeAbsenceActif && AbsenceAntiLegio > 0 && AbsenceJoursSansChauffe >= AbsenceAntiLegio) {
+      if (!AntiLegioEnCours) JournalAjoute("Anti-légionelle : chauffe de sécurité déclenchée");
+      AntiLegioEnCours = true;       //Trop longtemps sans chauffe : déclenchement
+    }
+  } else {
+    AntiLegioEnCours = false;        //Pas de sonde ballon valide : pas de cycle
+  }
+}
+
 // ************
 // *  ACTIONS *
 // ************
@@ -1582,6 +1623,16 @@ void GestionOverproduction(unsigned long dt) {  // appelée à ~200ms, dt = dur�
     Action::ParaPeriode P = LesActions[i].ParaEnCours(HeureCouranteDeci, laTemperature, LTARFbin, Retard[i]);  //Type: 0=NO,1=OFF,2=ON,3=PW,4=Triac
     if (forceOff) {
       P.Type = 1;  //  on arrete
+    }
+    //Mode absence : coupe les actions, sauf chauffe anti-légionelle sur l'action ballon
+    if (ModeAbsenceActif) {
+      bool estBallon = (BallonCanal >= 0 && LesActions[i].CanalTempEnCours(HeureCouranteDeci) == BallonCanal);
+      if (AntiLegioEnCours && estBallon) {
+        P.Type = 2;     //Force ON : chauffe complète garantie (au réseau si pas de soleil)
+        P.Vmax = 100;   //Pleine ouverture
+      } else {
+        P.Type = 1;     //Action coupée pendant l'absence
+      }
     }
     if (Actif[i] != MODE_INACTIF && P.Type > 1) {  // On ne traite plus le NO
       SeuilPw = float(P.Vmin);

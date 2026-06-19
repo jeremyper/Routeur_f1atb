@@ -59,7 +59,33 @@ function MajVar(){
   el.textContent=tempo?(tempo+(h?" · "+h:"")):(h||"Tarif —");
   const c=(b&16)?"var(--grid-imp)":(b&8)?"var(--txt)":(b&4)?"var(--home)":(b&2)?"var(--grid-exp)":(b&1)?"var(--sun)":"var(--txt-dim)";
   el.style.color=c;el.style.borderColor=c;
+  MajAbsence();
   MajFlux();MajTuiles();
+}
+
+//---------- Mode absence ----------
+function MajAbsence(){
+  if(!V)return;
+  var actif=(parseInt(V.ModeAbsenceActif)||0)==1;
+  var legio=(parseInt(V.AntiLegioEnCours)||0)==1;
+  var ban=GID("absenceBanner");
+  if(ban){
+    ban.style.display=actif?"block":"none";
+    ban.innerHTML=actif?(legio
+      ?"🏨 Absence — chauffe anti-légionelle en cours · appuyez pour désactiver"
+      :"🏨 Mode absence actif — actions coupées · appuyez pour désactiver"):"";
+  }
+  var btn=GID("btnAbsence");
+  if(btn)btn.style.background=actif?"rgba(255,181,71,.25)":"";
+}
+async function ToggleAbsence(){
+  var actif=V&&(parseInt(V.ModeAbsenceActif)||0)==1;
+  try{
+    var r=await fetch("/ajax_absence?set="+(actif?0:1));
+    var t=await r.text();
+    if(V)V.ModeAbsenceActif=(t.trim()=="1")?1:0;
+    MajAbsence();
+  }catch(e){}
 }
 
 //---------- Flux d'énergie + phrase statut ----------

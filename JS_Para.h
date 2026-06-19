@@ -8,6 +8,12 @@ var refTempIP = [];
 var dirty = false;
 var toastT;
 
+//Conversion date stockée "AAAAMMJJ" -> "AAAA-MM-JJ" pour <input type=date>
+function isoDate(d){
+  if(!d || (""+d).length!=8) return "";
+  d=""+d; return d.substr(0,4)+"-"+d.substr(4,2)+"-"+d.substr(6,2);
+}
+
 //---------- Thème clair / sombre ----------
 function setTheme(t){
   document.documentElement.setAttribute("data-theme",t);
@@ -170,6 +176,10 @@ function SetParaFixe() {
     GID("FanTdemarrage").value = F.FanTdemarrage !== undefined ? F.FanTdemarrage : 40;
     GID("FanTmax").value = F.FanTmax !== undefined ? F.FanTmax : 60;
     GID("FanVitesseMin").value = F.FanVitesseMin !== undefined ? F.FanVitesseMin : 30;
+    GID("AbsenceManuel").checked = F.AbsenceManuel == 1;
+    GID("AbsenceDebut").value = isoDate(F.AbsenceDebut);
+    GID("AbsenceFin").value = isoDate(F.AbsenceFin);
+    GID("AbsenceAntiLegio").value = F.AbsenceAntiLegio !== undefined ? F.AbsenceAntiLegio : 7;
 
     // --- Paramètres de Température ---
     const NbCanauxTemp = 4;
@@ -237,6 +247,10 @@ function SendValues() {
   F.FanTdemarrage = parseInt(GID("FanTdemarrage").value, 10) || 40;
   F.FanTmax = parseInt(GID("FanTmax").value, 10) || 60;
   F.FanVitesseMin = parseInt(GID("FanVitesseMin").value, 10) || 30;
+  F.AbsenceManuel = GID("AbsenceManuel").checked ? 1 : 0;
+  F.AbsenceDebut = GID("AbsenceDebut").value.replace(/-/g, "");
+  F.AbsenceFin = GID("AbsenceFin").value.replace(/-/g, "");
+  F.AbsenceAntiLegio = parseInt(GID("AbsenceAntiLegio").value, 10);
 
   F.nomRouteur = GID("nomRouteur").value.trim();
   F.nomSondeFixe = GID("nomSondeFixe").value.trim();
