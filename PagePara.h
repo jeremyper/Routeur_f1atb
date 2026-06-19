@@ -223,6 +223,37 @@ body{padding-bottom:90px}
 </div>
 </details>
 
+<details class="acc" id="accVentil">
+<summary><span class="aico">🌀</span><span class="atit">Ventilateur SSR<small>Refroidissement thermorégulé par sonde</small></span><span class="chev">▼</span></summary>
+<div class="abody">
+<div class="row"><label for="FanGpio">Broche GPIO du ventilateur<span class="hint">Broche câblée sur le connecteur FAN de la carte (PWM via transistor)</span></label>
+<select id="FanGpio" name="FanGpio" onchange="checkDisabled();" onclick="checkDisabled();">
+<option value="0">Désactivé</option>
+<option value="4">GPIO 4</option>
+<option value="5">GPIO 5</option>
+<option value="12">GPIO 12</option>
+<option value="13">GPIO 13</option>
+<option value="14">GPIO 14</option>
+<option value="25">GPIO 25</option>
+<option value="26">GPIO 26</option>
+<option value="27">GPIO 27</option>
+<option value="32">GPIO 32</option>
+<option value="33">GPIO 33</option>
+</select></div>
+<div class="row ligneFan" style="display:none"><label for="FanCanalTemp">Sonde de température à surveiller<span class="hint">Sonde posée sur le dissipateur du SSR</span></label>
+<select id="FanCanalTemp" name="FanCanalTemp">
+<option value="-1">Non configurée</option>
+<option value="0">Canal 0</option>
+<option value="1">Canal 1</option>
+<option value="2">Canal 2</option>
+<option value="3">Canal 3</option>
+</select></div>
+<div class="row ligneFan" style="display:none"><label for="FanTdemarrage">Température de démarrage (°C)<span class="hint">Le ventilateur démarre à vitesse minimale dès ce seuil</span></label><input type="number" id="FanTdemarrage" name="FanTdemarrage" step="1" min="20" max="80"></div>
+<div class="row ligneFan" style="display:none"><label for="FanTmax">Température pleine vitesse (°C)<span class="hint">Au-delà, le ventilateur tourne à 100%</span></label><input type="number" id="FanTmax" name="FanTmax" step="1" min="30" max="100"></div>
+<div class="row ligneFan" style="display:none"><label for="FanVitesseMin">Vitesse minimale (%)<span class="hint">Évite le calage au démarrage — typiquement 20 à 40%</span></label><input type="number" id="FanVitesseMin" name="FanVitesseMin" step="5" min="0" max="80"></div>
+</div>
+</details>
+
 <details class="acc" id="accReseau">
 <summary><span class="aico">🌐</span><span class="atit">Réseau &amp; domotique<small>WiFi, adresse IP, MQTT</small></span><span class="chev">▼</span></summary>
 <div class="abody">
