@@ -285,6 +285,11 @@ void DeserializeConfiguration(String json) {
   BallonPuissance = conf["BallonPuissance"].isNull() ? BallonPuissance : conf["BallonPuissance"].as<int16_t>();
   BallonCanal = conf["BallonCanal"].isNull() ? BallonCanal : conf["BallonCanal"].as<int8_t>();
   LastSmaMillis = 0;  //Forcer une relecture SMA après changement de paramètres
+  FanGpio = conf["FanGpio"].isNull() ? FanGpio : conf["FanGpio"].as<int8_t>();
+  FanCanalTemp = conf["FanCanalTemp"].isNull() ? FanCanalTemp : conf["FanCanalTemp"].as<int8_t>();
+  FanTdemarrage = conf["FanTdemarrage"].isNull() ? FanTdemarrage : conf["FanTdemarrage"].as<int16_t>();
+  FanTmax = conf["FanTmax"].isNull() ? FanTmax : conf["FanTmax"].as<int16_t>();
+  FanVitesseMin = conf["FanVitesseMin"].isNull() ? FanVitesseMin : conf["FanVitesseMin"].as<uint8_t>();
   PrixHP = conf["PrixHP"].isNull() ? PrixHP : conf["PrixHP"].as<float>();
   PrixHC = conf["PrixHC"].isNull() ? PrixHC : conf["PrixHC"].as<float>();
   EconomieMois = conf["EconomieMois"].isNull() ? EconomieMois : conf["EconomieMois"].as<float>();
@@ -442,6 +447,11 @@ String SerializeConfiguration() {
   conf["BallonTcible"] = BallonTcible;
   conf["BallonPuissance"] = BallonPuissance;
   conf["BallonCanal"] = BallonCanal;
+  conf["FanGpio"] = FanGpio;
+  conf["FanCanalTemp"] = FanCanalTemp;
+  conf["FanTdemarrage"] = FanTdemarrage;
+  conf["FanTmax"] = FanTmax;
+  conf["FanVitesseMin"] = FanVitesseMin;
   conf["PrixHP"] = serialized(String(PrixHP, 3));
   conf["PrixHC"] = serialized(String(PrixHC, 3));
   conf["EconomieMois"] = serialized(String(EconomieMois, 2));

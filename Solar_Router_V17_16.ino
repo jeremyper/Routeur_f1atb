@@ -641,6 +641,14 @@ int16_t BallonVolume = 200;     //Volume cuve en litres
 int16_t BallonTcible = 55;      //Température cible en °C
 int16_t BallonPuissance = 2400; //Puissance résistance en W
 int8_t BallonCanal = -1;        //Canal sonde température ballon (-1 = non configuré)
+
+//Paramètres ventilateur SSR (refroidissement thermorégulé)
+int8_t FanGpio = 0;          //GPIO PWM du ventilateur (0 = désactivé)
+int8_t FanCanalTemp = -1;    //Canal sonde température SSR (-1 = désactivé)
+int16_t FanTdemarrage = 40;  //Température de démarrage en °C
+int16_t FanTmax = 60;        //Température à pleine vitesse en °C
+uint8_t FanVitesseMin = 30;  //Vitesse minimale quand actif (%)
+uint8_t FanVitesse = 0;      //Vitesse courante en RAM (0-100%)
 int16_t BallonCoefAuto = 70;    //Part du surplus prévu utilisable en % (auto-apprise si SMA actif)
 float Ballon_Besoin = -1;       //kWh nécessaires pour remonter à la cible (-1 = pas de donnée)
 float Ballon_SurplusPrevu = -1; //kWh de surplus solaire attendu
@@ -1002,6 +1010,10 @@ void setup() {
   delay(500);
   LireSerial();
   InitGPIOs();
+  if (FanGpio > 0) {
+    pinMode(FanGpio, OUTPUT);
+    analogWrite(FanGpio, 0);
+  }
   TelnetPrintln("ESP32_Type:" + String(ESP32_Type));
   delay(500);
 
@@ -1391,6 +1403,20 @@ void loop() {
       JourHeureChange();
       EnergieQuotidienne();
       H_Ouvre_Equivalent(dt);
+      // Ventilateur SSR thermorégulé (rampe linéaire Tdemarrage → Tmax)
+      if (FanGpio > 0 && FanCanalTemp >= 0 && TemperatureValide[FanCanalTemp] > 0) {
+        float tSsr = temperature[FanCanalTemp];
+        uint8_t nouvelleVitesse = 0;
+        if (tSsr > float(FanTdemarrage)) {
+          float ramp = float(FanTmax - FanTdemarrage);
+          float pct = (ramp > 0.0f) ? constrain((tSsr - float(FanTdemarrage)) / ramp, 0.0f, 1.0f) : 1.0f;
+          nouvelleVitesse = uint8_t(float(FanVitesseMin) + pct * float(100 - FanVitesseMin));
+        }
+        if (nouvelleVitesse != FanVitesse) {
+          FanVitesse = nouvelleVitesse;
+          analogWrite(FanGpio, map(int(FanVitesse), 0, 100, 0, 255));
+        }
+      }
     }
 
     if (tps - previousOverProdMillis >= 200) {
