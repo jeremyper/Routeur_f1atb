@@ -162,6 +162,8 @@ body{padding-bottom:90px}
 <div class="row ligneBallon" style="display:none"><label for="BallonVolume">Capacité du ballon (litres)</label><input type="number" id="BallonVolume" name="BallonVolume" step="10" min="50" max="500"></div>
 <div class="row ligneBallon" style="display:none"><label for="BallonTcible">Température souhaitée (°C)</label><input type="number" id="BallonTcible" name="BallonTcible" step="1" min="40" max="80"></div>
 <div class="row ligneBallon" style="display:none"><label for="BallonPuissance">Puissance de la résistance (W)</label><input type="number" id="BallonPuissance" name="BallonPuissance" step="100" min="500" max="6000"></div>
+<div class="rowh ligneBallon" style="display:none"><label for="BallonModeIntel">Chauffe prédictive (intelligente)<span class="hint">Apprend votre consommation réelle d'eau chaude et n'entretient que la réserve nécessaire, au lieu de toujours viser la température cible. Une chauffe anti-légionelle de sécurité reste assurée.</span></label><label class="sw"><input type="checkbox" id="BallonModeIntel" name="BallonModeIntel" onclick="checkDisabled();"><span class="kn"></span></label></div>
+<div class="row ligneBallonIntel" style="display:none"><label for="BallonTmin">Température minimale utile (°C)<span class="hint">en dessous, l'eau n'est plus considérée comme exploitable — typiquement 40°C</span></label><input type="number" id="BallonTmin" name="BallonTmin" step="1" min="20" max="55"></div>
 <div class="row ligneBallon" style="display:none"><label>Diagnostic du jour</label><div class="info" id="etatBallon">—</div></div>
 </div>
 </details>

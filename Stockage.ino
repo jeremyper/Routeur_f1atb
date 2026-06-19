@@ -284,6 +284,8 @@ void DeserializeConfiguration(String json) {
   BallonTcible = conf["BallonTcible"].isNull() ? BallonTcible : conf["BallonTcible"].as<int16_t>();
   BallonPuissance = conf["BallonPuissance"].isNull() ? BallonPuissance : conf["BallonPuissance"].as<int16_t>();
   BallonCanal = conf["BallonCanal"].isNull() ? BallonCanal : conf["BallonCanal"].as<int8_t>();
+  BallonModeIntel = conf["BallonModeIntel"] | 0;
+  BallonTmin = conf["BallonTmin"].isNull() ? BallonTmin : conf["BallonTmin"].as<int16_t>();
   LastSmaMillis = 0;  //Forcer une relecture SMA après changement de paramètres
   AbsenceManuel = conf["AbsenceManuel"] | 0;
   AbsenceDebut = conf["AbsenceDebut"].isNull() ? AbsenceDebut : conf["AbsenceDebut"].as<String>();
@@ -458,6 +460,8 @@ String SerializeConfiguration() {
   conf["BallonTcible"] = BallonTcible;
   conf["BallonPuissance"] = BallonPuissance;
   conf["BallonCanal"] = BallonCanal;
+  conf["BallonModeIntel"] = BallonModeIntel;
+  conf["BallonTmin"] = BallonTmin;
   conf["AbsenceManuel"] = AbsenceManuel;
   conf["AbsenceDebut"] = AbsenceDebut;
   conf["AbsenceFin"] = AbsenceFin;

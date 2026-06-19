@@ -697,6 +697,9 @@ void handleParaVar() {
   conf["BallonBesoin"] = serialized(String(Ballon_Besoin, 1));           //kWh pour remonter à la cible
   conf["BallonSurplus"] = serialized(String(Ballon_SurplusPrevu, 1));    //kWh de surplus attendu
   conf["BallonCoefAuto"] = BallonCoefAuto;                               //Coefficient routable appris en %
+  conf["BallonModeIntel"] = BallonModeIntel;                            //Mode prédictif actif
+  conf["BallonReserve"] = serialized(String(Ballon_Reserve, 1));         //kWh d'eau chaude utile disponible
+  conf["BallonUsageMoyen"] = serialized(String(Ballon_UsageMoyen, 1));   //kWh/jour consommés en moyenne
   MajEconomieJour();
   conf["PrixHP"] = serialized(String(PrixHP, 3));                        //€/kWh Heure Pleine (ou tarif unique)
   conf["PrixHC"] = serialized(String(PrixHC, 3));                        //€/kWh Heure Creuse
