@@ -149,6 +149,12 @@ function SetParaFixe() {
     GID("PTemp").value = F.pTemp;
     GID("PrixHP").value = F.PrixHP !== undefined ? F.PrixHP : 0.25;
     GID("PrixHC").value = F.PrixHC !== undefined ? F.PrixHC : 0.15;
+    GID("PrixBleuHP").value = F.PrixBleuHP !== undefined ? F.PrixBleuHP : 0.1609;
+    GID("PrixBleuHC").value = F.PrixBleuHC !== undefined ? F.PrixBleuHC : 0.1296;
+    GID("PrixBlancHP").value = F.PrixBlancHP !== undefined ? F.PrixBlancHP : 0.1894;
+    GID("PrixBlancHC").value = F.PrixBlancHC !== undefined ? F.PrixBlancHC : 0.1486;
+    GID("PrixRougeHP").value = F.PrixRougeHP !== undefined ? F.PrixRougeHP : 0.7562;
+    GID("PrixRougeHC").value = F.PrixRougeHC !== undefined ? F.PrixRougeHC : 0.1568;
     GID("MeteoOn").checked = F.MeteoOn == 1;
     GID("MeteoLat").value = F.MeteoLat !== undefined ? F.MeteoLat : 46.5;
     GID("MeteoLon").value = F.MeteoLon !== undefined ? F.MeteoLon : 2.4;
@@ -210,6 +216,12 @@ function SendValues() {
 
   F.PrixHP = parseFloat(GID("PrixHP").value) || 0.25;
   F.PrixHC = parseFloat(GID("PrixHC").value) || 0.15;
+  F.PrixBleuHP = parseFloat(GID("PrixBleuHP").value) || 0.1609;
+  F.PrixBleuHC = parseFloat(GID("PrixBleuHC").value) || 0.1296;
+  F.PrixBlancHP = parseFloat(GID("PrixBlancHP").value) || 0.1894;
+  F.PrixBlancHC = parseFloat(GID("PrixBlancHC").value) || 0.1486;
+  F.PrixRougeHP = parseFloat(GID("PrixRougeHP").value) || 0.7562;
+  F.PrixRougeHC = parseFloat(GID("PrixRougeHC").value) || 0.1568;
   F.MeteoOn = GID("MeteoOn").checked ? 1 : 0;
   F.MeteoLat = parseFloat(GID("MeteoLat").value) || 0;
   F.MeteoLon = parseFloat(GID("MeteoLon").value) || 0;
@@ -356,6 +368,11 @@ function checkDisabled() {
     // Ventilateur SSR : champs détaillés visibles seulement si un GPIO est sélectionné
     const fanVisible = GID("FanGpio").value != "0";
     document.querySelectorAll(".ligneFan").forEach(l => { l.style.display = fanVisible ? "" : "none"; });
+
+    // Tarifs : si Tempo activé, on affiche les 6 prix Tempo et on masque le tarif Base HP/HC
+    const tempoOn = GID("TempoRTEon").checked;
+    document.querySelectorAll(".ligneTarifTempo").forEach(l => { l.style.display = tempoOn ? "" : "none"; });
+    document.querySelectorAll(".ligneTarifBase").forEach(l => { l.style.display = tempoOn ? "none" : ""; });
 
     // Options de température désactivées en mode point isolé
     for (let i = 0; i < 4; i++) {

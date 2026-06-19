@@ -292,6 +292,12 @@ void DeserializeConfiguration(String json) {
   FanVitesseMin = conf["FanVitesseMin"].isNull() ? FanVitesseMin : conf["FanVitesseMin"].as<uint8_t>();
   PrixHP = conf["PrixHP"].isNull() ? PrixHP : conf["PrixHP"].as<float>();
   PrixHC = conf["PrixHC"].isNull() ? PrixHC : conf["PrixHC"].as<float>();
+  PrixBleuHP = conf["PrixBleuHP"].isNull() ? PrixBleuHP : conf["PrixBleuHP"].as<float>();
+  PrixBleuHC = conf["PrixBleuHC"].isNull() ? PrixBleuHC : conf["PrixBleuHC"].as<float>();
+  PrixBlancHP = conf["PrixBlancHP"].isNull() ? PrixBlancHP : conf["PrixBlancHP"].as<float>();
+  PrixBlancHC = conf["PrixBlancHC"].isNull() ? PrixBlancHC : conf["PrixBlancHC"].as<float>();
+  PrixRougeHP = conf["PrixRougeHP"].isNull() ? PrixRougeHP : conf["PrixRougeHP"].as<float>();
+  PrixRougeHC = conf["PrixRougeHC"].isNull() ? PrixRougeHC : conf["PrixRougeHC"].as<float>();
   EconomieMois = conf["EconomieMois"].isNull() ? EconomieMois : conf["EconomieMois"].as<float>();
   EconomieTotal = conf["EconomieTotal"].isNull() ? EconomieTotal : conf["EconomieTotal"].as<float>();
   WifiSleep = conf["WifiSleep"];
@@ -454,6 +460,12 @@ String SerializeConfiguration() {
   conf["FanVitesseMin"] = FanVitesseMin;
   conf["PrixHP"] = serialized(String(PrixHP, 3));
   conf["PrixHC"] = serialized(String(PrixHC, 3));
+  conf["PrixBleuHP"] = serialized(String(PrixBleuHP, 4));
+  conf["PrixBleuHC"] = serialized(String(PrixBleuHC, 4));
+  conf["PrixBlancHP"] = serialized(String(PrixBlancHP, 4));
+  conf["PrixBlancHC"] = serialized(String(PrixBlancHC, 4));
+  conf["PrixRougeHP"] = serialized(String(PrixRougeHP, 4));
+  conf["PrixRougeHC"] = serialized(String(PrixRougeHC, 4));
   conf["EconomieMois"] = serialized(String(EconomieMois, 2));
   conf["EconomieTotal"] = serialized(String(EconomieTotal, 2));
   // Enregistrement des Actions

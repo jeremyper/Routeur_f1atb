@@ -657,6 +657,13 @@ float Ballon_Deficit = 0;       //Besoin - Surplus : si >0, le forçage adaptati
 //Tarif électricité et économies (fondations UI Soleo)
 float PrixHP = 0.25;      //€/kWh Heure Pleine (ou tarif unique)
 float PrixHC = 0.15;      //€/kWh Heure Creuse
+//Tarifs Tempo RTE (6 prix selon couleur du jour et HP/HC)
+float PrixBleuHP = 0.1609;   //€/kWh Tempo Bleu Heure Pleine
+float PrixBleuHC = 0.1296;   //€/kWh Tempo Bleu Heure Creuse
+float PrixBlancHP = 0.1894;  //€/kWh Tempo Blanc Heure Pleine
+float PrixBlancHC = 0.1486;  //€/kWh Tempo Blanc Heure Creuse
+float PrixRougeHP = 0.7562;  //€/kWh Tempo Rouge Heure Pleine
+float PrixRougeHC = 0.1568;  //€/kWh Tempo Rouge Heure Creuse
 float EconomieJour = 0;   //€ économisés aujourd'hui (production autoconsommée x tarif HP)
 float EconomieMois = 0;   //€ économisés depuis le début du mois (persisté)
 float EconomieTotal = 0;  //€ économisés depuis l'installation (persisté)

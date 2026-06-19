@@ -129,8 +129,19 @@ body{padding-bottom:90px}
 <div class="abody">
 <div class="row"><label for="nomRouteur">Nom du routeur</label><input type="text" id="nomRouteur" name="nomRouteur"></div>
 <div class="subt">Votre tarif électrique</div>
-<div class="row"><label for="PrixHP">Tarif Heures Pleines (€/kWh)<span class="hint">ou tarif unique si vous n'avez pas d'heures creuses</span></label><input type="number" id="PrixHP" name="PrixHP" step="0.001" min="0" max="2"></div>
-<div class="row"><label for="PrixHC">Tarif Heures Creuses (€/kWh)</label><input type="number" id="PrixHC" name="PrixHC" step="0.001" min="0" max="2"></div>
+<div class="row ligneTarifBase"><label for="PrixHP">Tarif Heures Pleines (€/kWh)<span class="hint">ou tarif unique si vous n'avez pas d'heures creuses</span></label><input type="number" id="PrixHP" name="PrixHP" step="0.001" min="0" max="2"></div>
+<div class="row ligneTarifBase"><label for="PrixHC">Tarif Heures Creuses (€/kWh)</label><input type="number" id="PrixHC" name="PrixHC" step="0.001" min="0" max="2"></div>
+<div class="ligneTarifTempo" style="display:none"><span class="hint">Tarif Tempo activé : saisissez vos 6 prix (€/kWh). Activez/désactivez Tempo dans « Automatismes avancés ».</span>
+<div class="subt" style="color:#4ab3f4">🔵 Jour Bleu</div>
+<div class="row"><label for="PrixBleuHP">Bleu — Heures Pleines</label><input type="number" id="PrixBleuHP" name="PrixBleuHP" step="0.0001" min="0" max="2"></div>
+<div class="row"><label for="PrixBleuHC">Bleu — Heures Creuses</label><input type="number" id="PrixBleuHC" name="PrixBleuHC" step="0.0001" min="0" max="2"></div>
+<div class="subt" style="color:#9aa6b8">⚪ Jour Blanc</div>
+<div class="row"><label for="PrixBlancHP">Blanc — Heures Pleines</label><input type="number" id="PrixBlancHP" name="PrixBlancHP" step="0.0001" min="0" max="2"></div>
+<div class="row"><label for="PrixBlancHC">Blanc — Heures Creuses</label><input type="number" id="PrixBlancHC" name="PrixBlancHC" step="0.0001" min="0" max="2"></div>
+<div class="subt" style="color:#e5604d">🔴 Jour Rouge</div>
+<div class="row"><label for="PrixRougeHP">Rouge — Heures Pleines</label><input type="number" id="PrixRougeHP" name="PrixRougeHP" step="0.0001" min="0" max="2"></div>
+<div class="row"><label for="PrixRougeHC">Rouge — Heures Creuses</label><input type="number" id="PrixRougeHC" name="PrixRougeHC" step="0.0001" min="0" max="2"></div>
+</div>
 <div class="subt">Prévision solaire</div>
 <div class="rowh"><label for="MeteoOn">Activer la prévision solaire<span class="hint">Le routeur anticipe la production de vos panneaux (Open-Meteo, gratuit, sans clé)</span></label><label class="sw"><input type="checkbox" id="MeteoOn" name="MeteoOn" onclick="checkDisabled();"><span class="kn"></span></label></div>
 <div class="row ligneMeteo" style="display:none"><label for="MeteoPVcrete">Puissance crête de vos panneaux (kWc)</label><input type="number" id="MeteoPVcrete" name="MeteoPVcrete" step="0.1" min="0.1" max="100"></div>
@@ -288,7 +299,7 @@ body{padding-bottom:90px}
 <details class="acc" id="accAvance">
 <summary><span class="aico">⚙️</span><span class="atit">Automatismes avancés<small>Tarif Tempo, WiFi, calibration</small></span><span class="chev">▼</span></summary>
 <div class="abody">
-<div class="rowh" id="l_wifi_0"><label for="TempoRTEon">Type de tarif électrique : Tempo<span class="hint">affiche la couleur du jour Tempo RTE — redémarrage nécessaire</span></label><label class="sw"><input type="checkbox" id="TempoRTEon" name="TempoRTEon"><span class="kn"></span></label></div>
+<div class="rowh" id="l_wifi_0"><label for="TempoRTEon">Type de tarif électrique : Tempo<span class="hint">affiche la couleur du jour Tempo RTE et débloque les 6 tarifs — redémarrage nécessaire</span></label><label class="sw"><input type="checkbox" id="TempoRTEon" name="TempoRTEon" onclick="checkDisabled();"><span class="kn"></span></label></div>
 <div class="rowh" id="l_wifi_2" style="display:none"><label for="WifiSleep">Veille WiFi<span class="hint">réduit la consommation mais ralentit la communication — redémarrage nécessaire</span></label><label class="sw"><input type="checkbox" id="WifiSleep" name="WifiSleep"><span class="kn"></span></label></div>
 <div class="row" id="SurvCom" style="display:none"><label for="ComSurv">Redémarrer si coupure WiFi de plus de</label>
 <select id="ComSurv" onclick="checkDisabled();">
