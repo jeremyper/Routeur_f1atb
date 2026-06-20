@@ -8,6 +8,12 @@ var refTempIP = [];
 var dirty = false;
 var toastT;
 
+//Conversion date stockée "AAAAMMJJ" -> "AAAA-MM-JJ" pour <input type=date>
+function isoDate(d){
+  if(!d || (""+d).length!=8) return "";
+  d=""+d; return d.substr(0,4)+"-"+d.substr(4,2)+"-"+d.substr(6,2);
+}
+
 //---------- Thème clair / sombre ----------
 function setTheme(t){
   document.documentElement.setAttribute("data-theme",t);
@@ -149,6 +155,12 @@ function SetParaFixe() {
     GID("PTemp").value = F.pTemp;
     GID("PrixHP").value = F.PrixHP !== undefined ? F.PrixHP : 0.25;
     GID("PrixHC").value = F.PrixHC !== undefined ? F.PrixHC : 0.15;
+    GID("PrixBleuHP").value = F.PrixBleuHP !== undefined ? F.PrixBleuHP : 0.1609;
+    GID("PrixBleuHC").value = F.PrixBleuHC !== undefined ? F.PrixBleuHC : 0.1296;
+    GID("PrixBlancHP").value = F.PrixBlancHP !== undefined ? F.PrixBlancHP : 0.1894;
+    GID("PrixBlancHC").value = F.PrixBlancHC !== undefined ? F.PrixBlancHC : 0.1486;
+    GID("PrixRougeHP").value = F.PrixRougeHP !== undefined ? F.PrixRougeHP : 0.7562;
+    GID("PrixRougeHC").value = F.PrixRougeHC !== undefined ? F.PrixRougeHC : 0.1568;
     GID("MeteoOn").checked = F.MeteoOn == 1;
     GID("MeteoLat").value = F.MeteoLat !== undefined ? F.MeteoLat : 46.5;
     GID("MeteoLon").value = F.MeteoLon !== undefined ? F.MeteoLon : 2.4;
@@ -159,11 +171,17 @@ function SetParaFixe() {
     GID("BallonVolume").value = F.BallonVolume !== undefined ? F.BallonVolume : 200;
     GID("BallonTcible").value = F.BallonTcible !== undefined ? F.BallonTcible : 55;
     GID("BallonPuissance").value = F.BallonPuissance !== undefined ? F.BallonPuissance : 2400;
+    GID("BallonModeIntel").checked = F.BallonModeIntel == 1;
+    GID("BallonTmin").value = F.BallonTmin !== undefined ? F.BallonTmin : 40;
     GID("FanGpio").value = F.FanGpio !== undefined ? F.FanGpio : 0;
     GID("FanCanalTemp").value = F.FanCanalTemp !== undefined ? F.FanCanalTemp : -1;
     GID("FanTdemarrage").value = F.FanTdemarrage !== undefined ? F.FanTdemarrage : 40;
     GID("FanTmax").value = F.FanTmax !== undefined ? F.FanTmax : 60;
     GID("FanVitesseMin").value = F.FanVitesseMin !== undefined ? F.FanVitesseMin : 30;
+    GID("AbsenceManuel").checked = F.AbsenceManuel == 1;
+    GID("AbsenceDebut").value = isoDate(F.AbsenceDebut);
+    GID("AbsenceFin").value = isoDate(F.AbsenceFin);
+    GID("AbsenceAntiLegio").value = F.AbsenceAntiLegio !== undefined ? F.AbsenceAntiLegio : 7;
 
     // --- Paramètres de Température ---
     const NbCanauxTemp = 4;
@@ -210,6 +228,12 @@ function SendValues() {
 
   F.PrixHP = parseFloat(GID("PrixHP").value) || 0.25;
   F.PrixHC = parseFloat(GID("PrixHC").value) || 0.15;
+  F.PrixBleuHP = parseFloat(GID("PrixBleuHP").value) || 0.1609;
+  F.PrixBleuHC = parseFloat(GID("PrixBleuHC").value) || 0.1296;
+  F.PrixBlancHP = parseFloat(GID("PrixBlancHP").value) || 0.1894;
+  F.PrixBlancHC = parseFloat(GID("PrixBlancHC").value) || 0.1486;
+  F.PrixRougeHP = parseFloat(GID("PrixRougeHP").value) || 0.7562;
+  F.PrixRougeHC = parseFloat(GID("PrixRougeHC").value) || 0.1568;
   F.MeteoOn = GID("MeteoOn").checked ? 1 : 0;
   F.MeteoLat = parseFloat(GID("MeteoLat").value) || 0;
   F.MeteoLon = parseFloat(GID("MeteoLon").value) || 0;
@@ -220,11 +244,17 @@ function SendValues() {
   F.BallonVolume = parseInt(GID("BallonVolume").value, 10) || 200;
   F.BallonTcible = parseInt(GID("BallonTcible").value, 10) || 55;
   F.BallonPuissance = parseInt(GID("BallonPuissance").value, 10) || 2400;
+  F.BallonModeIntel = GID("BallonModeIntel").checked ? 1 : 0;
+  F.BallonTmin = parseInt(GID("BallonTmin").value, 10) || 40;
   F.FanGpio = parseInt(GID("FanGpio").value, 10);
   F.FanCanalTemp = parseInt(GID("FanCanalTemp").value, 10);
   F.FanTdemarrage = parseInt(GID("FanTdemarrage").value, 10) || 40;
   F.FanTmax = parseInt(GID("FanTmax").value, 10) || 60;
   F.FanVitesseMin = parseInt(GID("FanVitesseMin").value, 10) || 30;
+  F.AbsenceManuel = GID("AbsenceManuel").checked ? 1 : 0;
+  F.AbsenceDebut = GID("AbsenceDebut").value.replace(/-/g, "");
+  F.AbsenceFin = GID("AbsenceFin").value.replace(/-/g, "");
+  F.AbsenceAntiLegio = parseInt(GID("AbsenceAntiLegio").value, 10);
 
   F.nomRouteur = GID("nomRouteur").value.trim();
   F.nomSondeFixe = GID("nomSondeFixe").value.trim();
@@ -352,10 +382,18 @@ function checkDisabled() {
     // Ballon : champs visibles seulement si une sonde est choisie
     const ballonVisible = GID("BallonCanal").value >= 0;
     document.querySelectorAll(".ligneBallon").forEach(l => { l.style.display = ballonVisible ? "" : "none"; });
+    // Température minimale utile : seulement si le mode prédictif est activé
+    const intelVisible = ballonVisible && GID("BallonModeIntel").checked;
+    document.querySelectorAll(".ligneBallonIntel").forEach(l => { l.style.display = intelVisible ? "" : "none"; });
 
     // Ventilateur SSR : champs détaillés visibles seulement si un GPIO est sélectionné
     const fanVisible = GID("FanGpio").value != "0";
     document.querySelectorAll(".ligneFan").forEach(l => { l.style.display = fanVisible ? "" : "none"; });
+
+    // Tarifs : si Tempo activé, on affiche les 6 prix Tempo et on masque le tarif Base HP/HC
+    const tempoOn = GID("TempoRTEon").checked;
+    document.querySelectorAll(".ligneTarifTempo").forEach(l => { l.style.display = tempoOn ? "" : "none"; });
+    document.querySelectorAll(".ligneTarifBase").forEach(l => { l.style.display = tempoOn ? "none" : ""; });
 
     // Options de température désactivées en mode point isolé
     for (let i = 0; i < 4; i++) {
@@ -499,7 +537,11 @@ function SetParaVar() {
     if (V.BallonCanal >= 0) {
         if (V.BallonBesoin >= 0) {
             let decision = (V.BallonBesoin - V.BallonSurplus > 0.05) ? "<span style='color:var(--grid-imp);'>forçage autorisé</span>" : "<span style='color:var(--grid-exp);'>le soleil suffira</span>";
-            GH("etatBallon", "Besoin : <strong>" + V.BallonBesoin + " kWh</strong> &nbsp;|&nbsp; Surplus prévu : <strong>" + V.BallonSurplus + " kWh</strong> &nbsp;|&nbsp; Coef : " + V.BallonCoefAuto + "% &mdash; " + decision);
+            let intel = "";
+            if (V.BallonModeIntel == 1) {
+                intel = "<br>Mode prédictif : réserve d'eau chaude <strong>" + V.BallonReserve + " kWh</strong>, usage moyen appris <strong>" + V.BallonUsageMoyen + " kWh/jour</strong>";
+            }
+            GH("etatBallon", "Besoin : <strong>" + V.BallonBesoin + " kWh</strong> &nbsp;|&nbsp; Surplus prévu : <strong>" + V.BallonSurplus + " kWh</strong> &nbsp;|&nbsp; Coef : " + V.BallonCoefAuto + "% &mdash; " + decision + intel);
         } else {
             GH("etatBallon", "En attente (sonde et météo nécessaires)…");
         }

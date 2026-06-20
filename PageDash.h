@@ -95,7 +95,7 @@ body{padding-bottom:20px}
 <body>
 <header class="top">
 <div class="brand"><span class="logo"></span><span id="nom_R">Routeur solaire</span></div>
-<div class="top-actions"><span class="badge" id="tarifBadge">—</span><span class="online off" id="online"><span class="odot"></span><span id="onlineTxt">…</span></span><button class="iconbtn" id="btnTheme" title="Thème">🌙</button></div>
+<div class="top-actions"><span class="badge" id="tarifBadge">—</span><span class="online off" id="online"><span class="odot"></span><span id="onlineTxt">…</span></span><button class="iconbtn" id="btnAbsence" title="Mode absence" onclick="ToggleAbsence();">🏨</button><button class="iconbtn" id="btnTheme" title="Thème">🌙</button></div>
 </header>
 <nav class="botnav">
 <a class="active" href="/"><span class="ni">⚡</span>Accueil</a>
@@ -103,6 +103,7 @@ body{padding-bottom:20px}
 <a href="/Actions"><span class="ni">✨</span>Actions</a>
 <a href="/Para"><span class="ni">🛠️</span>Réglages</a>
 </nav>
+<div id="absenceBanner" onclick="ToggleAbsence();" style="display:none;cursor:pointer;max-width:760px;margin:8px auto 0;padding:11px 16px;border-radius:14px;background:rgba(255,181,71,.14);border:1px solid var(--sun);color:var(--sun-soft);font-weight:700;font-size:13.5px;text-align:center">🏨 Mode absence actif — actions coupées · appuyez pour désactiver</div>
 <main class="app">
 <section>
 <div class="sec-head"><h2>En direct</h2><span class="sub" id="liveClock">—</span></div>

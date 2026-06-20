@@ -89,13 +89,27 @@ void CalculBallon() {
   float Tb = temperature[BallonCanal];
   float dT = float(BallonTcible) - Tb;
   if (dT < 0) dT = 0;
-  Ballon_Besoin = float(BallonVolume) * 1.163 / 1000.0 * dT;  //kWh (1.163 Wh par litre par °C)
+  Ballon_Besoin = float(BallonVolume) * 1.163 / 1000.0 * dT;  //kWh pour atteindre la cible (affichage)
+
+  //Énergie utile actuellement stockée (eau au-dessus de la température minimale exploitable)
+  float dispo = Tb - float(BallonTmin);
+  if (dispo < 0) dispo = 0;
+  Ballon_Reserve = float(BallonVolume) * 1.163 / 1000.0 * dispo;
 
   //La production "qui vient" : avant midi c'est celle du jour, après midi celle du lendemain
   float prevision = (HeureCouranteDeci < 1200) ? Meteo_PrevisionJour : Meteo_PrevisionDemain;
   if (prevision < 0) prevision = 0;  //Pas de météo : on considère 0 => on autorise la chauffe (fail-safe confort)
   Ballon_SurplusPrevu = prevision * float(BallonCoefAuto) / 100.0;
-  Ballon_Deficit = Ballon_Besoin - Ballon_SurplusPrevu;
+
+  //Besoin retenu pour le forçage adaptatif :
+  // - mode classique : viser la température cible (Ballon_Besoin)
+  // - mode intelligent : couvrir seulement l'usage habituel (marge 30%) compte tenu de la réserve déjà stockée
+  float besoinDeficit = Ballon_Besoin;
+  if (BallonModeIntel == 1 && Ballon_UsageMoyen > 0.1) {
+    besoinDeficit = Ballon_UsageMoyen * 1.3 - Ballon_Reserve;
+    if (besoinDeficit < 0) besoinDeficit = 0;
+  }
+  Ballon_Deficit = besoinDeficit - Ballon_SurplusPrevu;
 
   //Journal : on signale une seule fois le passage en "besoin détecté"
   static bool besoinSignale = false;
@@ -113,6 +127,18 @@ void CalculBallon() {
 //Compare la production SMA du jour à l'énergie réellement routée vers le ballon
 //(H_Ouvre de la première action SSR x puissance résistance).
 void ApprentissageBallon() {
+  //Apprentissage de l'usage d'eau chaude : moyenne glissante sur ~5 jours (mode ballon intelligent)
+  if (BallonCanal >= 0 && Ballon_UsageJour > 0.05) {
+    if (Ballon_UsageMoyen < 0.05) {
+      Ballon_UsageMoyen = Ballon_UsageJour;  //Première initialisation
+    } else {
+      Ballon_UsageMoyen = 0.8 * Ballon_UsageMoyen + 0.2 * Ballon_UsageJour;
+    }
+    JournalAjoute("Ballon : usage estimé du jour " + String(Ballon_UsageJour, 1) + " kWh (moyenne " + String(Ballon_UsageMoyen, 1) + " kWh)");
+    SauveCoefAuto();  //Persiste coef + usage moyen
+  }
+  Ballon_UsageJour = 0;  //Nouveau jour
+
   float prodJour = (SmaOn == 1 && EnergieJourPV > 0) ? float(EnergieJourPV) / 1000.0 : -1;  //kWh (-1 = pas de donnée)
   float routee = 0;
   for (int i = 0; i < NbActions; i++) {
@@ -176,7 +202,7 @@ void HistMeteoAjoute(float prodJour, float routee) {
 void SauveCoefAuto() {
   File f = LittleFS.open("/coefauto.txt", "w");
   if (f) {
-    f.print(String(BallonCoefAuto));
+    f.print(String(BallonCoefAuto) + ";" + String(Ballon_UsageMoyen, 2));  //"coef;usageMoyen"
     f.close();
   }
 }
@@ -184,9 +210,15 @@ void LitCoefAuto() {
   if (LittleFS.exists("/coefauto.txt")) {
     File f = LittleFS.open("/coefauto.txt", "r");
     if (f) {
-      int v = f.readString().toInt();
-      if (v >= 20 && v <= 90) BallonCoefAuto = v;
+      String s = f.readString();
       f.close();
+      int sep = s.indexOf(';');
+      int v = (sep >= 0 ? s.substring(0, sep) : s).toInt();
+      if (v >= 20 && v <= 90) BallonCoefAuto = v;
+      if (sep >= 0) {
+        float u = s.substring(sep + 1).toFloat();
+        if (u >= 0 && u < 100) Ballon_UsageMoyen = u;
+      }
     }
   }
 }

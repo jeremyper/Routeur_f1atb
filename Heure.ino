@@ -69,15 +69,16 @@ void JourHeureChange() {
       PuisMaxS_M = 0;
       PuisMaxI_T = 0;
       PuisMaxI_M = 0;
-      //Bilan des économies du jour écoulé : production autoconsommée x tarif HP de référence
+      //Bilan des économies du jour écoulé : production autoconsommée x tarif courant (couleur Tempo incluse)
       if (SmaOn == 1 && EnergieJourPV > 0) {
-        EconomieJour = float(EnergieJourPV) / 1000.0 * PrixHP;
+        EconomieJour = float(EnergieJourPV) / 1000.0 * PrixKwhActuel();
         if (DateAMJ.substring(6, 8) == "01") EconomieMois = 0;  //Premier du mois : nouveau compteur mensuel
         EconomieMois += EconomieJour;
         EconomieTotal += EconomieJour;
         RecordFichierParametres();  //Persistance des compteurs (1 écriture par jour)
       }
       ApprentissageBallon();  //Ajuste le coefficient routable et cale le compteur PV du jour
+      if (AbsenceJoursSansChauffe < 99) AbsenceJoursSansChauffe++;  //Compteur anti-légionelle (remis à 0 quand le ballon atteint sa cible)
       EconomieJour = 0;       //Nouvelle journée
     }
     old_Heure = Int_Heure;

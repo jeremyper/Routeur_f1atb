@@ -642,6 +642,15 @@ int16_t BallonTcible = 55;      //Température cible en °C
 int16_t BallonPuissance = 2400; //Puissance résistance en W
 int8_t BallonCanal = -1;        //Canal sonde température ballon (-1 = non configuré)
 
+//Mode absence (vacances / hôtel) : coupe les actions, avec sécurité anti-légionelle sur le ballon
+byte AbsenceManuel = 0;          //Interrupteur manuel (0/1) persisté
+String AbsenceDebut = "";        //Date début programmée "AAAAMMJJ" (vide = pas de programmation)
+String AbsenceFin = "";          //Date fin programmée "AAAAMMJJ"
+byte AbsenceAntiLegio = 7;       //Intervalle anti-légionelle en jours (0 = désactivé)
+int AbsenceJoursSansChauffe = 0; //Nb de jours sans que le ballon atteigne sa cible (persisté)
+bool ModeAbsenceActif = false;   //Calculé : absence réellement active en ce moment
+bool AntiLegioEnCours = false;   //Cycle de chauffe anti-légionelle en cours
+
 //Paramètres ventilateur SSR (refroidissement thermorégulé)
 int8_t FanGpio = 0;          //GPIO PWM du ventilateur (0 = désactivé)
 int8_t FanCanalTemp = -1;    //Canal sonde température SSR (-1 = désactivé)
@@ -654,9 +663,24 @@ float Ballon_Besoin = -1;       //kWh nécessaires pour remonter à la cible (-1
 float Ballon_SurplusPrevu = -1; //kWh de surplus solaire attendu
 float Ballon_Deficit = 0;       //Besoin - Surplus : si >0, le forçage adaptatif est autorisé
 
+//Ballon intelligent : ne chauffe que ce qui sera réellement consommé (apprentissage de l'usage)
+byte BallonModeIntel = 0;       //1 = mode prédictif basé sur l'usage réel d'eau chaude
+int16_t BallonTmin = 40;        //Température minimale exploitable de l'eau (°C)
+float Ballon_UsageMoyen = 0;    //Consommation quotidienne moyenne apprise (kWh/jour, persisté)
+float Ballon_UsageJour = 0;     //Consommation accumulée aujourd'hui (kWh)
+float Ballon_Reserve = 0;       //Énergie utile actuellement stockée au-dessus de Tmin (kWh)
+float Ballon_TempPrec = -127;   //Température précédente pour détecter les puisages
+
 //Tarif électricité et économies (fondations UI Soleo)
 float PrixHP = 0.25;      //€/kWh Heure Pleine (ou tarif unique)
 float PrixHC = 0.15;      //€/kWh Heure Creuse
+//Tarifs Tempo RTE (6 prix selon couleur du jour et HP/HC)
+float PrixBleuHP = 0.1609;   //€/kWh Tempo Bleu Heure Pleine
+float PrixBleuHC = 0.1296;   //€/kWh Tempo Bleu Heure Creuse
+float PrixBlancHP = 0.1894;  //€/kWh Tempo Blanc Heure Pleine
+float PrixBlancHC = 0.1486;  //€/kWh Tempo Blanc Heure Creuse
+float PrixRougeHP = 0.7562;  //€/kWh Tempo Rouge Heure Pleine
+float PrixRougeHC = 0.1568;  //€/kWh Tempo Rouge Heure Creuse
 float EconomieJour = 0;   //€ économisés aujourd'hui (production autoconsommée x tarif HP)
 float EconomieMois = 0;   //€ économisés depuis le début du mois (persisté)
 float EconomieTotal = 0;  //€ économisés depuis l'installation (persisté)
@@ -1403,6 +1427,8 @@ void loop() {
       JourHeureChange();
       EnergieQuotidienne();
       H_Ouvre_Equivalent(dt);
+      SuiviUsageBallon();  //Estimation de la consommation d'eau chaude (ballon intelligent)
+      GestionAbsence();    //État mode absence + sécurité anti-légionelle
       // Ventilateur SSR thermorégulé (rampe linéaire Tdemarrage → Tmax)
       if (FanGpio > 0 && FanCanalTemp >= 0 && TemperatureValide[FanCanalTemp] > 0) {
         float tSsr = temperature[FanCanalTemp];
@@ -1539,6 +1565,60 @@ void loop() {
   delay(1);
 }  // Fin du loop core 1
 
+// *********************
+// *  BALLON INTELLIGENT *
+// *********************
+// Estime la consommation d'eau chaude en détectant les chutes nettes de température.
+// Le refroidissement naturel est lent ; une chute marquée = puisage d'eau chaude.
+// Appelé depuis la boucle 2s, échantillonne en interne toutes les 60s.
+void SuiviUsageBallon() {
+  if (BallonCanal < 0 || TemperatureValide[BallonCanal] <= 0) return;
+  static unsigned long lastSample = 0;
+  unsigned long now = millis();
+  if (now - lastSample < 60000UL) return;  //Un échantillon par minute
+  lastSample = now;
+  float Tb = temperature[BallonCanal];
+  if (Ballon_TempPrec > -50) {
+    float drop = Ballon_TempPrec - Tb;
+    if (drop > 0.3) {  //Chute > 0,3°C/min : puisage (le refroidissement naturel est bien plus lent)
+      Ballon_UsageJour += float(BallonVolume) * 1.163 / 1000.0 * drop;  //kWh prélevés
+    }
+  }
+  Ballon_TempPrec = Tb;
+}
+
+// ****************
+// *  MODE ABSENCE *
+// ****************
+// Évalue si le mode absence est actif (manuel ou plage de dates) et gère le
+// déclenchement du cycle anti-légionelle. Appelé périodiquement (boucle 2s).
+void GestionAbsence() {
+  bool actif = (AbsenceManuel == 1);
+  //Programmation par dates : actif si aujourd'hui est dans [début, fin] (comparaison "AAAAMMJJ")
+  if (AbsenceDebut.length() == 8 && AbsenceFin.length() == 8 && DateAMJ.length() == 8) {
+    if (DateAMJ >= AbsenceDebut && DateAMJ <= AbsenceFin) actif = true;
+  }
+  if (actif != ModeAbsenceActif) {  //Trace du changement d'état
+    JournalAjoute(actif ? "Mode absence activé" : "Mode absence désactivé");
+  }
+  ModeAbsenceActif = actif;
+
+  //Sécurité anti-légionelle : active en absence ET en mode intelligent (qui peut garder le ballon tiède)
+  bool surveillance = (ModeAbsenceActif || BallonModeIntel == 1);
+  if (BallonCanal >= 0 && TemperatureValide[BallonCanal] > 0) {
+    if (temperature[BallonCanal] >= float(BallonTcible)) {
+      AbsenceJoursSansChauffe = 0;   //Cible atteinte : compteur remis à zéro
+      if (AntiLegioEnCours) JournalAjoute("Anti-légionelle : chauffe complète terminée");
+      AntiLegioEnCours = false;
+    } else if (surveillance && AbsenceAntiLegio > 0 && AbsenceJoursSansChauffe >= AbsenceAntiLegio) {
+      if (!AntiLegioEnCours) JournalAjoute("Anti-légionelle : chauffe de sécurité déclenchée");
+      AntiLegioEnCours = true;       //Trop longtemps sans chauffe : déclenchement
+    }
+  } else {
+    AntiLegioEnCours = false;        //Pas de sonde ballon valide : pas de cycle
+  }
+}
+
 // ************
 // *  ACTIONS *
 // ************
@@ -1575,6 +1655,14 @@ void GestionOverproduction(unsigned long dt) {  // appelée à ~200ms, dt = dur�
     Action::ParaPeriode P = LesActions[i].ParaEnCours(HeureCouranteDeci, laTemperature, LTARFbin, Retard[i]);  //Type: 0=NO,1=OFF,2=ON,3=PW,4=Triac
     if (forceOff) {
       P.Type = 1;  //  on arrete
+    }
+    //Chauffe anti-légionelle : force le ballon ON (au réseau si besoin), en présence comme en absence
+    bool estBallon = (BallonCanal >= 0 && LesActions[i].CanalTempEnCours(HeureCouranteDeci) == BallonCanal);
+    if (AntiLegioEnCours && estBallon) {
+      P.Type = 2;       //Force ON : chauffe complète garantie
+      P.Vmax = 100;     //Pleine ouverture
+    } else if (ModeAbsenceActif) {
+      P.Type = 1;       //Mode absence : autres actions coupées
     }
     if (Actif[i] != MODE_INACTIF && P.Type > 1) {  // On ne traite plus le NO
       SeuilPw = float(P.Vmin);

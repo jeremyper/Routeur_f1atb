@@ -284,7 +284,14 @@ void DeserializeConfiguration(String json) {
   BallonTcible = conf["BallonTcible"].isNull() ? BallonTcible : conf["BallonTcible"].as<int16_t>();
   BallonPuissance = conf["BallonPuissance"].isNull() ? BallonPuissance : conf["BallonPuissance"].as<int16_t>();
   BallonCanal = conf["BallonCanal"].isNull() ? BallonCanal : conf["BallonCanal"].as<int8_t>();
+  BallonModeIntel = conf["BallonModeIntel"] | 0;
+  BallonTmin = conf["BallonTmin"].isNull() ? BallonTmin : conf["BallonTmin"].as<int16_t>();
   LastSmaMillis = 0;  //Forcer une relecture SMA après changement de paramètres
+  AbsenceManuel = conf["AbsenceManuel"] | 0;
+  AbsenceDebut = conf["AbsenceDebut"].isNull() ? AbsenceDebut : conf["AbsenceDebut"].as<String>();
+  AbsenceFin = conf["AbsenceFin"].isNull() ? AbsenceFin : conf["AbsenceFin"].as<String>();
+  AbsenceAntiLegio = conf["AbsenceAntiLegio"].isNull() ? AbsenceAntiLegio : conf["AbsenceAntiLegio"].as<byte>();
+  AbsenceJoursSansChauffe = conf["AbsenceJoursSansChauffe"] | 0;
   FanGpio = conf["FanGpio"].isNull() ? FanGpio : conf["FanGpio"].as<int8_t>();
   FanCanalTemp = conf["FanCanalTemp"].isNull() ? FanCanalTemp : conf["FanCanalTemp"].as<int8_t>();
   FanTdemarrage = conf["FanTdemarrage"].isNull() ? FanTdemarrage : conf["FanTdemarrage"].as<int16_t>();
@@ -292,6 +299,12 @@ void DeserializeConfiguration(String json) {
   FanVitesseMin = conf["FanVitesseMin"].isNull() ? FanVitesseMin : conf["FanVitesseMin"].as<uint8_t>();
   PrixHP = conf["PrixHP"].isNull() ? PrixHP : conf["PrixHP"].as<float>();
   PrixHC = conf["PrixHC"].isNull() ? PrixHC : conf["PrixHC"].as<float>();
+  PrixBleuHP = conf["PrixBleuHP"].isNull() ? PrixBleuHP : conf["PrixBleuHP"].as<float>();
+  PrixBleuHC = conf["PrixBleuHC"].isNull() ? PrixBleuHC : conf["PrixBleuHC"].as<float>();
+  PrixBlancHP = conf["PrixBlancHP"].isNull() ? PrixBlancHP : conf["PrixBlancHP"].as<float>();
+  PrixBlancHC = conf["PrixBlancHC"].isNull() ? PrixBlancHC : conf["PrixBlancHC"].as<float>();
+  PrixRougeHP = conf["PrixRougeHP"].isNull() ? PrixRougeHP : conf["PrixRougeHP"].as<float>();
+  PrixRougeHC = conf["PrixRougeHC"].isNull() ? PrixRougeHC : conf["PrixRougeHC"].as<float>();
   EconomieMois = conf["EconomieMois"].isNull() ? EconomieMois : conf["EconomieMois"].as<float>();
   EconomieTotal = conf["EconomieTotal"].isNull() ? EconomieTotal : conf["EconomieTotal"].as<float>();
   WifiSleep = conf["WifiSleep"];
@@ -447,6 +460,13 @@ String SerializeConfiguration() {
   conf["BallonTcible"] = BallonTcible;
   conf["BallonPuissance"] = BallonPuissance;
   conf["BallonCanal"] = BallonCanal;
+  conf["BallonModeIntel"] = BallonModeIntel;
+  conf["BallonTmin"] = BallonTmin;
+  conf["AbsenceManuel"] = AbsenceManuel;
+  conf["AbsenceDebut"] = AbsenceDebut;
+  conf["AbsenceFin"] = AbsenceFin;
+  conf["AbsenceAntiLegio"] = AbsenceAntiLegio;
+  conf["AbsenceJoursSansChauffe"] = AbsenceJoursSansChauffe;
   conf["FanGpio"] = FanGpio;
   conf["FanCanalTemp"] = FanCanalTemp;
   conf["FanTdemarrage"] = FanTdemarrage;
@@ -454,6 +474,12 @@ String SerializeConfiguration() {
   conf["FanVitesseMin"] = FanVitesseMin;
   conf["PrixHP"] = serialized(String(PrixHP, 3));
   conf["PrixHC"] = serialized(String(PrixHC, 3));
+  conf["PrixBleuHP"] = serialized(String(PrixBleuHP, 4));
+  conf["PrixBleuHC"] = serialized(String(PrixBleuHC, 4));
+  conf["PrixBlancHP"] = serialized(String(PrixBlancHP, 4));
+  conf["PrixBlancHC"] = serialized(String(PrixBlancHC, 4));
+  conf["PrixRougeHP"] = serialized(String(PrixRougeHP, 4));
+  conf["PrixRougeHC"] = serialized(String(PrixRougeHC, 4));
   conf["EconomieMois"] = serialized(String(EconomieMois, 2));
   conf["EconomieTotal"] = serialized(String(EconomieTotal, 2));
   // Enregistrement des Actions

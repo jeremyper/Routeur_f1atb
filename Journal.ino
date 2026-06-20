@@ -5,16 +5,21 @@
 // *   30 lignes max, la plus récente en premier, format "HH:MM;message" *
 // ***********************************************************************
 
-//Prix du kWh en cours : Heure Creuse si le Linky / RTE l'indique, sinon Heure Pleine (ou tarif unique)
+//Prix du kWh en cours, selon la couleur Tempo du jour (si activé) et l'heure pleine/creuse
 float PrixKwhActuel() {
-  if (LTARF.indexOf("CREUSE") >= 0 || LTARF.indexOf("HC") >= 0) return PrixHC;
-  return PrixHP;
+  bool estHC = (LTARF.indexOf("CREUSE") >= 0 || LTARF.indexOf("HC") >= 0);
+  if (TempoRTEon == 1) {  //Tarif Tempo : 6 prix selon couleur
+    if (LTARF.indexOf("ROUGE") >= 0) return estHC ? PrixRougeHC : PrixRougeHP;
+    if (LTARF.indexOf("BLANC") >= 0) return estHC ? PrixBlancHC : PrixBlancHP;
+    if (LTARF.indexOf("BLEU") >= 0) return estHC ? PrixBleuHC : PrixBleuHP;
+  }
+  return estHC ? PrixHC : PrixHP;  //Tarif Base / HP-HC classique
 }
 
 //Economie estimée du jour en € : toute la production PV est considérée autoconsommée (routeur)
-//Référence tarif HP, cohérent avec le bilan accumulé à minuit dans Heure.ino
+//Utilise le tarif courant (couleur Tempo prise en compte) pour rester cohérent
 void MajEconomieJour() {
-  if (SmaOn == 1 && EnergieJourPV > 0) EconomieJour = float(EnergieJourPV) / 1000.0 * PrixHP;
+  if (SmaOn == 1 && EnergieJourPV > 0) EconomieJour = float(EnergieJourPV) / 1000.0 * PrixKwhActuel();
 }
 
 //Ajoute un événement en tête du journal et tronque à 30 lignes

@@ -43,6 +43,7 @@ void Init_Server() {
   server.on("/ajax_etatActions", handleAjax_etatActions);
   server.on("/ajax_etatActionX", handleAjax_etatActionX);
   server.on("/ForceAction", handleForceAction);
+  server.on("/ajax_absence", handleAbsence);
   server.on("/ajax_Temperature", handleAjaxTemperature);
   server.on("/ajax_Noms", handleAjaxNoms);
   server.on("/ajaxRAZhisto", handleajaxRAZhisto);
@@ -481,6 +482,15 @@ void handleForceAction() {
 
   server.send(200, "text/html", "Force");
 }
+//Bascule manuelle du mode absence depuis l'accueil. ?set=1 active, ?set=0 désactive
+void handleAbsence() {
+  if (server.hasArg("set")) {
+    AbsenceManuel = (server.arg("set").toInt() == 1) ? 1 : 0;
+    GestionAbsence();          //Réévalue l'état immédiatement
+    RecordFichierParametres(); //Persiste le choix
+  }
+  server.send(200, "text/html", ModeAbsenceActif ? "1" : "0");
+}
 void handleShowAction() {
   int NumAction = server.arg("NumAction").toInt();
   if (NumAction < 0 || NumAction >= NbActions) {
@@ -687,6 +697,9 @@ void handleParaVar() {
   conf["BallonBesoin"] = serialized(String(Ballon_Besoin, 1));           //kWh pour remonter à la cible
   conf["BallonSurplus"] = serialized(String(Ballon_SurplusPrevu, 1));    //kWh de surplus attendu
   conf["BallonCoefAuto"] = BallonCoefAuto;                               //Coefficient routable appris en %
+  conf["BallonModeIntel"] = BallonModeIntel;                            //Mode prédictif actif
+  conf["BallonReserve"] = serialized(String(Ballon_Reserve, 1));         //kWh d'eau chaude utile disponible
+  conf["BallonUsageMoyen"] = serialized(String(Ballon_UsageMoyen, 1));   //kWh/jour consommés en moyenne
   MajEconomieJour();
   conf["PrixHP"] = serialized(String(PrixHP, 3));                        //€/kWh Heure Pleine (ou tarif unique)
   conf["PrixHC"] = serialized(String(PrixHC, 3));                        //€/kWh Heure Creuse
@@ -694,6 +707,8 @@ void handleParaVar() {
   conf["EconomieJour"] = serialized(String(EconomieJour, 2));            //€ économisés aujourd'hui
   conf["EconomieMois"] = serialized(String(EconomieMois, 2));            //€ économisés ce mois
   conf["EconomieTotal"] = serialized(String(EconomieTotal, 2));          //€ économisés au total
+  conf["ModeAbsenceActif"] = ModeAbsenceActif ? 1 : 0;                   //Absence active en ce moment
+  conf["AntiLegioEnCours"] = AntiLegioEnCours ? 1 : 0;                   //Chauffe anti-légionelle en cours
   for (int c = 0; c < 4; c++) {
     conf["temperature"][c] = temperature[c];
   }

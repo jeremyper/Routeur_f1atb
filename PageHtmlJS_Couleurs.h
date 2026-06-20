@@ -1,163 +1,129 @@
 //****************************************************
-// Page HTML et Javascript - Gestion des couleurs    *
+// Page Couleurs — design Soleo (CommunCouleurJS inchangé)
 //****************************************************
 const char *CouleursHtml = R"====(
- <!doctype html>
-<html>
+<!doctype html>
+<html lang="fr" data-theme="dark">
 <head>
-    <meta charset="UTF-8">
-    <title>Colors</title>
-
-    <link rel="stylesheet" href="/commun.css">
-
-    <style>
-        .Zone {
-            width: 100%;
-            border: 1px solid grey;
-            border-radius: 10px;
-            margin-top: 10px;
-            background-color: rgba(30,30,30,0.3);
-        }
-        .boldT {
-            text-align: left;
-            font-weight: bold;
-            padding: 10px;
-        }
-        .form {
-            margin: auto;
-            padding: 10px;
-            display: table;
-            text-align:left;
-            width:100%;
-        }
-        .ligne {
-            display: table-row;
-            margin-top: 5px;
-        }
-        .ligneB {
-            font-weight: bold;
-        }
-        .ligne div {
-            display: table-cell;
-            margin: 5px;
-            text-align: left;
-            font-size: 20px;
-            height: 25px;
-        }
-        .liste {
-            display:flex;
-            justify-content:center;
-            text-align:left;
-        }
-        #onglets2 {
-            display:block;
-        }
-        .Bparametres { border: inset 10px azure; }
-        .Bcouleurs   { border: inset 4px azure; }
-        .les_boutons {
-            display:flex;
-            justify-content:space-between;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="/favicon.ico">
+<title>Couleurs</title>
+<style>
+:root{--bg:#0d1117;--bg-soft:#161b22;--card:#1c2230;--card-2:#232b3b;--line:#2c3444;--txt:#e8edf6;--txt-soft:#9aa6b8;--txt-dim:#6b7585;--sun:#ffb547;--sun-soft:#ffd27d;--home:#4ab3f4;--water:#ff6f91;--grid-imp:#e5604d;--grid-exp:#4cd28b;--accent:#6ee7c7;--shadow:0 10px 30px rgba(0,0,0,.35);--radius:20px;--radius-s:14px}
+html[data-theme=light]{--bg:#eef2f8;--bg-soft:#fff;--card:#fff;--card-2:#f3f6fb;--line:#e0e6f0;--txt:#1a2230;--txt-soft:#586273;--txt-dim:#8a93a4;--shadow:0 10px 30px rgba(40,60,90,.1)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--txt);line-height:1.45;transition:background .4s,color .4s;padding-bottom:88px}
+h2{margin:0;font-weight:700}
+a{text-decoration:none;color:inherit}
+.app{max-width:760px;margin:0 auto;padding:0 16px}
+header.top{position:sticky;top:0;z-index:40;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(14px);display:flex;align-items:center;justify-content:space-between;padding:12px 16px;max-width:760px;margin:0 auto;gap:8px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:18px;min-width:0}
+#nom_R{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.logo{flex-shrink:0;width:30px;height:30px;border-radius:9px;background:radial-gradient(circle at 35% 30%,var(--sun-soft),var(--sun) 65%,#e98a1a);box-shadow:0 0 18px rgba(255,181,71,.45)}
+.top-actions{display:flex;gap:8px;align-items:center;flex-shrink:0}
+.badge{font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:999px;background:var(--card-2);color:var(--txt-soft);border:1px solid var(--line);white-space:nowrap}
+.iconbtn{width:38px;height:38px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--txt);font-size:17px;cursor:pointer;display:grid;place-items:center}
+.iconbtn:active{transform:scale(.92)}
+.botnav{position:fixed;bottom:0;left:0;right:0;z-index:50;background:color-mix(in srgb,var(--bg-soft) 92%,transparent);backdrop-filter:blur(16px);border-top:1px solid var(--line);display:flex;justify-content:space-around;padding:8px 4px env(safe-area-inset-bottom)}
+.botnav a{color:var(--txt-dim);display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10.5px;font-weight:600;padding:6px 14px;border-radius:12px}
+.botnav a .ni{font-size:20px}
+.botnav a.active{color:var(--accent)}
+section{margin:20px 0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius-s);padding:16px;margin:12px 0;box-shadow:var(--shadow);overflow-x:auto}
+.col-tbl{width:100%;border-collapse:collapse}
+.col-tbl th{text-align:left;padding:8px 6px;font-size:12px;color:var(--txt-dim);font-weight:600;border-bottom:2px solid var(--line)}
+.col-tbl td{padding:8px 6px;border-bottom:1px solid var(--line);font-size:13.5px;vertical-align:middle}
+.col-tbl tr:last-child td{border-bottom:none}
+.col-tbl input[type=color]{width:36px;height:28px;border:1px solid var(--line);border-radius:6px;background:transparent;cursor:pointer;padding:1px}
+.btnrow{display:flex;gap:10px;margin-top:4px;flex-wrap:wrap}
+.btn-pri{background:var(--accent);color:#08221a;border:none;border-radius:11px;padding:11px 22px;font-size:14.5px;font-weight:800;cursor:pointer}
+.btn-pri:active,.btn-ghost:active{transform:scale(.96)}
+.btn-ghost{border:1px solid var(--line);background:var(--card-2);color:var(--txt);border-radius:11px;padding:11px 22px;font-size:14.5px;font-weight:700;cursor:pointer}
+.info-note{font-size:12.5px;color:var(--txt-dim);margin-top:10px}
+@media(min-width:700px){body{padding-bottom:20px}.botnav{position:static;border-top:none;border-bottom:1px solid var(--line);max-width:760px;margin:0 auto;justify-content:center;gap:20px;background:transparent;backdrop-filter:none}.botnav a{flex-direction:row;font-size:13px;gap:7px}.botnav a .ni{font-size:17px}}
+</style>
 </head>
-
 <body onload="Init();">
+<header class="top">
+<div class="brand"><span class="logo"></span><span id="nom_R">Routeur solaire</span></div>
+<div class="top-actions"><span class="badge" id="tarifBadge">—</span><button class="iconbtn" id="btnTheme" title="Thème">🌙</button></div>
+</header>
+<nav class="botnav">
+<a href="/"><span class="ni">⚡</span>Accueil</a>
+<a href="/mesures"><span class="ni">📊</span>Mesures</a>
+<a href="/Actions"><span class="ni">✨</span>Actions</a>
+<a class="active" href="/Para"><span class="ni">🛠️</span>Réglages</a>
+</nav>
+<main class="app">
+<section>
+<h2 style="margin-bottom:4px">🎨 Couleurs</h2>
+<p style="font-size:13px;color:var(--txt-dim);margin:4px 0 12px">Personnalisez les couleurs des tableaux et graphiques des pages Mesures et Données brutes.</p>
 
-    <div id="lesOnglets"></div>
+<div class="card">
+<div id="colors"></div>
+</div>
 
-    <h2>Choix des couleurs</h2>
+<div class="btnrow">
+<button class="btn-ghost" onclick="SendValues(false);">↩ Couleurs par défaut</button>
+<button class="btn-pri" onclick="SendValues(true);">💾 Sauvegarder</button>
+</div>
+<p class="info-note">Les couleurs s'appliquent aux pages Mesures et Données brutes. Le thème sombre/clair est indépendant.</p>
+</section>
+</main>
 
-    <div class="Zone">
-        <div class="form" id="colors"></div>
-    </div>
+<script src="/ParaCommunJS"></script>
+<script src="/CommunCouleurJS"></script>
+<script>
+function setTheme(t){document.documentElement.setAttribute("data-theme",t);GID("btnTheme").textContent=(t==="dark")?"🌙":"☀️";try{localStorage.setItem("soleoTheme",t);}catch(e){}}
+GID("btnTheme").onclick=function(){setTheme(document.documentElement.getAttribute("data-theme")==="dark"?"light":"dark");};
+(function(){var t="dark";try{t=localStorage.getItem("soleoTheme")||"dark";}catch(e){}setTheme(t);})();
 
-    <br>
+var BordsInverse=[];
 
-    <div class="les_boutons">
-        <input class="bouton" type="button" value="Couleurs par défaut"
-               onclick="SendValues(false);">
+function Init(){SetCurseurs();LoadParaFixe();}
 
-        <input class="bouton" type="button" value="Sauvegarder"
-               onclick="SendValues(true);">
-    </div>
-   <br>
-    <script>
-        var BordsInverse = [".Bparametres", ".Bcouleurs"];
+function SetCurseurs(){
+  var S="<table class='col-tbl'><thead><tr><th>Champ</th><th>Texte</th><th>Fond / Courbe</th><th>Bordure</th></tr></thead><tbody>";
+  for(var i=0;i<Koul.length;i++){
+    S+="<tr><td>"+Koul[i][0]+"</td>";
+    S+="<td><input type='color' id='text_color"+i+"' value='#000000' onchange='readCouleur();'></td>";
+    S+="<td><input type='color' id='bg_color"+i+"' value='#000000' onchange='readCouleur();'></td>";
+    S+="<td><input type='color' id='bord_color"+i+"' value='#000000' onchange='readCouleur();'></td></tr>";
+  }
+  S+="</tbody></table>";
+  GH("colors",S);
+}
 
-        function Init() {
-            SetHautBas();
-            SetCurseurs();
-            LoadParaFixe();
-            
-        }
+function readCouleur(){
+  for(var i=0;i<Koul.length;i++){
+    if(Koul[i][1]) Koul[i][1]=GID("text_color"+i).value.substring(1);
+    if(Koul[i][3]) Koul[i][3]=GID("bg_color"+i).value.substring(1);
+    if(Koul[i][5]) Koul[i][5]=GID("bord_color"+i).value.substring(1);
+  }
+  setCouleur();
+}
 
-        function SetCurseurs() {
-            let S = "<div class='ligne ligneB'><div>Champ</div><div>Texte</div><div>Fond / Courbe</div><div>Bordure</div></div>";
+function SendValues(update){
+  var S="?couleurs=";
+  if(update){
+    for(var i=0;i<Koul.length;i++){
+      if(Koul[i][1]) S+=Koul[i][1];
+      if(Koul[i][3]) S+=Koul[i][3];
+      if(Koul[i][5]) S+=Koul[i][5];
+    }
+  }
+  var x=new XMLHttpRequest();
+  x.onreadystatechange=function(){if(this.readyState===4&&this.status===200)location.reload();};
+  x.open("GET","/CouleurUpdate"+S,true);x.send();
+}
 
-            for (let i = 0; i < Koul.length; i++) {
-                S += "<div class='ligne'>";
-                S += "<div>" + Koul[i][0] + "</div>";
-                S += "<div><input type='color' id='text_color" + i + "' value='#000000' onchange='readCouleur();'></div>";
-                S += "<div><input type='color' id='bg_color" + i + "' value='#000000' onchange='readCouleur();'></div>";
-                S += "<div><input type='color' id='bord_color" + i + "' value='#000000' onchange='readCouleur();'></div>";
-                S += "</div>";
-            }
-
-            GH("colors", S);
-        }
-
-        function readCouleur() {
-            for (let i = 0; i < Koul.length; i++) {
-                if (Koul[i][1]) Koul[i][1] = GID("text_color" + i).value.substring(1);
-                if (Koul[i][3]) Koul[i][3] = GID("bg_color" + i).value.substring(1);
-                if (Koul[i][5]) Koul[i][5] = GID("bord_color" + i).value.substring(1);
-            }
-            CoulPage();
-            setCouleur();
-        }
-
-        function CoulPage() {
-            setColorQuery("body", "#" + Koul[0][1]);
-            document.body.style.background =
-                "linear-gradient(#" + Koul[0][5] + ",#" + Koul[0][3] + ",#" + Koul[0][5] + ")";
-        }
-
-        function SendValues(update) {
-            let S = "?couleurs=";
-            if(update){
-              for (let i = 0; i < Koul.length; i++) {
-                  if (Koul[i][1]) S += Koul[i][1];
-                  if (Koul[i][3]) S += Koul[i][3];
-                  if (Koul[i][5]) S += Koul[i][5];
-              }
-            }
-            const xhttp = new XMLHttpRequest();
-            xhttp.onreadystatechange = function () {
-                if (this.readyState === 4 && this.status === 200) {
-                    location.reload();
-                }
-            };
-
-            xhttp.open("GET", "/CouleurUpdate" + S, true);
-            xhttp.send();
-        }
-
-        function SetParaFixe() {
-            GID("Bwifi").style.display = (F.ESP32_Type != 10) ? "inline-block" : "none";
-            Set_Couleurs();
-        }
-    </script>
-
-    <br>
-    <div id="pied"></div>
-
-    <script src="/ParaCommunJS"></script>
-    <script src="/CommunCouleurJS"></script>
-   
-
+function SetParaFixe(){Set_Couleurs();}
+function AdaptationSource(){}
+function SetParaVar(){}
+</script>
 </body>
 </html>
-
  )====";
 
 
