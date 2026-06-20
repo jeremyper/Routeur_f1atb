@@ -350,7 +350,6 @@ function SetParaFixe() {
   GID("B_graph").style.display = "flex";
   GID("date").style.display = "block";
   GID("foot").style.display = "block";
-  GID("routeur").style.display = "none";
   LoadParaVar();
 }
 // Fonction de fin de chargement des paramètres variables

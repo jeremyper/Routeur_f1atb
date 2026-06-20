@@ -1654,19 +1654,16 @@ function PollStatuses(){
     .finally(function(){ setTimeout(PollStatuses, 4000); });
 }
 
-// ---- Theme ----
-function toggleTheme(){
-  var el = document.documentElement;
-  var cur = el.getAttribute("data-theme") == "light" ? "dark" : "light";
-  el.setAttribute("data-theme", cur);
-  try { localStorage.setItem("soleo-theme", cur); } catch(e){}
+// ---- Theme (unifie avec les autres pages : cle soleoTheme + bouton btnTheme) ----
+function setTheme(t){
+  document.documentElement.setAttribute("data-theme",t);
+  if(GID("btnTheme"))GID("btnTheme").textContent=(t==="dark")?"🌙":"☀️";
+  try{localStorage.setItem("soleoTheme",t);}catch(e){}
 }
-(function(){
-  try {
-    var t = localStorage.getItem("soleo-theme");
-    if (t) document.documentElement.setAttribute("data-theme", t);
-  } catch(e){}
-})();
+if(GID("btnTheme"))GID("btnTheme").onclick=function(){
+  setTheme(document.documentElement.getAttribute("data-theme")==="dark"?"light":"dark");
+};
+(function(){var t="dark";try{t=localStorage.getItem("soleoTheme")||"dark";}catch(e){}setTheme(t);})();
 
 // ---- Override Init : doit etre defini APRES l'original ----
 window.Init = function(){

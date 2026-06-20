@@ -31,9 +31,11 @@ header.top{position:sticky;top:0;z-index:40;background:color-mix(in srgb,var(--b
 .top-actions{display:flex;gap:8px;align-items:center}
 .iconbtn{width:38px;height:38px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--txt);font-size:17px;cursor:pointer;display:grid;place-items:center}
 .iconbtn:active{transform:scale(.92)}
-.nav{display:flex;gap:6px;padding:0 16px 8px;max-width:760px;margin:0 auto;overflow-x:auto}
-.nav a{padding:7px 14px;border-radius:999px;font-size:13.5px;font-weight:600;color:var(--txt-soft);white-space:nowrap;border:1px solid transparent;text-decoration:none}
-.nav a.act{background:var(--card);border-color:var(--line);color:var(--txt)}
+.botnav{position:fixed;bottom:0;left:0;right:0;z-index:50;background:color-mix(in srgb,var(--bg-soft) 92%,transparent);backdrop-filter:blur(16px);border-top:1px solid var(--line);display:flex;justify-content:space-around;padding:8px 4px env(safe-area-inset-bottom)}
+.botnav a{color:var(--txt-dim);display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10.5px;font-weight:600;padding:6px 14px;border-radius:12px}
+.botnav a .ni{font-size:20px}
+.botnav a.active{color:var(--accent)}
+@media(min-width:700px){body{padding-bottom:40px}.botnav{position:static;border-top:none;border-bottom:1px solid var(--line);max-width:760px;margin:0 auto;justify-content:center;gap:20px;background:transparent;backdrop-filter:none}.botnav a{flex-direction:row;font-size:13px;gap:7px}.botnav a .ni{font-size:17px}.fab{bottom:24px}.save-bar{bottom:24px}}
 section{margin:26px 0}
 .sec-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px}
 .sec-head h2{font-size:20px}
@@ -74,13 +76,13 @@ section{margin:26px 0}
 .save-bar{position:fixed;bottom:88px;left:50%;transform:translateX(-50%);z-index:25;background:var(--card-2);border:1px solid var(--accent);border-radius:16px;padding:10px 20px;display:flex;align-items:center;gap:12px;box-shadow:0 4px 24px rgba(110,231,199,.2);white-space:nowrap}
 .btn-save{background:var(--accent);color:#0d1117;font-weight:800;font-size:14px;border:none;border-radius:10px;padding:9px 20px;cursor:pointer}
 /* FAB */
-.fab{position:fixed;bottom:24px;right:20px;z-index:30;padding:14px 22px;border-radius:16px;background:linear-gradient(135deg,var(--accent),#4cd28b);color:#0d1117;font-weight:800;font-size:15px;border:none;cursor:pointer;box-shadow:0 8px 24px rgba(110,231,199,.35)}
+.fab{position:fixed;bottom:80px;right:20px;z-index:30;padding:14px 22px;border-radius:16px;background:linear-gradient(135deg,var(--accent),#4cd28b);color:#0d1117;font-weight:800;font-size:15px;border:none;cursor:pointer;box-shadow:0 8px 24px rgba(110,231,199,.35)}
 .fab:active{transform:scale(.95)}
 /* spinner */
 .lds-dual-ring{display:inline-block;width:24px;height:24px;vertical-align:middle}
 .lds-dual-ring:after{content:" ";display:block;width:18px;height:18px;margin:3px;border-radius:50%;border:2px solid var(--acc,#4ab3f4);border-color:var(--acc,#4ab3f4) transparent;animation:ldsR .8s linear infinite}
 @keyframes ldsR{to{transform:rotate(360deg)}}
-@media(max-width:480px){.fab{bottom:16px;right:12px;padding:12px 18px;font-size:14px}.save-bar{bottom:76px}}
+@media(max-width:480px){.fab{bottom:80px;right:12px;padding:12px 18px;font-size:14px}.save-bar{bottom:148px}}
 
 /* ── Legacy planning CSS (editeur technique) ─────────── */
 .Bactions { border: inset 8px azure; }
@@ -177,17 +179,16 @@ svg { border:1px solid #445; border-radius:6px; width:100%; }
 </head>
 <body onload="Init();" onmouseup="mouseClick=false;">
   <header class="top">
-    <div class="brand"><div class="logo"></div><span id="nom_R">Soleo</span></div>
+    <div class="brand"><span class="logo"></span><span id="nom_R">Routeur solaire</span></div>
     <div class="top-actions">
-      <button class="iconbtn" onclick="toggleTheme()" title="Theme">&#9728;</button>
+      <button class="iconbtn" id="btnTheme" title="Thème">🌙</button>
     </div>
   </header>
-  <nav class="nav">
-    <a href="/">Tableau</a>
-    <a href="/mesures">Mesures</a>
-    <a href="/Actions" class="act">Automatismes</a>
-    <a href="/para">Reglages</a>
-    <a href="/accueil">Accueil</a>
+  <nav class="botnav">
+    <a href="/"><span class="ni">⚡</span>Accueil</a>
+    <a href="/mesures"><span class="ni">📊</span>Mesures</a>
+    <a class="active" href="/Actions"><span class="ni">✨</span>Actions</a>
+    <a href="/Para"><span class="ni">🛠️</span>Réglages</a>
   </nav>
   <div class="app">
     <!-- CARD VIEW (default visible) -->
