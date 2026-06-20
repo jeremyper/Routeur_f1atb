@@ -33,8 +33,9 @@ const char *PageBrute = R"====(
   @keyframes blink{50%{opacity:.3}}
   @media(min-width:700px){body{padding-bottom:20px}.botnav{position:static;border-top:none;border-bottom:1px solid var(--line);max-width:900px;margin:0 auto;justify-content:center;gap:20px;background:transparent;backdrop-filter:none}.botnav a{flex-direction:row;font-size:13px;gap:7px}.botnav a .ni{font-size:17px}}
 
-  /* === Contenu données brutes === */
+  /* === Contenu données brutes — reskin Soleo === */
   .ri { text-align: right; }
+  /* fallback CSS (CommunCouleurJS applique les couleurs en inline) */
   .Wh { background-color: #fdd; }
   .A { background-color: #ddf; }
   .W { background-color: #f88; }
@@ -42,11 +43,13 @@ const char *PageBrute = R"====(
   .V { background-color: #ee8; }
   .VA { background-color: #dfd; }
   .Hz, .Enph { background-color: #eeb; }
-  .titre { background-color: #ccc; text-align: center; font-weight: bold; }
-  .dataIn { text-align: left; overflow: hidden; word-wrap: break-word; }
-  td { text-align: left; padding: 4px; }
-  svg { border: 10px inset azure; }
-  .Bbrut { border: inset 8px azure; }
+  /* tableaux : Soleo card */
+  .tableau { background: var(--card); border: 1px solid var(--line) !important; border-radius: var(--radius-s) !important; box-shadow: var(--shadow); overflow: hidden; margin-bottom: 14px; }
+  .titre { background: rgba(74,179,244,.22) !important; color: var(--txt) !important; text-align: center; font-weight: 700; }
+  td { text-align: left; padding: 6px 8px; color: var(--txt); }
+  .dataIn { text-align: left; overflow: hidden; word-wrap: break-word; font-size: 13px; }
+  svg { border: 1px solid var(--line); border-radius: var(--radius-s); }
+  .Bbrut { border: 2px solid var(--accent); border-radius: var(--radius-s); }
   .dispT { display: none; }
   .ce { text-align: center; position: relative; }
   #LED {
@@ -63,10 +66,10 @@ const char *PageBrute = R"====(
   }
   #infoUxIx2,#infoUxIx3,#infoUxI,#infoNotDef,#infoLinky,
   #infoEnphase,#infoSmartG,#infoHomeW,#infoShellyEm,#infoPmqtt{display:none}
-  #DataLinky{font-size:14px;tab-size:10}
-  #donneeDistante{font-size:50%;text-align:center;margin-bottom:10px;display:none}
-  .bloc a:link,.bloc a:visited{color:#116;text-decoration:none}
-  .sec-title{font-size:14px;font-weight:700;color:var(--txt-soft);margin:18px 0 6px;text-transform:uppercase;letter-spacing:.05em}
+  #DataLinky{font-size:13px;tab-size:10;color:var(--txt)}
+  #donneeDistante{font-size:50%;color:var(--txt-soft);text-align:center;margin-bottom:10px;display:none}
+  .bloc a:link,.bloc a:visited{color:var(--accent);text-decoration:none}
+  .sec-title{font-size:12px;font-weight:700;color:var(--txt-soft);margin:18px 0 6px;text-transform:uppercase;letter-spacing:.08em}
   </style>
 </head>
 <body onload="SetHautBas(); LoadParaFixe();">
