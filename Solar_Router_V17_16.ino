@@ -321,6 +321,7 @@
 #include <HardwareSerial.h>
 #include <Update.h>
 #include <esp_task_wdt.h>  //Pour deinitialiser le watchdog. Nécessaire pour les gros program en ROM. Mystère non élucidé
+#include <freertos/semphr.h>  //Mutex de synchronisation entre le cœur 0 (réseau) et le cœur 1 (régulation)
 #include <esp_wps.h>  //Librairie WPS pour appairage automatique connexion WiFi //SR19
 #include "Actions.h"
 #include "FS.h"
@@ -671,6 +672,16 @@ float Ballon_UsageJour = 0;     //Consommation accumulée aujourd'hui (kWh)
 float Ballon_Reserve = 0;       //Énergie utile actuellement stockée au-dessus de Tmin (kWh)
 float Ballon_TempPrec = -127;   //Température précédente pour détecter les puisages
 
+// Verrous inter-cœurs.
+// Depuis le déport des appels réseau sur le cœur 0 (Task_Reseau), deux ressources sont
+// touchées par les deux cœurs à la fois :
+//  - le journal /journal.txt, réécrit intégralement à chaque ajout (lecture + troncature
+//    + écriture) : deux ajouts simultanés tronquaient le fichier ;
+//  - les compteurs d'usage du ballon, accumulés par SuiviUsageBallon() sur le cœur 1 et
+//    lus puis remis à zéro par ApprentissageBallon() sur le cœur 0.
+SemaphoreHandle_t MutexJournal = NULL;
+SemaphoreHandle_t MutexBallon = NULL;
+
 //Tarif électricité et économies (fondations UI Soleo)
 float PrixHP = 0.25;      //€/kWh Heure Pleine (ou tarif unique)
 float PrixHC = 0.15;      //€/kWh Heure Creuse
@@ -929,6 +940,9 @@ void setup() {
   startMillis = millis();
   previousLEDsMillis = startMillis;
 
+  //Verrous inter-cœurs : créés au plus tôt, avant tout accès au journal ou au ballon
+  MutexJournal = xSemaphoreCreateMutex();
+  MutexBallon = xSemaphoreCreateMutex();
 
   //Ports Série ESP
   Serial.begin(115200);
@@ -1578,6 +1592,10 @@ void SuiviUsageBallon() {
   if (now - lastSample < 60000UL) return;  //Un échantillon par minute
   lastSample = now;
   float Tb = temperature[BallonCanal];
+  //Ballon_UsageJour est lu et remis à zéro par ApprentissageBallon() sur le cœur 0 :
+  //l'accumulation doit être protégée pour ne pas perdre ou dupliquer un puisage.
+  if (MutexBallon == NULL) return;
+  if (xSemaphoreTake(MutexBallon, pdMS_TO_TICKS(50)) != pdTRUE) return;
   if (Ballon_TempPrec > -50) {
     float drop = Ballon_TempPrec - Tb;
     if (drop > 0.3) {  //Chute > 0,3°C/min : puisage (le refroidissement naturel est bien plus lent)
@@ -1585,6 +1603,28 @@ void SuiviUsageBallon() {
     }
   }
   Ballon_TempPrec = Tb;
+  xSemaphoreGive(MutexBallon);
+}
+
+// Identifie l'action qui pilote le ballon d'eau chaude, pour la sécurité anti-légionelle.
+// On ne peut pas se fier au canal de température de la période EN COURS : si le créneau
+// courant n'a pas de condition de température, CanalTempEnCours() renvoie -1 et le cycle
+// de sécurité ne se déclenchait sur aucune action, silencieusement.
+// On balaie donc toutes les périodes ; à défaut, on retient la première action SSR, même
+// convention que ApprentissageBallon() ("première action SSR = ballon").
+int IndexActionBallon() {
+  if (BallonCanal < 0) return -1;
+  int premierSSR = -1;
+  for (int i = 0; i < NbActions; i++) {
+    if (LesActions[i].Actif == MODE_INACTIF) continue;
+    for (int p = 0; p < LesActions[i].NbPeriode && p < 8; p++) {
+      if (LesActions[i].CanalTemp[p] == BallonCanal) return i;  //Action liée à la sonde ballon
+    }
+    if (premierSSR < 0 && (LesActions[i].Actif == MODE_MULTISINUS || LesActions[i].Actif == MODE_TRAINSINUS)) {
+      premierSSR = i;
+    }
+  }
+  return premierSSR;
 }
 
 // ****************
@@ -1638,6 +1678,7 @@ void GestionOverproduction(unsigned long dt) {  // appelée à ~200ms, dt = dur�
 
   float Puissance = float(PuissanceS_M - PuissanceI_M);
   if (NbActions == 0) LissageLong = true;  //Cas d'un capteur seul et actions déporté sur autre ESP
+  int idxBallon = AntiLegioEnCours ? IndexActionBallon() : -1;  //Résolu une fois par passe
   for (int i = 0; i < NbActions; i++) {
     Actif[i] = LesActions[i].Actif;                                                //0=Inactif,1=On/Off, 2=Multi, 3=Train
     if (Actif[i] == MODE_MULTISINUS || Actif[i] == MODE_TRAINSINUS) lissage = true;  //En RAM
@@ -1657,7 +1698,7 @@ void GestionOverproduction(unsigned long dt) {  // appelée à ~200ms, dt = dur�
       P.Type = 1;  //  on arrete
     }
     //Chauffe anti-légionelle : force le ballon ON (au réseau si besoin), en présence comme en absence
-    bool estBallon = (BallonCanal >= 0 && LesActions[i].CanalTempEnCours(HeureCouranteDeci) == BallonCanal);
+    bool estBallon = (idxBallon == i);
     if (AntiLegioEnCours && estBallon) {
       P.Type = 2;       //Force ON : chauffe complète garantie
       P.Vmax = 100;     //Pleine ouverture
