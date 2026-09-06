@@ -15,15 +15,7 @@ function isoDate(d){
 }
 
 //---------- Thème clair / sombre ----------
-function setTheme(t){
-  document.documentElement.setAttribute("data-theme",t);
-  GID("btnTheme").textContent=(t==="dark")?"🌙":"☀️";
-  try{localStorage.setItem("soleoTheme",t);}catch(e){}
-}
-GID("btnTheme").onclick=function(){
-  setTheme(document.documentElement.getAttribute("data-theme")==="dark"?"light":"dark");
-};
-(function(){let t="dark";try{t=localStorage.getItem("soleoTheme")||"dark";}catch(e){}setTheme(t);})();
+// Bascule de thème : /theme.js (partagé par toutes les pages)
 
 //---------- Accordéons : un seul ouvert à la fois ----------
 document.querySelectorAll("details.acc").forEach(d=>{

@@ -65,6 +65,7 @@ void Init_Server() {
   server.on("/CouleursAjax", handleCouleursAjax);
   server.on("/CouleurUpdate", handleCouleurUpdate);
   server.on("/commun.css", handleCommunCSS);
+  server.on("/theme.js", handleThemeJS);  //Bascule clair/sombre partagée par toutes les pages
   server.on("/favicon.ico", handleFavicon);
   server.on("/favicon192.ico", handleFavicon192);
   server.on("/manifest.json", handleManifest);
@@ -981,23 +982,20 @@ void handleCouleurUpdate() {
 
   server.send(200, "text/plain", "OK couleurs");
 }
+void handleThemeJS() {
+  CacheEtClose(300);
+  //Chargé en <head> (bloquant) pour que le thème soit posé avant le premier rendu :
+  //sinon les utilisateurs en mode clair voient un flash sombre à chaque navigation.
+  server.send(200, "text/javascript", CommunThemeJS);
+}
 void handleCommunCSS() {
   CacheEtClose(60);
-  String S = "* {box-sizing: border-box;}\n";
-  S += "body {font-size:150%;text-align:center;width:100%;max-width:1000px;margin:auto;padding:10px;background:linear-gradient(";
-  if (Couleurs == "") {
-    S += "#000033,#77b5fe,#000033";
-  } else {
-    S += "#" + Couleurs.substring(12, 18) + ",#" + Couleurs.substring(6, 12) + ",#" + Couleurs.substring(12, 18);
-  }
-  S += ");background-attachment:fixed;color:";
-  if (Couleurs == "") {
-    S += "#ffffff";
-  } else {
-    S += "#" + Couleurs.substring(0, 6);
-  }
-  S += ";}\n";
-  server.send(200, "text/css", S + CommunCSS);
+  //L'ancien dégradé bleu et son body{font-size:150%;text-align:center;max-width:1000px;
+  //padding:10px} s'appliquaient encore à toutes les pages Soleo, dont les <style> inline
+  //ne redéfinissaient pas ces propriétés : typographie surdimensionnée et entête bridée.
+  //Le fond et le texte de page relèvent désormais du thème Soleo (clair/sombre) ;
+  //la page Couleurs continue de piloter les couleurs des mesures (.W/.VA/.Wh...).
+  server.send(200, "text/css", CommunCSS);
 }
 
 void handleFavicon() {
