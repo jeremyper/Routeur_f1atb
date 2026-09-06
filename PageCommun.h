@@ -79,7 +79,7 @@ const char *ParaCleHtml = R"====(
   <script>
     let BordsInverse = [".Bparametres"];
     function SendCle() {
-      document.cookie = "CleAcces=" + GID("CleAcces").value.trim();
+      document.cookie = "CleAcces=" + encodeURIComponent(GID("CleAcces").value.trim()) + ";path=/";
 
       GID("attente").style = "visibility: visible;";
       let xhttp = new XMLHttpRequest();
@@ -96,7 +96,7 @@ const char *ParaCleHtml = R"====(
       SetHautBas();
       LoadParaVar();
       Set_Couleurs();
-      document.cookie = "CleAcces=" + GID("CleAcces").value.trim();
+      document.cookie = "CleAcces=" + encodeURIComponent(GID("CleAcces").value.trim()) + ";path=/";
     }
     function AdaptationSource() { };
     function SetParaVar() { };

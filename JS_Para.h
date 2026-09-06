@@ -290,7 +290,8 @@ function SendValues() {
     F["RMS_IP" + i] = Vip;
   }
 
-  document.cookie = "CleAcces=" + encodeURIComponent(F.CleAccesRef) + ";max-age=31536000;path=/";
+  // Le cookie n'est mis à jour qu'APRÈS la sauvegarde : la requête doit s'authentifier
+  // avec la clé encore connue du serveur, sinon changer sa clé d'accès serait impossible.
   if ((GID("dhcp").checked || checkIP("adrIP") && checkIP("gateway")) && (!GID("MQTTRepet").checked || checkIP("MQTTIP"))) {
     fetch("/ParaNew", {
       method: "POST",
@@ -298,10 +299,12 @@ function SendValues() {
       body: JSON.stringify(F)
     })
       .then(response => {
+        if (response.status === 401) throw new Error("clé d'accès refusée, rechargez la page et ressaisissez-la");
         if (!response.ok) throw new Error("Erreur HTTP " + response.status);
         return response.json();
       })
       .then(resultat => {
+        document.cookie = "CleAcces=" + encodeURIComponent(F.CleAccesRef) + ";max-age=31536000;path=/";
         dirty = false;
         GID("saveBar").classList.remove("show");
         GID("attente").style = "visibility: hidden;";
