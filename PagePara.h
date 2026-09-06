@@ -253,6 +253,15 @@ body{padding-bottom:90px}
 </div>
 </details>
 
+<details class="acc" id="accDelestage">
+<summary><span class="aico">🛡️</span><span class="atit">Protection du disjoncteur<small>Bride les actions avant la disjonction</small></span><span class="chev">▼</span></summary>
+<div class="abody">
+<div class="rowh"><label for="DelestageOn">Activer le délestage<span class="hint">En routage de surplus la puissance tirée du réseau reste faible. Le risque de disjonction vient des marches forcées et des périodes ON, qui puisent sur le réseau. Quand la puissance soutirée approche votre abonnement, les actions sont refermées progressivement puis rouvertes une fois le pic passé.</span></label><label class="sw"><input type="checkbox" id="DelestageOn" name="DelestageOn" onclick="checkDisabled();"><span class="kn"></span></label></div>
+<div class="row ligneDelestage" style="display:none"><label for="DelestagePuissance">Puissance souscrite (W)<span class="hint">Indiquée sur votre facture. Repères monophasé : 15 A ≈ 3450, 30 A ≈ 6900, 45 A ≈ 10350, 60 A ≈ 13800.</span></label><input type="number" id="DelestagePuissance" name="DelestagePuissance" step="100" min="1000" max="30000"></div>
+<div class="row ligneDelestage" style="display:none"><label for="DelestageMarge">Marge de sécurité (%)<span class="hint">Le bridage démarre à ce pourcentage sous la puissance souscrite. 10 % sur 6900 W = déclenchement dès 6210 W.</span></label><input type="number" id="DelestageMarge" name="DelestageMarge" step="1" min="0" max="50"></div>
+</div>
+</details>
+
 <details class="acc" id="accAbsence">
 <summary><span class="aico">🏨</span><span class="atit">Mode absence<small>Coupe les actions quand vous êtes parti</small></span><span class="chev">▼</span></summary>
 <div class="abody">

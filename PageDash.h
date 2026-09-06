@@ -89,6 +89,7 @@ body{padding-bottom:20px}
 <a href="/Para"><span class="ni">🛠️</span>Réglages</a>
 </nav>
 <div id="absenceBanner" onclick="ToggleAbsence();" style="display:none;cursor:pointer;max-width:760px;margin:8px auto 0;padding:11px 16px;border-radius:14px;background:rgba(255,181,71,.14);border:1px solid var(--sun);color:var(--sun-soft);font-weight:700;font-size:13.5px;text-align:center">🏨 Mode absence actif — actions coupées · appuyez pour désactiver</div>
+<div id="delestageBanner" style="display:none;max-width:760px;margin:8px auto 0;padding:11px 16px;border-radius:14px;background:rgba(229,96,77,.14);border:1px solid var(--grid-imp);color:var(--grid-imp);font-weight:700;font-size:13.5px;text-align:center"></div>
 <main class="app">
 <section>
 <div class="sec-head"><h2>En direct</h2><span class="sub" id="liveClock">—</span></div>

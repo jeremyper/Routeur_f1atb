@@ -699,8 +699,30 @@ void handleParaCommunJS() {
 }
 void handleParaFixe() {  //Paramètres stockés en fichier
   File file = LittleFS.open("/parametres.json", "r");
-  server.send(200, "application/json", file.readString());
+  if (!file) {
+    server.send(200, "application/json", "{}");
+    return;
+  }
+  String conf = file.readString();
   file.close();
+  //Les pages Mesures, Actions, Brute et Accueil ont besoin de ce document, mais elles ne
+  //sont pas protégées par la clé : on n'expose les secrets qu'à un appelant authentifié.
+  //Sans cela /ParaFixe livrait le mot de passe WiFi, les identifiants MQTT/Enphase et la
+  //clé d'accès elle-même à n'importe qui sur le réseau local.
+  if (!AccesUploadAutorise()) {
+    const char *secrets[] = { "password", "MQTTPwd", "MQTTUser", "EnphasePwd", "EnphaseUser", "CleAccesRef" };
+    for (unsigned int s = 0; s < sizeof(secrets) / sizeof(secrets[0]); s++) {
+      String cle = "\"" + String(secrets[s]) + "\":";
+      int p = conf.indexOf(cle);
+      if (p < 0) continue;
+      int deb = conf.indexOf('"', p + cle.length());  //Ouvrante de la valeur
+      if (deb < 0) continue;
+      int fin = conf.indexOf('"', deb + 1);           //Fermante (ces champs n'ont pas d'échappement)
+      if (fin < 0) continue;
+      conf = conf.substring(0, deb + 1) + conf.substring(fin);  //Valeur vidée
+    }
+  }
+  server.send(200, "application/json", conf);
 }
 void handleajaxRAZhisto() {
   if (!AccesAutorise()) return;
@@ -758,6 +780,8 @@ void handleParaVar() {
   conf["EconomieTotal"] = serialized(String(EconomieTotal, 2));          //€ économisés au total
   conf["ModeAbsenceActif"] = ModeAbsenceActif ? 1 : 0;                   //Absence active en ce moment
   conf["AntiLegioEnCours"] = AntiLegioEnCours ? 1 : 0;                   //Chauffe anti-légionelle en cours
+  conf["DelestageActif"] = DelestageActif ? 1 : 0;                       //Délestage en cours
+  conf["DelestagePlafond"] = int(DelestagePlafond + 0.5);                //Ouverture max autorisée (%)
   for (int c = 0; c < 4; c++) {
     conf["temperature"][c] = temperature[c];
   }

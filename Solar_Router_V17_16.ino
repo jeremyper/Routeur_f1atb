@@ -652,6 +652,14 @@ int AbsenceJoursSansChauffe = 0; //Nb de jours sans que le ballon atteigne sa ci
 bool ModeAbsenceActif = false;   //Calculé : absence réellement active en ce moment
 bool AntiLegioEnCours = false;   //Cycle de chauffe anti-légionelle en cours
 
+//Délestage de protection d'abonnement : coupe progressivement les actions routées quand
+//la puissance soutirée approche le calibre du disjoncteur, pour éviter la disjonction.
+byte DelestageOn = 0;            //1 = protection active
+int16_t DelestagePuissance = 6000;  //Puissance d'abonnement en W (30 A monophasé = 6900 VA)
+byte DelestageMarge = 10;        //Marge de déclenchement en % sous le calibre
+bool DelestageActif = false;     //État courant : délestage en cours
+float DelestagePlafond = 100.0;  //Ouverture max autorisée aux actions (%), 100 = pas de bridage
+
 //Paramètres ventilateur SSR (refroidissement thermorégulé)
 int8_t FanGpio = 0;          //GPIO PWM du ventilateur (0 = désactivé)
 int8_t FanCanalTemp = -1;    //Canal sonde température SSR (-1 = désactivé)
@@ -1679,6 +1687,32 @@ void GestionOverproduction(unsigned long dt) {  // appelée à ~200ms, dt = dur�
   float Puissance = float(PuissanceS_M - PuissanceI_M);
   if (NbActions == 0) LissageLong = true;  //Cas d'un capteur seul et actions déporté sur autre ESP
   int idxBallon = AntiLegioEnCours ? IndexActionBallon() : -1;  //Résolu une fois par passe
+
+  // Délestage de protection d'abonnement.
+  // En routage de surplus la puissance soutirée reste proche de zéro : le risque de
+  // disjonction vient des marches forcées, des périodes ON et de la chauffe
+  // anti-légionelle, qui tirent sur le réseau. On calcule ici un plafond d'ouverture
+  // commun à toutes les actions : fermeture rapide en cas de dépassement, réouverture
+  // lente pour éviter le pompage.
+  if (DelestageOn == 1 && DelestagePuissance > 0) {
+    float seuil = float(DelestagePuissance) * (100.0f - float(DelestageMarge)) / 100.0f;
+    if (Puissance > seuil) {
+      float pas = constrain((Puissance - seuil) / 50.0f, 1.0f, 25.0f);  //50 W d'excès = 1 %
+      DelestagePlafond -= pas * (float(dt) / 200.0f);
+    } else {
+      DelestagePlafond += 0.5f * (float(dt) / 200.0f);  //~2,5 %/s de réouverture
+    }
+    DelestagePlafond = constrain(DelestagePlafond, 0.0f, 100.0f);
+  } else {
+    DelestagePlafond = 100.0f;
+  }
+  bool delestageEnCours = (DelestagePlafond < 99.5f);
+  if (delestageEnCours != DelestageActif) {
+    DelestageActif = delestageEnCours;
+    JournalAjoute(delestageEnCours
+                    ? "Délestage : puissance proche du calibre, actions bridées"
+                    : "Délestage : puissance redescendue, actions rétablies");
+  }
   for (int i = 0; i < NbActions; i++) {
     Actif[i] = LesActions[i].Actif;                                                //0=Inactif,1=On/Off, 2=Multi, 3=Train
     if (Actif[i] == MODE_MULTISINUS || Actif[i] == MODE_TRAINSINUS) lissage = true;  //En RAM
@@ -1750,6 +1784,11 @@ void GestionOverproduction(unsigned long dt) {  // appelée à ~200ms, dt = dur�
     } else {
       RetardF[i] = 100.0;
       IntegrErrorPw[i] = 100.0;
+    }
+    //Délestage : borne l'ouverture de toutes les actions, y compris les marches forcées
+    //et la chauffe anti-légionelle — un disjoncteur qui saute coupe tout de toute façon.
+    if (DelestagePlafond < 100.0f && RetardF[i] < 100.0f - DelestagePlafond) {
+      RetardF[i] = 100.0f - DelestagePlafond;
     }
     Retard[i] = round(RetardF[i]);         //Valeure entiere pour piloter le Triac et les relais
     if (RetardVx == i && Actif[i] != 0) {  //Affiche calcul retards port série ou Telnet

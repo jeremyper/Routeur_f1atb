@@ -170,6 +170,9 @@ function SetParaFixe() {
     GID("FanTdemarrage").value = F.FanTdemarrage !== undefined ? F.FanTdemarrage : 40;
     GID("FanTmax").value = F.FanTmax !== undefined ? F.FanTmax : 60;
     GID("FanVitesseMin").value = F.FanVitesseMin !== undefined ? F.FanVitesseMin : 30;
+    GID("DelestageOn").checked = F.DelestageOn == 1;
+    GID("DelestagePuissance").value = F.DelestagePuissance !== undefined ? F.DelestagePuissance : 6000;
+    GID("DelestageMarge").value = F.DelestageMarge !== undefined ? F.DelestageMarge : 10;
     GID("AbsenceManuel").checked = F.AbsenceManuel == 1;
     GID("AbsenceDebut").value = isoDate(F.AbsenceDebut);
     GID("AbsenceFin").value = isoDate(F.AbsenceFin);
@@ -243,6 +246,10 @@ function SendValues() {
   F.FanTdemarrage = parseInt(GID("FanTdemarrage").value, 10) || 40;
   F.FanTmax = parseInt(GID("FanTmax").value, 10) || 60;
   F.FanVitesseMin = parseInt(GID("FanVitesseMin").value, 10) || 30;
+  F.DelestageOn = GID("DelestageOn").checked ? 1 : 0;
+  F.DelestagePuissance = parseInt(GID("DelestagePuissance").value, 10) || 6000;
+  F.DelestageMarge = parseInt(GID("DelestageMarge").value, 10);
+  if (isNaN(F.DelestageMarge)) F.DelestageMarge = 10;  //0 % est une valeur valide
   F.AbsenceManuel = GID("AbsenceManuel").checked ? 1 : 0;
   F.AbsenceDebut = GID("AbsenceDebut").value.replace(/-/g, "");
   F.AbsenceFin = GID("AbsenceFin").value.replace(/-/g, "");
@@ -384,6 +391,10 @@ function checkDisabled() {
     // Ventilateur SSR : champs détaillés visibles seulement si un GPIO est sélectionné
     const fanVisible = GID("FanGpio").value != "0";
     document.querySelectorAll(".ligneFan").forEach(l => { l.style.display = fanVisible ? "" : "none"; });
+
+    // Délestage : puissance souscrite et marge visibles seulement si la protection est active
+    const delestVisible = GID("DelestageOn").checked;
+    document.querySelectorAll(".ligneDelestage").forEach(l => { l.style.display = delestVisible ? "" : "none"; });
 
     // Tarifs : si Tempo activé, on affiche les 6 prix Tempo et on masque le tarif Base HP/HC
     const tempoOn = GID("TempoRTEon").checked;

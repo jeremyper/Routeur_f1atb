@@ -69,6 +69,20 @@ function MajAbsence(){
   }
   var btn=GID("btnAbsence");
   if(btn)btn.style.background=actif?"rgba(255,181,71,.25)":"";
+  MajDelestage();
+}
+
+//---------- Délestage de protection d'abonnement ----------
+function MajDelestage(){
+  var ban=GID("delestageBanner");
+  if(!ban||!V)return;
+  var actif=(parseInt(V.DelestageActif)||0)==1;
+  ban.style.display=actif?"block":"none";
+  if(actif){
+    var plafond=parseInt(V.DelestagePlafond);
+    if(isNaN(plafond))plafond=0;
+    ban.textContent="🛡️ Puissance proche de votre abonnement — actions bridées à "+plafond+"%";
+  }
 }
 async function ToggleAbsence(){
   var actif=V&&(parseInt(V.ModeAbsenceActif)||0)==1;
