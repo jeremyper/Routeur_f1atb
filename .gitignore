@@ -1,0 +1,25 @@
+# Configuration et données du routeur (LittleFS)
+# parametres.json contient le mot de passe WiFi, les identifiants MQTT/Enphase
+# et la clé d'accès : ne jamais le committer.
+parametres.json
+journal.txt
+coefauto.txt
+histmeteo.csv
+EnergieMinuit.eng
+*.eng
+data/
+
+# Artefacts de compilation Arduino
+build/
+*.bin
+*.elf
+*.map
+*.hex
+
+# Éditeurs et systèmes
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*~

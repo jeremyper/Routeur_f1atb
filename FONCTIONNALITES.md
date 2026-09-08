@@ -39,7 +39,7 @@ Le **Routeur Solaire F1ATB** (RMS = Routeur Multi Sources) est un firmware ESP32
 **Principe :**
 - Mesure en temps réel le flux de puissance à l'entrée du tableau électrique
 - Calcule l'excédent PV disponible
-- Pilote jusqu'à **4 sorties** (SSR / relais / Triac) pour absorber cet excédent
+- Pilote jusqu'à **10 actions** (SSR / relais / Triac / commandes HTTP) pour absorber cet excédent
 - S'adapte aux contraintes tarifaires, météo et aux besoins thermiques
 
 ---
