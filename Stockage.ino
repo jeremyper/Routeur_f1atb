@@ -297,6 +297,9 @@ void DeserializeConfiguration(String json) {
   FanTdemarrage = conf["FanTdemarrage"].isNull() ? FanTdemarrage : conf["FanTdemarrage"].as<int16_t>();
   FanTmax = conf["FanTmax"].isNull() ? FanTmax : conf["FanTmax"].as<int16_t>();
   FanVitesseMin = conf["FanVitesseMin"].isNull() ? FanVitesseMin : conf["FanVitesseMin"].as<uint8_t>();
+  DelestageOn = conf["DelestageOn"] | 0;
+  DelestagePuissance = conf["DelestagePuissance"].isNull() ? DelestagePuissance : conf["DelestagePuissance"].as<int16_t>();
+  DelestageMarge = conf["DelestageMarge"].isNull() ? DelestageMarge : conf["DelestageMarge"].as<byte>();
   PrixHP = conf["PrixHP"].isNull() ? PrixHP : conf["PrixHP"].as<float>();
   PrixHC = conf["PrixHC"].isNull() ? PrixHC : conf["PrixHC"].as<float>();
   PrixBleuHP = conf["PrixBleuHP"].isNull() ? PrixBleuHP : conf["PrixBleuHP"].as<float>();
@@ -472,6 +475,9 @@ String SerializeConfiguration() {
   conf["FanTdemarrage"] = FanTdemarrage;
   conf["FanTmax"] = FanTmax;
   conf["FanVitesseMin"] = FanVitesseMin;
+  conf["DelestageOn"] = DelestageOn;
+  conf["DelestagePuissance"] = DelestagePuissance;
+  conf["DelestageMarge"] = DelestageMarge;
   conf["PrixHP"] = serialized(String(PrixHP, 3));
   conf["PrixHC"] = serialized(String(PrixHC, 3));
   conf["PrixBleuHP"] = serialized(String(PrixBleuHP, 4));

@@ -15,15 +15,7 @@ function isoDate(d){
 }
 
 //---------- Thème clair / sombre ----------
-function setTheme(t){
-  document.documentElement.setAttribute("data-theme",t);
-  GID("btnTheme").textContent=(t==="dark")?"🌙":"☀️";
-  try{localStorage.setItem("soleoTheme",t);}catch(e){}
-}
-GID("btnTheme").onclick=function(){
-  setTheme(document.documentElement.getAttribute("data-theme")==="dark"?"light":"dark");
-};
-(function(){let t="dark";try{t=localStorage.getItem("soleoTheme")||"dark";}catch(e){}setTheme(t);})();
+// Bascule de thème : /theme.js (partagé par toutes les pages)
 
 //---------- Accordéons : un seul ouvert à la fois ----------
 document.querySelectorAll("details.acc").forEach(d=>{
@@ -178,6 +170,9 @@ function SetParaFixe() {
     GID("FanTdemarrage").value = F.FanTdemarrage !== undefined ? F.FanTdemarrage : 40;
     GID("FanTmax").value = F.FanTmax !== undefined ? F.FanTmax : 60;
     GID("FanVitesseMin").value = F.FanVitesseMin !== undefined ? F.FanVitesseMin : 30;
+    GID("DelestageOn").checked = F.DelestageOn == 1;
+    GID("DelestagePuissance").value = F.DelestagePuissance !== undefined ? F.DelestagePuissance : 6000;
+    GID("DelestageMarge").value = F.DelestageMarge !== undefined ? F.DelestageMarge : 10;
     GID("AbsenceManuel").checked = F.AbsenceManuel == 1;
     GID("AbsenceDebut").value = isoDate(F.AbsenceDebut);
     GID("AbsenceFin").value = isoDate(F.AbsenceFin);
@@ -251,6 +246,10 @@ function SendValues() {
   F.FanTdemarrage = parseInt(GID("FanTdemarrage").value, 10) || 40;
   F.FanTmax = parseInt(GID("FanTmax").value, 10) || 60;
   F.FanVitesseMin = parseInt(GID("FanVitesseMin").value, 10) || 30;
+  F.DelestageOn = GID("DelestageOn").checked ? 1 : 0;
+  F.DelestagePuissance = parseInt(GID("DelestagePuissance").value, 10) || 6000;
+  F.DelestageMarge = parseInt(GID("DelestageMarge").value, 10);
+  if (isNaN(F.DelestageMarge)) F.DelestageMarge = 10;  //0 % est une valeur valide
   F.AbsenceManuel = GID("AbsenceManuel").checked ? 1 : 0;
   F.AbsenceDebut = GID("AbsenceDebut").value.replace(/-/g, "");
   F.AbsenceFin = GID("AbsenceFin").value.replace(/-/g, "");
@@ -290,7 +289,8 @@ function SendValues() {
     F["RMS_IP" + i] = Vip;
   }
 
-  document.cookie = "CleAcces=" + encodeURIComponent(F.CleAccesRef) + ";max-age=31536000;path=/";
+  // Le cookie n'est mis à jour qu'APRÈS la sauvegarde : la requête doit s'authentifier
+  // avec la clé encore connue du serveur, sinon changer sa clé d'accès serait impossible.
   if ((GID("dhcp").checked || checkIP("adrIP") && checkIP("gateway")) && (!GID("MQTTRepet").checked || checkIP("MQTTIP"))) {
     fetch("/ParaNew", {
       method: "POST",
@@ -298,10 +298,12 @@ function SendValues() {
       body: JSON.stringify(F)
     })
       .then(response => {
+        if (response.status === 401) throw new Error("clé d'accès refusée, rechargez la page et ressaisissez-la");
         if (!response.ok) throw new Error("Erreur HTTP " + response.status);
         return response.json();
       })
       .then(resultat => {
+        document.cookie = "CleAcces=" + encodeURIComponent(F.CleAccesRef) + ";max-age=31536000;path=/";
         dirty = false;
         GID("saveBar").classList.remove("show");
         GID("attente").style = "visibility: hidden;";
@@ -389,6 +391,10 @@ function checkDisabled() {
     // Ventilateur SSR : champs détaillés visibles seulement si un GPIO est sélectionné
     const fanVisible = GID("FanGpio").value != "0";
     document.querySelectorAll(".ligneFan").forEach(l => { l.style.display = fanVisible ? "" : "none"; });
+
+    // Délestage : puissance souscrite et marge visibles seulement si la protection est active
+    const delestVisible = GID("DelestageOn").checked;
+    document.querySelectorAll(".ligneDelestage").forEach(l => { l.style.display = delestVisible ? "" : "none"; });
 
     // Tarifs : si Tempo activé, on affiche les 6 prix Tempo et on masque le tarif Base HP/HC
     const tempoOn = GID("TempoRTEon").checked;

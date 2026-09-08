@@ -22,9 +22,16 @@ void MajEconomieJour() {
   if (SmaOn == 1 && EnergieJourPV > 0) EconomieJour = float(EnergieJourPV) / 1000.0 * PrixKwhActuel();
 }
 
-//Ajoute un événement en tête du journal et tronque à 30 lignes
+//Ajoute un événement en tête du journal et tronque à 30 lignes.
+//Appelé depuis les deux cœurs (boucle 2s et handlers web sur le cœur 1, Task_Reseau sur
+//le cœur 0). L'ajout étant un cycle lecture/troncature/réécriture du fichier entier, il
+//doit être sérialisé : sans verrou, deux ajouts simultanés tronquaient le journal.
 void JournalAjoute(const String &msg) {
   if (!HeureValide) return;  //Pas d'horodatage possible
+  if (MutexJournal == NULL) return;
+  //Attente bornée : un ajout au journal ne doit jamais retarder la régulation
+  if (xSemaphoreTake(MutexJournal, pdMS_TO_TICKS(200)) != pdTRUE) return;
+
   String hh = (Int_Heure < 10) ? "0" + String(Int_Heure) : String(Int_Heure);
   String mn = (Int_Minute < 10) ? "0" + String(Int_Minute) : String(Int_Minute);
   String contenu = hh + ":" + mn + ";" + msg + "\n";
@@ -50,4 +57,5 @@ void JournalAjoute(const String &msg) {
     f.print(contenu);
     f.close();
   }
+  xSemaphoreGive(MutexJournal);
 }

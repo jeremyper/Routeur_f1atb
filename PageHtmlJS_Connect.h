@@ -8,17 +8,13 @@ const char *ConnectAP_Html = R"====(
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Connexion WiFi</title>
+<link rel="stylesheet" href="/commun.css">
+<script src="/theme.js"></script>
 <style>
-:root{--bg:#0d1117;--bg-soft:#161b22;--card:#1c2230;--card-2:#232b3b;--line:#2c3444;--txt:#e8edf6;--txt-soft:#9aa6b8;--txt-dim:#6b7585;--sun:#ffb547;--sun-soft:#ffd27d;--home:#4ab3f4;--grid-imp:#e5604d;--grid-exp:#4cd28b;--accent:#6ee7c7;--shadow:0 10px 30px rgba(0,0,0,.35);--radius:20px;--radius-s:14px}
-html[data-theme=light]{--bg:#eef2f8;--bg-soft:#fff;--card:#fff;--card-2:#f3f6fb;--line:#e0e6f0;--txt:#1a2230;--txt-soft:#586273;--txt-dim:#8a93a4}
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--txt);line-height:1.45;padding-bottom:40px}
+/* Shell Soleo : voir /commun.css — surcharges propres a la page */
+.app,header.top,.botnav{max-width:600px}
+body{padding-bottom:40px}
 h2{margin:0;font-weight:700}
-a{text-decoration:none;color:inherit}
-.app{max-width:600px;margin:0 auto;padding:0 16px}
-header.top{background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(14px);display:flex;align-items:center;gap:12px;padding:16px}
-.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px}
-.logo{flex-shrink:0;width:32px;height:32px;border-radius:10px;background:radial-gradient(circle at 35% 30%,#ffd27d,#ffb547 65%,#e98a1a);box-shadow:0 0 18px rgba(255,181,71,.45)}
 section{margin:20px 0}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius-s);padding:16px;margin:12px 0;box-shadow:var(--shadow)}
 .card h3{margin:0 0 12px;font-size:15px;font-weight:700}

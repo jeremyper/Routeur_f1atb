@@ -10,26 +10,15 @@ const char *DashHtml = R"====(
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" href="/favicon.ico">
 <title>Accueil</title>
+<link rel="stylesheet" href="/commun.css">
+<script src="/theme.js"></script>
 <style>
-:root{--bg:#0d1117;--bg-soft:#161b22;--card:#1c2230;--card-2:#232b3b;--line:#2c3444;--txt:#e8edf6;--txt-soft:#9aa6b8;--txt-dim:#6b7585;--sun:#ffb547;--sun-soft:#ffd27d;--home:#4ab3f4;--water:#ff6f91;--grid-imp:#e5604d;--grid-exp:#4cd28b;--accent:#6ee7c7;--shadow:0 10px 30px rgba(0,0,0,.35);--radius:20px;--radius-s:14px}
-html[data-theme=light]{--bg:#eef2f8;--bg-soft:#fff;--card:#fff;--card-2:#f3f6fb;--line:#e0e6f0;--txt:#1a2230;--txt-soft:#586273;--txt-dim:#8a93a4;--shadow:0 10px 30px rgba(40,60,90,.1)}
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--txt);line-height:1.45;transition:background .4s,color .4s;padding-bottom:88px}
+/* Shell Soleo : voir /commun.css — surcharges propres a la page */
+.app,header.top,.botnav{max-width:760px}
 h1,h2{margin:0;font-weight:700;letter-spacing:-.01em}
-a{text-decoration:none;color:inherit}
-.app{max-width:760px;margin:0 auto;padding:0 16px}
-header.top{position:sticky;top:0;z-index:40;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(14px);display:flex;align-items:center;justify-content:space-between;padding:12px 16px;max-width:760px;margin:0 auto;gap:8px}
-.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:18px;min-width:0}
-#nom_R{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.logo{flex-shrink:0;width:30px;height:30px;border-radius:9px;background:radial-gradient(circle at 35% 30%,var(--sun-soft),var(--sun) 65%,#e98a1a);box-shadow:0 0 18px rgba(255,181,71,.45)}
-.top-actions{display:flex;gap:8px;align-items:center;flex-shrink:0}
-.badge{font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:999px;background:var(--card-2);color:var(--txt-soft);border:1px solid var(--line);white-space:nowrap}
 .online{display:flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;color:var(--grid-exp)}
 .online.off{color:var(--txt-dim)}
 .odot{width:9px;height:9px;border-radius:50%;background:currentColor;box-shadow:0 0 8px currentColor;animation:blink 2.4s infinite}
-@keyframes blink{50%{opacity:.3}}
-.iconbtn{width:38px;height:38px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--txt);font-size:17px;cursor:pointer;display:grid;place-items:center}
-.iconbtn:active{transform:scale(.92)}
 section{margin:26px 0}
 .sec-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px}
 .sec-head h2{font-size:20px}
@@ -79,10 +68,6 @@ section{margin:26px 0}
 .feed .ic{flex-shrink:0;width:34px;height:34px;border-radius:11px;display:grid;place-items:center;font-size:17px;background:var(--card-2)}
 .feed .txt{font-size:13.5px}
 .feed .when{font-size:11.5px;color:var(--txt-dim)}
-.botnav{position:fixed;bottom:0;left:0;right:0;z-index:50;background:color-mix(in srgb,var(--bg-soft) 92%,transparent);backdrop-filter:blur(16px);border-top:1px solid var(--line);display:flex;justify-content:space-around;padding:8px 4px env(safe-area-inset-bottom)}
-.botnav a{color:var(--txt-dim);display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10.5px;font-weight:600;padding:6px 14px;border-radius:12px}
-.botnav a .ni{font-size:20px}
-.botnav a.active{color:var(--accent)}
 @media(min-width:700px){
 body{padding-bottom:20px}
 .tiles{grid-template-columns:repeat(4,1fr)}
@@ -104,6 +89,7 @@ body{padding-bottom:20px}
 <a href="/Para"><span class="ni">🛠️</span>Réglages</a>
 </nav>
 <div id="absenceBanner" onclick="ToggleAbsence();" style="display:none;cursor:pointer;max-width:760px;margin:8px auto 0;padding:11px 16px;border-radius:14px;background:rgba(255,181,71,.14);border:1px solid var(--sun);color:var(--sun-soft);font-weight:700;font-size:13.5px;text-align:center">🏨 Mode absence actif — actions coupées · appuyez pour désactiver</div>
+<div id="delestageBanner" style="display:none;max-width:760px;margin:8px auto 0;padding:11px 16px;border-radius:14px;background:rgba(229,96,77,.14);border:1px solid var(--grid-imp);color:var(--grid-imp);font-weight:700;font-size:13.5px;text-align:center"></div>
 <main class="app">
 <section>
 <div class="sec-head"><h2>En direct</h2><span class="sub" id="liveClock">—</span></div>

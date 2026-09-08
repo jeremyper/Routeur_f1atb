@@ -4,6 +4,9 @@
 #include <Arduino.h>
 bool opened = false;
 String ConfImport;
+//Autorisation du téléversement en cours (/update firmware et /import fichier).
+//Évaluée à l'ouverture du flux, relue à chaque bloc reçu et à la réponse finale.
+bool UploadAutorise = false;
 void Init_Server() {
   // Init Web Server on port 80
   server.on("/", handleRoot);          //Tableau de bord Soleo
@@ -62,6 +65,7 @@ void Init_Server() {
   server.on("/CouleursAjax", handleCouleursAjax);
   server.on("/CouleurUpdate", handleCouleurUpdate);
   server.on("/commun.css", handleCommunCSS);
+  server.on("/theme.js", handleThemeJS);  //Bascule clair/sombre partagée par toutes les pages
   server.on("/favicon.ico", handleFavicon);
   server.on("/favicon192.ico", handleFavicon192);
   server.on("/manifest.json", handleManifest);
@@ -74,22 +78,39 @@ void Init_Server() {
   /*handling uploading firmware file */
   server.on(
     "/update", HTTP_POST, []() {
+      //Double contrôle : le drapeau (posé à l'ouverture du flux) ET la clé au moment de
+      //la réponse, pour qu'un POST sans fichier ne réutilise pas un drapeau resté à true.
+      if (!UploadAutorise || !AccesUploadAutorise()) {
+        UploadAutorise = false;
+        server.send(401, "text/plain", "Acces refuse : cle d'acces requise");
+        return;
+      }
+      UploadAutorise = false;
       server.send(200, "text/plain", (Update.hasError()) ? "FAIL" : "OK");
       ReseT((Update.hasError()) ? "Update FAIL" : "Update OK");
     },
     []() {
       HTTPUpload &upload = server.upload();
       if (upload.status == UPLOAD_FILE_START) {
+        //Le contrôle se fait à l'ouverture du flux : sans clé valide on n'écrit pas
+        //une seule ligne dans la partition OTA.
+        UploadAutorise = AccesUploadAutorise();
+        if (!UploadAutorise) {
+          TelnetPrintln("Update refusé : clé d'accès invalide");
+          return;
+        }
         TelnetPrintln("Update: " + String(upload.filename));
         if (!Update.begin(UPDATE_SIZE_UNKNOWN)) {  // start with max available size
           Update.printError(Serial);
         }
       } else if (upload.status == UPLOAD_FILE_WRITE) {
+        if (!UploadAutorise) return;
         /* flashing firmware to ESP*/
         if (Update.write(upload.buf, upload.currentSize) != upload.currentSize) {
           Update.printError(Serial);
         }
       } else if (upload.status == UPLOAD_FILE_END) {
+        if (!UploadAutorise) return;
         if (Update.end(true)) {  // true to set the size to the current progress
           TelnetPrintln("Update Success: Rebooting..." + String(upload.totalSize));
         } else {
@@ -101,6 +122,12 @@ void Init_Server() {
   /*handling uploading file */
   server.on(
     "/import", HTTP_POST, []() {
+      if (!UploadAutorise || !AccesUploadAutorise()) {
+        UploadAutorise = false;
+        server.send(401, "text/plain", "Acces refuse : cle d'acces requise");
+        return;
+      }
+      UploadAutorise = false;
       server.send(200, "text/plain", "OK");
     },
     []() {
@@ -111,8 +138,20 @@ void Init_Server() {
 
       if (upload.status == UPLOAD_FILE_START)  // État de début du téléversement
       {
+        //Le nom de fichier vient du client : contrôle de la clé ET du nom avant
+        //d'écrire quoi que ce soit dans LittleFS.
+        UploadAutorise = AccesUploadAutorise();
+        if (!UploadAutorise) {
+          TelnetPrintln("Import refusé : clé d'accès invalide");
+          return;
+        }
         // --- C'EST ICI QUE VOUS RÉCUPÉREZ LE NOM DU FICHIER ---
         fileName = upload.filename;
+        if (!NomFichierSur(fileName)) {
+          TelnetPrintln("Import refusé : nom de fichier invalide (" + fileName + ")");
+          UploadAutorise = false;
+          return;
+        }
 
         TelnetPrintln("Début Upload du fichier: " + fileName);
         ConfImport = "";
@@ -122,10 +161,12 @@ void Init_Server() {
           opened = true;
         }
       } else if (upload.status == UPLOAD_FILE_WRITE) {
+        if (!UploadAutorise) return;
         for (int i = 0; i < upload.currentSize; i++) {
           ConfImport += String(char(upload.buf[i]));
         }
       } else if (upload.status == UPLOAD_FILE_END) {
+        if (!UploadAutorise) return;
         TelnetPrintln("Fin Upload du fichier: " + fileName);
         if (fileName.indexOf(".json") > 0) {
           int nbOK = 0;
@@ -470,6 +511,7 @@ void handleAjax_etatActionX() {
   server.send(200, "text/html", S);
 }
 void handleForceAction() {
+  if (!AccesAutorise()) return;
   int Force = server.arg("Force").toInt();
   int NumAction = server.arg("NumAction").toInt();
   if (NumAction >= 0 && NumAction < NbActions) {
@@ -484,10 +526,14 @@ void handleForceAction() {
 }
 //Bascule manuelle du mode absence depuis l'accueil. ?set=1 active, ?set=0 désactive
 void handleAbsence() {
-  if (server.hasArg("set")) {
-    AbsenceManuel = (server.arg("set").toInt() == 1) ? 1 : 0;
-    GestionAbsence();          //Réévalue l'état immédiatement
-    RecordFichierParametres(); //Persiste le choix
+  if (server.hasArg("set")) {  //Écriture : protégée. La simple lecture d'état reste libre.
+    if (!AccesAutorise()) return;
+    byte nouveau = (server.arg("set").toInt() == 1) ? 1 : 0;
+    if (nouveau != AbsenceManuel) {  //Anti-rebond : pas d'écriture flash si l'état ne change pas
+      AbsenceManuel = nouveau;
+      GestionAbsence();           //Réévalue l'état immédiatement
+      RecordFichierParametres();  //Persiste le choix
+    }
   }
   server.send(200, "text/html", ModeAbsenceActif ? "1" : "0");
 }
@@ -501,6 +547,7 @@ void handleShowAction() {
   LastShowActionMillis = millis();
 }
 void handleUpdateK() {
+  if (!AccesAutorise()) return;
   int iAct = server.arg("iAct").toInt();
   if (iAct < 0 || iAct >= NbActions) {
     server.send(400, "text/plain", "Bad iAct");
@@ -518,7 +565,7 @@ void handleAjaxTemperature() {
   server.send(200, "text/html", GS + LesTemp + RS);
 }
 void handleRestart() {  // Eventuellement Reseter l'ESP32 à distance
-
+  if (!AccesAutorise()) return;
   server.send(200, "text/plain", "OK Reset. Attendez.");
   delay(1000);
   ReseT("Reset Demandé par le Web");
@@ -607,6 +654,7 @@ void handlePara() {
   previousTempMillis = millis() - 120000;
 }
 void handleParaNew() {
+  if (!AccesAutorise()) return;
   DeserializeConfiguration(server.arg("plain"));
   server.send(200, "application/json", "{\"new_config\":\"ok\"}");
   int j = 1;
@@ -651,10 +699,33 @@ void handleParaCommunJS() {
 }
 void handleParaFixe() {  //Paramètres stockés en fichier
   File file = LittleFS.open("/parametres.json", "r");
-  server.send(200, "application/json", file.readString());
+  if (!file) {
+    server.send(200, "application/json", "{}");
+    return;
+  }
+  String conf = file.readString();
   file.close();
+  //Les pages Mesures, Actions, Brute et Accueil ont besoin de ce document, mais elles ne
+  //sont pas protégées par la clé : on n'expose les secrets qu'à un appelant authentifié.
+  //Sans cela /ParaFixe livrait le mot de passe WiFi, les identifiants MQTT/Enphase et la
+  //clé d'accès elle-même à n'importe qui sur le réseau local.
+  if (!AccesUploadAutorise()) {
+    const char *secrets[] = { "password", "MQTTPwd", "MQTTUser", "EnphasePwd", "EnphaseUser", "CleAccesRef" };
+    for (unsigned int s = 0; s < sizeof(secrets) / sizeof(secrets[0]); s++) {
+      String cle = "\"" + String(secrets[s]) + "\":";
+      int p = conf.indexOf(cle);
+      if (p < 0) continue;
+      int deb = conf.indexOf('"', p + cle.length());  //Ouvrante de la valeur
+      if (deb < 0) continue;
+      int fin = conf.indexOf('"', deb + 1);           //Fermante (ces champs n'ont pas d'échappement)
+      if (fin < 0) continue;
+      conf = conf.substring(0, deb + 1) + conf.substring(fin);  //Valeur vidée
+    }
+  }
+  server.send(200, "application/json", conf);
 }
 void handleajaxRAZhisto() {
+  if (!AccesAutorise()) return;
   RAZ_Histo_Conso();
   for (int i = 0; i < 600; i++) {
     tabPw_Maison_5mn[i] = 0;  // Puissance Active:Soutiré-Injecté toutes les 5mn
@@ -709,6 +780,8 @@ void handleParaVar() {
   conf["EconomieTotal"] = serialized(String(EconomieTotal, 2));          //€ économisés au total
   conf["ModeAbsenceActif"] = ModeAbsenceActif ? 1 : 0;                   //Absence active en ce moment
   conf["AntiLegioEnCours"] = AntiLegioEnCours ? 1 : 0;                   //Chauffe anti-légionelle en cours
+  conf["DelestageActif"] = DelestageActif ? 1 : 0;                       //Délestage en cours
+  conf["DelestagePlafond"] = int(DelestagePlafond + 0.5);                //Ouverture max autorisée (%)
   for (int c = 0; c < 4; c++) {
     conf["temperature"][c] = temperature[c];
   }
@@ -747,6 +820,7 @@ void handleAjaxHistMeteo() {  //Historique quotidien : date;prevision_kWh;produc
   server.send(200, "text/plain", S);
 }
 void handleSetGpio() {
+  if (!AccesAutorise()) return;
   int gpio = server.arg("gpio").toInt();
   int out = server.arg("out").toInt();
   String S = "Refut : gpio =" + String(gpio) + " out =" + String(out);
@@ -765,25 +839,31 @@ void handleExport() {
   lectureCookie(ExportHtml);
 }
 void handleExport_file() {
-  String S = "";
+  //parametres.json contient les mots de passe WiFi/MQTT/Enphase et la clé d'accès
+  //elle-même : cet endpoint doit impérativement exiger la clé.
+  if (!AccesAutorise()) return;
   String Fichier = server.arg("Fichier");
+  if (!NomFichierSur(Fichier)) {
+    server.send(400, "text/plain", "Nom de fichier invalide");
+    return;
+  }
   if (server.arg("Delete") == "OK") {
     LittleFS.remove("/" + Fichier);
-  } else {
-    File file = LittleFS.open("/" + Fichier, "r");
-    while (file.available()) {
-      char c = file.read();
-      S += String(c);
-    }
-    file.close();
-
-    server.sendHeader("Content-Type", "application/octet-stream");
-    server.sendHeader("Content-Disposition", "attachment; filename=\"" + server.arg("download") + "\"");
+    server.send(200, "application/json", "");
+    return;
   }
-
-  server.send(200, "application/json", S);
+  File file = LittleFS.open("/" + Fichier, "r");
+  if (!file) {
+    server.send(404, "text/plain", "Fichier introuvable");
+    return;
+  }
+  //Envoi en flux : évite de reconstruire tout le fichier en RAM caractère par caractère
+  server.sendHeader("Content-Disposition", "attachment; filename=\"" + server.arg("download") + "\"");
+  server.streamFile(file, "application/octet-stream");
+  file.close();
 }
 void handleListeFile() {
+  if (!AccesAutorise()) return;
   String S = "";
   File root = LittleFS.open("/");
   File file = root.openNextFile();
@@ -845,6 +925,7 @@ bool Liste_WIFI() {  // Doit être fait avant toute connection WIFI depuis bibli
 }
 
 void handleAP_SetWifi() {
+  if (!AccesAutorise()) return;
   esp_task_wdt_reset();
   delay(1);
   TelnetPrintln("Set Wifi");
@@ -893,6 +974,7 @@ void handleHeure() {
   lectureCookie(HeureHtml);
 }
 void handleHourUpdate() {
+  if (!AccesAutorise()) return;
   String New_H = server.arg("New_H");
   String New_J = server.arg("New_J");
   Horloge = server.arg("Horloge").toInt();
@@ -917,29 +999,27 @@ void handleCouleursAjax() {
   server.send(200, "text/javascript", Couleurs);  // tableau des couleurs
 }
 void handleCouleurUpdate() {
+  if (!AccesAutorise()) return;
   Couleurs = server.arg("couleurs");
   if (Couleurs.length()==0) Couleurs=String(CouleurDefaut);
   EcritureEnROM();
 
   server.send(200, "text/plain", "OK couleurs");
 }
+void handleThemeJS() {
+  CacheEtClose(300);
+  //Chargé en <head> (bloquant) pour que le thème soit posé avant le premier rendu :
+  //sinon les utilisateurs en mode clair voient un flash sombre à chaque navigation.
+  server.send(200, "text/javascript", CommunThemeJS);
+}
 void handleCommunCSS() {
   CacheEtClose(60);
-  String S = "* {box-sizing: border-box;}\n";
-  S += "body {font-size:150%;text-align:center;width:100%;max-width:1000px;margin:auto;padding:10px;background:linear-gradient(";
-  if (Couleurs == "") {
-    S += "#000033,#77b5fe,#000033";
-  } else {
-    S += "#" + Couleurs.substring(12, 18) + ",#" + Couleurs.substring(6, 12) + ",#" + Couleurs.substring(12, 18);
-  }
-  S += ");background-attachment:fixed;color:";
-  if (Couleurs == "") {
-    S += "#ffffff";
-  } else {
-    S += "#" + Couleurs.substring(0, 6);
-  }
-  S += ";}\n";
-  server.send(200, "text/css", S + CommunCSS);
+  //L'ancien dégradé bleu et son body{font-size:150%;text-align:center;max-width:1000px;
+  //padding:10px} s'appliquaient encore à toutes les pages Soleo, dont les <style> inline
+  //ne redéfinissaient pas ces propriétés : typographie surdimensionnée et entête bridée.
+  //Le fond et le texte de page relèvent désormais du thème Soleo (clair/sombre) ;
+  //la page Couleurs continue de piloter les couleurs des mesures (.W/.VA/.Wh...).
+  server.send(200, "text/css", CommunCSS);
 }
 
 void handleFavicon() {
@@ -992,6 +1072,38 @@ void ExtraitCookie() {
     }
     CleAcces.trim();
   }
+}
+
+// Contrôle d'accès des endpoints qui MODIFIENT l'état (configuration, GPIO, fichiers,
+// redémarrage, mise à jour du firmware).
+// lectureCookie() ne protégeait que l'affichage des pages HTML : les API sous-jacentes
+// restaient appelables directement. AccesAutorise() ferme ce contournement.
+// Si aucune clé n'est configurée, l'accès reste libre (comportement historique, pas de
+// régression pour les installations existantes).
+bool AccesAutorise() {
+  if (CleAccesRef.length() == 0) return true;  //Pas de clé définie : accès libre
+  ExtraitCookie();
+  if (CleAccesRef == CleAcces) return true;
+  server.send(401, "text/plain", "Acces refuse : cle d'acces requise");
+  return false;
+}
+
+// Variante silencieuse pour les téléversements : les callbacks d'upload sont appelés
+// pendant la réception du corps de la requête, on ne peut pas y émettre de réponse HTTP.
+// Le refus est renvoyé par le handler final via UploadAutorise.
+bool AccesUploadAutorise() {
+  if (CleAccesRef.length() == 0) return true;
+  ExtraitCookie();
+  return (CleAccesRef == CleAcces);
+}
+
+// Un nom de fichier LittleFS doit rester à la racine : ni séparateur, ni remontée de
+// répertoire, ni nom vide. Empêche /export_file et /import de sortir du dossier.
+bool NomFichierSur(const String &nom) {
+  if (nom.length() == 0 || nom.length() > 64) return false;
+  if (nom.indexOf('/') >= 0 || nom.indexOf('\\') >= 0) return false;
+  if (nom.indexOf("..") >= 0) return false;
+  return true;
 }
 
 // class pour découper au format chunked attendu par navigateur

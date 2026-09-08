@@ -1654,16 +1654,7 @@ function PollStatuses(){
     .finally(function(){ setTimeout(PollStatuses, 4000); });
 }
 
-// ---- Theme (unifie avec les autres pages : cle soleoTheme + bouton btnTheme) ----
-function setTheme(t){
-  document.documentElement.setAttribute("data-theme",t);
-  if(GID("btnTheme"))GID("btnTheme").textContent=(t==="dark")?"🌙":"☀️";
-  try{localStorage.setItem("soleoTheme",t);}catch(e){}
-}
-if(GID("btnTheme"))GID("btnTheme").onclick=function(){
-  setTheme(document.documentElement.getAttribute("data-theme")==="dark"?"light":"dark");
-};
-(function(){var t="dark";try{t=localStorage.getItem("soleoTheme")||"dark";}catch(e){}setTheme(t);})();
+// Bascule de thème : /theme.js (partagé par toutes les pages)
 
 // ---- Override Init : doit etre defini APRES l'original ----
 window.Init = function(){

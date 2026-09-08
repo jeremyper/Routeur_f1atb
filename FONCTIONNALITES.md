@@ -15,6 +15,7 @@
 7. [Prévision météo solaire](#7-prévision-météo-solaire)
 8. [Ballon eau chaude intelligent](#8-ballon-eau-chaude-intelligent)
 9. [Mode Absence](#9-mode-absence)
+9 bis. [Protection du disjoncteur (délestage)](#9-bis-protection-du-disjoncteur-délestage)
 10. [Tarification électrique](#10-tarification-électrique)
 11. [Horloge et synchronisation](#11-horloge-et-synchronisation)
 12. [Connectivité réseau](#12-connectivité-réseau)
@@ -38,7 +39,7 @@ Le **Routeur Solaire F1ATB** (RMS = Routeur Multi Sources) est un firmware ESP32
 **Principe :**
 - Mesure en temps réel le flux de puissance à l'entrée du tableau électrique
 - Calcule l'excédent PV disponible
-- Pilote jusqu'à **4 sorties** (SSR / relais / Triac) pour absorber cet excédent
+- Pilote jusqu'à **10 actions** (SSR / relais / Triac / commandes HTTP) pour absorber cet excédent
 - S'adapte aux contraintes tarifaires, météo et aux besoins thermiques
 
 ---
@@ -255,6 +256,28 @@ Suspension complète des automatismes pendant une période de vacances.
 - Paramètre `AbsenceAntiLegio` : nombre de jours sans chauffe toléré (0 = désactivé, 3/5/7/14 jours)
 - Quand le seuil est atteint : la résistance du ballon est forcée ON à 100% jusqu'à atteindre la température cible
 - Le compteur est remis à zéro après la chauffe
+- L'action pilotant le ballon est identifiée en balayant **toutes** les périodes à la recherche de la sonde `BallonCanal`, avec repli sur la première action SSR. Se fier au seul créneau horaire courant rendait la sécurité inopérante quand celui-ci n'avait pas de condition de température.
+
+---
+
+## 9 bis. Protection du disjoncteur (délestage)
+
+Évite la disjonction quand la puissance soutirée approche le calibre de l'abonnement.
+
+### Pourquoi
+En routage de surplus, la puissance tirée du réseau reste proche de zéro : le routeur ne peut pas faire disjoncter. Le risque vient des **marches forcées**, des **périodes ON** et de la **chauffe anti-légionelle**, qui puisent sur le réseau en s'ajoutant à la consommation du foyer.
+
+### Paramètres (page Réglages → 🛡️ Protection du disjoncteur)
+- `DelestageOn` : active la protection
+- `DelestagePuissance` : puissance souscrite en W (monophasé : 15 A ≈ 3450, 30 A ≈ 6900, 45 A ≈ 10350, 60 A ≈ 13800)
+- `DelestageMarge` : marge de déclenchement en % sous le calibre (défaut 10 %)
+
+### Fonctionnement
+- Évalué à chaque cycle de régulation (200 ms), comme la boucle de routage
+- Au-dessus du seuil : fermeture rapide, proportionnelle au dépassement (50 W d'excès = 1 % de fermeture par cycle, plafonné à 25 %) — soit une fermeture complète en moins d'une seconde sur un dépassement franc
+- Sous le seuil : réouverture lente (~2,5 %/s) pour éviter le pompage
+- Le plafond s'applique à **toutes** les actions, marches forcées et anti-légionelle comprises : un disjoncteur qui saute coupe tout de toute façon
+- Bannière rouge sur le tableau de bord indiquant le plafond courant, et trace au journal à chaque entrée/sortie de délestage
 
 ---
 
@@ -514,9 +537,24 @@ Interface responsive **dark/light** accessible depuis n'importe quel navigateur 
 
 ## 21. Sécurité d'accès
 
-- **Mot de passe** configurable pour protéger l'accès aux pages Paramètres et Actions
-- Stocké en cookie navigateur (`CleAcces`)
-- Les pages de consultation (tableau de bord, mesures) restent accessibles sans mot de passe
+- **Clé d'accès** configurable, stockée en cookie navigateur (`CleAcces`) et comparée à `CleAccesRef`
+- Les pages de consultation (tableau de bord, mesures, données brutes) restent accessibles sans clé
+- Si **aucune clé n'est définie**, tout reste ouvert : comportement historique inchangé
+
+### Périmètre de la protection
+La clé ne gouverne pas seulement l'affichage des pages : elle est exigée par tous les points d'entrée qui **modifient l'état** ou **exposent des secrets**. Une réponse `401` est renvoyée sinon.
+
+| Catégorie | Points d'entrée |
+|---|---|
+| Configuration | `/ParaNew`, `/HourUpdate`, `/CouleurUpdate`, `/UpdateK`, `/AP_SetWifi` |
+| Actions & matériel | `/ForceAction`, `/SetGPIO`, `/ajax_absence` (écriture), `/restart` |
+| Fichiers | `/export_file`, `/ListeFile`, `/import`, `/ajaxRAZhisto` |
+| Firmware | `/update` (téléversement OTA) |
+
+- `/ParaFixe` reste ouvert (les pages de consultation en dépendent) mais **masque les secrets** — mot de passe WiFi, identifiants MQTT et Enphase, clé d'accès — pour tout appelant non authentifié.
+- Les noms de fichiers de `/export_file` et `/import` sont validés : ni séparateur, ni remontée de répertoire.
+- Pour `/update` et `/import`, le contrôle a lieu à l'ouverture du flux : rien n'est écrit en flash sans clé valide.
+- Le cookie n'est mis à jour qu'**après** une sauvegarde réussie, afin que changer sa propre clé reste possible.
 
 ---
 

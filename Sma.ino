@@ -127,17 +127,26 @@ void CalculBallon() {
 //Compare la production SMA du jour à l'énergie réellement routée vers le ballon
 //(H_Ouvre de la première action SSR x puissance résistance).
 void ApprentissageBallon() {
+  //Relève du compteur du jour puis remise à zéro, sous verrou : SuiviUsageBallon()
+  //l'accumule depuis le cœur 1. On ne garde le verrou que le temps de la copie, le
+  //journal et l'écriture flash qui suivent se font sur la valeur relevée.
+  float usageJour = 0;
+  if (MutexBallon != NULL && xSemaphoreTake(MutexBallon, pdMS_TO_TICKS(500)) == pdTRUE) {
+    usageJour = Ballon_UsageJour;
+    Ballon_UsageJour = 0;  //Nouveau jour
+    xSemaphoreGive(MutexBallon);
+  }
+
   //Apprentissage de l'usage d'eau chaude : moyenne glissante sur ~5 jours (mode ballon intelligent)
-  if (BallonCanal >= 0 && Ballon_UsageJour > 0.05) {
+  if (BallonCanal >= 0 && usageJour > 0.05) {
     if (Ballon_UsageMoyen < 0.05) {
-      Ballon_UsageMoyen = Ballon_UsageJour;  //Première initialisation
+      Ballon_UsageMoyen = usageJour;  //Première initialisation
     } else {
-      Ballon_UsageMoyen = 0.8 * Ballon_UsageMoyen + 0.2 * Ballon_UsageJour;
+      Ballon_UsageMoyen = 0.8 * Ballon_UsageMoyen + 0.2 * usageJour;
     }
-    JournalAjoute("Ballon : usage estimé du jour " + String(Ballon_UsageJour, 1) + " kWh (moyenne " + String(Ballon_UsageMoyen, 1) + " kWh)");
+    JournalAjoute("Ballon : usage estimé du jour " + String(usageJour, 1) + " kWh (moyenne " + String(Ballon_UsageMoyen, 1) + " kWh)");
     SauveCoefAuto();  //Persiste coef + usage moyen
   }
-  Ballon_UsageJour = 0;  //Nouveau jour
 
   float prodJour = (SmaOn == 1 && EnergieJourPV > 0) ? float(EnergieJourPV) / 1000.0 : -1;  //kWh (-1 = pas de donnée)
   float routee = 0;
