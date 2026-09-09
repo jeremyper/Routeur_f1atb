@@ -28,11 +28,10 @@ section{margin:20px 0}
 ol{padding-left:20px;margin:0;display:flex;flex-direction:column;gap:8px}
 ol li{font-size:14px;line-height:1.5}
 input[type=file]{width:100%;background:var(--card-2);border:1px solid var(--line);border-radius:10px;color:var(--txt);font-size:14px;padding:9px 12px;outline:none;margin-bottom:10px}
-.btn-pri{background:var(--accent);color:#08221a;border:none;border-radius:11px;padding:11px 22px;font-size:14.5px;font-weight:800;cursor:pointer;white-space:nowrap}
+.btn-pri{display:inline-block;background:var(--accent);color:#08221a;border:none;border-radius:11px;padding:11px 22px;font-size:14.5px;font-weight:800;cursor:pointer;white-space:nowrap;text-decoration:none}
 .btn-pri:active{transform:scale(.96)}
 .pbar-wrap{height:10px;border-radius:999px;background:var(--card-2);overflow:hidden;margin-top:10px}
 .pbar{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--accent),var(--grid-exp));width:0%;transition:width .3s}
-iframe{width:100%;height:160px;border:1px solid var(--line);border-radius:10px;background:var(--card-2)}
 @media(min-width:700px){body{padding-bottom:20px}.botnav{position:static;border-top:none;border-bottom:1px solid var(--line);max-width:760px;margin:0 auto;justify-content:center;gap:20px;background:transparent;backdrop-filter:none}.botnav a{flex-direction:row;font-size:13px;gap:7px}.botnav a .ni{font-size:17px}}
 </style>
 </head>
@@ -60,16 +59,22 @@ iframe{width:100%;height:160px;border:1px solid var(--line);border-radius:10px;b
 
 <div class="card">
 <h3>🌐 Versions disponibles</h3>
-<iframe src="https://f1atb.fr/web_tool/scan_dir_bin.php"></iframe>
+<p style="font-size:14px;margin:0 0 12px">Les binaires de ce firmware sont publiés sur GitHub.</p>
+<a class="btn-pri" href="https://github.com/jeremyper/Routeur_f1atb/releases/latest" target="_blank" rel="noopener">⬇ Télécharger la dernière version</a>
+<p style="font-size:12.5px;color:var(--txt-dim);margin:12px 0 0">
+Ce routeur utilise un fork du firmware F1ATB : n'y envoyez pas un binaire officiel
+<code>Solar_Router_Vxx.xx.ino.bin</code> pris sur f1atb.fr, les fonctions et le découpage
+des partitions diffèrent. Pour revenir au firmware d'origine, passez par l'USB.
+</p>
 </div>
 
 <div class="card">
 <h3>📋 Procédure</h3>
 <ol>
-<li><a href="/Export">Sauvegardez vos paramètres</a> sur le PC si la partie entière de la version change.</li>
-<li>Téléchargez le binaire souhaité (<code style="color:var(--accent)">Solar_Router_Vxx.xx.ino.bin</code>) en cliquant dessus.</li>
+<li><a href="/Export">Sauvegardez vos paramètres</a> sur le PC avant toute mise à jour.</li>
+<li>Téléchargez le binaire <code style="color:var(--accent)">Solar_Router_V17_16.ino.bin</code> depuis la page GitHub ci-dessus (ou compilez-le vous-même).</li>
 <li>Cliquez sur "Choisir un fichier" et sélectionnez ce binaire.</li>
-<li>Cliquez sur "Mettre à jour".</li>
+<li>Cliquez sur "Mettre à jour", puis patientez ~20 s et rechargez avec Ctrl+F5.</li>
 <li><a href="/Export">Importez si besoin vos anciens paramètres</a> depuis le PC.</li>
 </ol>
 <form method="POST" action="#" enctype="multipart/form-data" id="upload_form" style="margin-top:16px">

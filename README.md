@@ -24,6 +24,20 @@ Toute redistribution, modifiée ou non, doit rester sous la même licence et fou
 
 ---
 
+## Aperçu
+
+| Tableau de bord | Mesures |
+|---|---|
+| ![Tableau de bord](docs/captures/accueil.png) | ![Mesures](docs/captures/mesures.png) |
+| Flux d'énergie en direct, tarif Tempo du jour, économies du mois | Prévision de production PV sur 48 h (Open-Meteo) |
+
+| Automatismes | Réglages |
+|---|---|
+| ![Actions](docs/captures/actions.png) | ![Réglages](docs/captures/reglages.png) |
+| Assistant de création en langage naturel | Ballon d'eau chaude et chauffe prédictive |
+
+---
+
 ## Ce que ce fork ajoute
 
 ### Eau chaude sanitaire
