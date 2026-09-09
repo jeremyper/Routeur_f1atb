@@ -109,10 +109,36 @@ puissance reçue par MQTT, ESP externe.
 
 - **Arduino IDE 2.x** ou arduino-cli, core **esp32 by Espressif 3.3.x**
 - Carte : `ESP32 Dev Module`
-- Partition Scheme : **custom** (`partitions.csv` fourni) ou `Minimal SPIFFS`
+- Partition Scheme : **Custom** ⚠️ (voir ci-dessous)
 - Bibliothèques : `ArduinoJson`, `PubSubClient`, `DallasTemperature`
   (+ `OneWire` fourni dans le dépôt — version spécifique, ne pas remplacer par celle du
   gestionnaire de bibliothèques)
+
+Empreinte : **1 699 336 octets (87 %)** de flash, 83 428 octets de RAM statique.
+
+### ⚠️ Le dossier doit être renommé
+
+Arduino IDE exige que le dossier porte le nom du croquis principal. Après clonage,
+renommez le dossier en **`Solar_Router_V17_16`**. Si l'IDE propose de « créer un dossier »
+à l'ouverture, refusez : il ne déplacerait qu'un seul fichier sur la trentaine du projet.
+
+### ⚠️ Partition Scheme : « Custom » obligatoire
+
+Avec le schéma par défaut (*Default 4MB with spiffs*, 1,2 Mo applicatifs), la compilation
+échoue :
+
+```
+Le croquis utilise 1699336 octets (129%) ... Le maximum est de 1310720 octets.
+text section exceeds available space in board
+```
+
+Sélectionnez **Outils → Partition Scheme → Custom** : le `partitions.csv` fourni réserve
+1900 Ko par partition applicative, avec OTA.
+
+Ne choisissez pas un autre schéma qui « rentrerait » : la mise à jour OTA n'écrit que la
+partition applicative et conserve la table de partitions déjà en place. Un découpage
+différent déplacerait la zone LittleFS et ferait perdre configuration, actions et
+historiques au redémarrage.
 
 ---
 
