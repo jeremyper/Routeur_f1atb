@@ -133,7 +133,18 @@ text section exceeds available space in board
 ```
 
 Sélectionnez **Outils → Partition Scheme → Custom** : le `partitions.csv` fourni réserve
-1900 Ko par partition applicative, avec OTA.
+1900 Ko par partition applicative, avec OTA. Vérifiez aussi que **Flash Size** est sur
+**4MB** — le découpage fourni totalise ~3,97 Mo.
+
+Avec « Custom », l'IDE affiche ensuite un pourcentage trompeur :
+
+```
+Le croquis utilise 1699336 octets (10%) ... Le maximum est de 16777216 octets.
+```
+
+C'est normal : le core ESP32 ne sait pas déduire la taille utile d'un `partitions.csv`
+quelconque et se rabat sur la taille maximale d'une puce flash. L'occupation réelle est
+de **87 %** des 1900 Ko de la partition `app0`.
 
 Ne choisissez pas un autre schéma qui « rentrerait » : la mise à jour OTA n'écrit que la
 partition applicative et conserve la table de partitions déjà en place. Un découpage
