@@ -72,7 +72,7 @@ des partitions diffèrent. Pour revenir au firmware d'origine, passez par l'USB.
 <h3>📋 Procédure</h3>
 <ol>
 <li><a href="/Export">Sauvegardez vos paramètres</a> sur le PC avant toute mise à jour.</li>
-<li>Téléchargez le binaire <code style="color:var(--accent)">Solar_Router_V17_16.ino.bin</code> depuis la page GitHub ci-dessus (ou compilez-le vous-même).</li>
+<li>Téléchargez le binaire <code style="color:var(--accent)">.bin</code> de la dernière version depuis la page GitHub ci-dessus (ou compilez-le vous-même).</li>
 <li>Cliquez sur "Choisir un fichier" et sélectionnez ce binaire.</li>
 <li>Cliquez sur "Mettre à jour", puis patientez ~20 s et rechargez avec Ctrl+F5.</li>
 <li><a href="/Export">Importez si besoin vos anciens paramètres</a> depuis le PC.</li>
