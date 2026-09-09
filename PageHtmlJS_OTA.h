@@ -105,7 +105,22 @@ $("form").submit(function(e){
       },false);
       return xhr;
     },
-    success:function(){console.log("OTA OK");},error:function(){}
+    success:function(rep){
+      //Le serveur répond "OK" ou "FAIL" selon le résultat de Update.end()
+      if((""+rep).indexOf("FAIL")>=0){
+        GH("prg","&#10007; Échec de l'écriture — le routeur redémarre sur l'ancienne version");
+      }else{
+        GH("prg","&#10003; Mise à jour reçue — redémarrage en cours, patientez ~20 s puis rechargez");
+      }
+    },
+    error:function(xhr){
+      //Sans ce retour, un refus passait inaperçu : la barre atteignait 100 % en silence
+      var m="&#10007; Échec de l'envoi";
+      if(xhr&&xhr.status==401) m="&#10007; Clé d'accès refusée — rouvrez la page et ressaisissez-la";
+      else if(xhr&&xhr.status) m+=" (erreur HTTP "+xhr.status+")";
+      GH("prg",m);
+      GID("pgbar").style.width="0%";
+    }
   });
 });
 
