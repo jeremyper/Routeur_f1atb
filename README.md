@@ -17,6 +17,23 @@ Documentation d'origine : **https://f1atb.fr**, section Domotique.
 > ([V17.26 au 09/2026](https://github.com/F1ATB/Solar-Router-F1ATB)) : les correctifs et
 > nouveautés publiés depuis ne sont pas repris ici.
 
+## Versions
+
+Ce fork a **sa propre numérotation, repartie à 1.00**, pour éviter toute confusion avec
+celle du firmware officiel — qui est déjà en 17.26 et continue d'avancer. Le fichier
+principal garde son nom d'origine (`Solar_Router_V17_16.ino`), qui indique la base amont,
+pas la version du fork.
+
+| Incrément | Signification |
+|---|---|
+| `1.01`, `1.02` | Correctif |
+| `1.10`, `1.20` | Nouvelle fonctionnalité |
+| `2.00` | Changement majeur ou rupture du format de configuration |
+
+Les binaires compilés sont publiés dans les
+[Releases](https://github.com/jeremyper/Routeur_f1atb/releases) et accessibles directement
+depuis la page **Mise à jour** du routeur.
+
 ## Licence
 
 **GNU AGPL-3.0-or-later**, comme le firmware d'origine — voir [LICENSE](LICENSE).

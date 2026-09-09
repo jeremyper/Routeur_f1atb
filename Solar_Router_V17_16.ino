@@ -1,4 +1,8 @@
-#define Version "17.16"
+// Numérotation propre au fork, repartie à 1.00 pour ne pas entrer en collision avec
+// celle du firmware officiel F1ATB (V17.26 et suivantes). La base amont est la V17.16.
+// Format imposé par Stockage.ino : décimal à deux chiffres, converti en entier par
+// round(100 * toFloat()) — "1.00" est stocké 100 et affiché 1.00.
+#define Version "1.00"
 #define HOSTNAME "RMS-ESP32-"
 
 /*
