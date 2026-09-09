@@ -8,9 +8,14 @@ Le cœur de régulation, les pilotes de sources de mesure et l'essentiel du firm
 l'œuvre de F1ATB. Ce dépôt n'ajoute que des fonctions périphériques.
 Documentation d'origine : **https://f1atb.fr**, section Domotique.
 
-> ⚠️ **Fork personnel, sans garantie.** Testé sur une seule installation. Ce n'est pas un
-> remplacement du firmware officiel. Exportez votre configuration (page **Import / Export**)
-> avant de flasher, et gardez de quoi revenir en arrière.
+> ⚠️ **Fork personnel, sans garantie.** Testé sur une seule installation, avec un périmètre
+> matériel réduit (voir plus bas). Ce n'est pas un remplacement du firmware officiel.
+> Exportez votre configuration (page **Import / Export**) avant de flasher, et gardez de
+> quoi revenir en arrière.
+>
+> 📌 **Base : V17.16.** Le firmware officiel poursuit son développement de son côté
+> ([V17.26 au 09/2026](https://github.com/F1ATB/Solar-Router-F1ATB)) : les correctifs et
+> nouveautés publiés depuis ne sont pas repris ici.
 
 ## Licence
 
@@ -65,17 +70,38 @@ Toute redistribution, modifiée ou non, doit rester sous la même licence et fou
 
 ---
 
+## Périmètre matériel : plus étroit que l'original
+
+Ce fork est **recentré sur une seule configuration matérielle**, la mienne. Plusieurs
+sources et périphériques gérés par le firmware d'origine ont été retirés. Si votre
+installation utilise l'un d'eux, **restez sur le firmware officiel F1ATB**.
+
+### Sources de mesure conservées
+| Source | État |
+|---|---|
+| **UxI** (transformateur + pince ampèremétrique) | ✅ |
+| **UxIx2** (module JSY-MK-194T) | ✅ |
+| **UxIx3** (module JSY-MK-333, triphasé) | ✅ |
+
+### Sources retirées
+Linky TIC, Enphase Envoy-S, Shelly EM et Pro EM, SmartGateways, HomeWizard,
+puissance reçue par MQTT, ESP externe.
+*(des libellés résiduels peuvent subsister dans l'interface : ils ne correspondent
+à aucun pilote de lecture)*
+
+### Autres retraits
+- Écrans LCD tactiles (Sunton / CYD) et pilotes associés — seules les LED d'état restent
+- Carte Ethernet WT32-ETH01
+
 ## Ce qui est conservé de l'original
 
 - Régulation **PID** éprouvée (intégrateur dominant, P/D optionnels)
-- Les **10 sources de mesure** : UxI, JSY-MK-194T (UxIx2), JSY-MK-333 (UxIx3), Linky TIC,
-  Enphase Envoy-S, Shelly EM / Pro EM, SmartGateways, HomeWizard, MQTT, ESP externe
 - Modes de sortie **Multi-sinus**, **Train de sinus**, **On/Off**, découpe triac
 - Jusqu'à **10 actions × 8 périodes**, avec conditions horaire, température, tarif,
   météo et état d'une autre action
-- **MQTT** avec auto-découverte Home Assistant
+- **Publication MQTT** avec auto-découverte Home Assistant
 - Multi-routeurs (ESP-RMS distants), historiques, **OTA**, Telnet, mode AP / WPS
-- Sondes de température **DS18B20** (jusqu'à 4 canaux), internes, externes ou via MQTT
+- Sondes de température **DS18B20** (jusqu'à 4 canaux), internes ou externes
 
 ---
 
