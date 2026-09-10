@@ -16,6 +16,7 @@
 8. [Ballon eau chaude intelligent](#8-ballon-eau-chaude-intelligent)
 9. [Mode Absence](#9-mode-absence)
 9 bis. [Protection du disjoncteur (délestage)](#9-bis-protection-du-disjoncteur-délestage)
+9 ter. [Notifications sortantes](#9-ter-notifications-sortantes)
 10. [Tarification électrique](#10-tarification-électrique)
 11. [Horloge et synchronisation](#11-horloge-et-synchronisation)
 12. [Connectivité réseau](#12-connectivité-réseau)
@@ -278,6 +279,33 @@ En routage de surplus, la puissance tirée du réseau reste proche de zéro : le
 - Sous le seuil : réouverture lente (~2,5 %/s) pour éviter le pompage
 - Le plafond s'applique à **toutes** les actions, marches forcées et anti-légionelle comprises : un disjoncteur qui saute coupe tout de toute façon
 - Bannière rouge sur le tableau de bord indiquant le plafond courant, et trace au journal à chaque entrée/sortie de délestage
+
+---
+
+## 9 ter. Notifications sortantes
+
+Le routeur peut alerter sans qu'on ouvre sa page.
+
+### Principe
+Chaque événement écrit au journal (chauffe anti-légionelle, entrée et sortie de délestage,
+marche forcée, bilan du jour, mode absence) est envoyé vers un service de notification.
+
+### Paramètres (Réglages → 🔔 Notifications)
+- `NotifOn` : active le service
+- `NotifUrl` : adresse de destination. Compatible **ntfy.sh** (gratuit, sans compte) sous
+  la forme `https://ntfy.sh/votre-sujet-prive`, ou tout webhook acceptant du texte en POST.
+- Un bouton **Envoyer un test** permet de vérifier la chaîne complète.
+
+### Architecture
+`JournalAjoute()` s'exécute dans la boucle de régulation et dans les handlers web : un
+envoi HTTP y serait bloquant. Les messages sont donc empilés dans une file de 6 entrées,
+drainée par `Task_Reseau` sur le cœur 0, là où les appels réseau lents sont déjà isolés.
+Un seul message part par passage, espacé d'au moins 3 secondes, pour qu'une rafale
+d'événements n'immobilise pas la tâche réseau. File pleine : les nouveaux messages sont
+abandonnés plutôt que d'écraser les anciens.
+
+> ⚠️ Le nom de sujet ntfy tient lieu de mot de passe : toute personne le connaissant
+> recevra vos notifications. Choisissez-en un difficile à deviner.
 
 ---
 

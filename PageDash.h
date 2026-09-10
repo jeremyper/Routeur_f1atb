@@ -105,7 +105,7 @@ body{padding-bottom:20px}
 <g transform="translate(58 250)"><circle r="22" fill="var(--home)"/><text y="7" text-anchor="middle" font-size="20">🏠</text></g>
 <g transform="translate(262 250)"><circle r="22" fill="var(--water)"/><text y="7" text-anchor="middle" font-size="20">🚿</text></g>
 </svg>
-<div class="flow-center"><div class="big" id="flowKw">—</div><div class="unit">kW produits</div><div class="euros" id="flowEur"></div></div>
+<div class="flow-center"><div class="big" id="flowKw">—</div><div class="unit" id="flowUnit">kW produits</div><div class="euros" id="flowEur"></div></div>
 </div>
 <div class="hero"><div class="pulse" id="heroIcon">⏳</div><div><h1 id="heroTitle">Connexion…</h1><p id="heroMsg">Recherche des données du routeur.</p></div></div>
 <div class="flow-legend">

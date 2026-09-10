@@ -39,6 +39,19 @@ function Toast(m){
   toastT=setTimeout(()=>t.classList.remove("show"),4000);
 }
 
+//---------- Test de notification ----------
+function TestNotif(){
+  GH("btnTestNotif","⏳ Envoi…");
+  fetch("/ajax_testNotif")
+    .then(r=>{ if(r.status===401) throw new Error("clé d'accès refusée"); return r.text(); })
+    .then(t=>{
+      GH("btnTestNotif","🔔 Envoyer un test");
+      if(t.indexOf("OK")>=0) Toast("Test envoyé — il arrive dans quelques secondes");
+      else Toast("Activez les notifications et enregistrez avant de tester");
+    })
+    .catch(e=>{ GH("btnTestNotif","🔔 Envoyer un test"); Toast("Échec : "+e.message); });
+}
+
 //---------- Géolocalisation ----------
 function DetectePosition(){
   if(!navigator.geolocation){Toast("Géolocalisation non disponible sur ce navigateur");return;}
@@ -170,6 +183,8 @@ function SetParaFixe() {
     GID("FanTdemarrage").value = F.FanTdemarrage !== undefined ? F.FanTdemarrage : 40;
     GID("FanTmax").value = F.FanTmax !== undefined ? F.FanTmax : 60;
     GID("FanVitesseMin").value = F.FanVitesseMin !== undefined ? F.FanVitesseMin : 30;
+    GID("NotifOn").checked = F.NotifOn == 1;
+    GID("NotifUrl").value = F.NotifUrl !== undefined ? F.NotifUrl : "";
     GID("DelestageOn").checked = F.DelestageOn == 1;
     GID("DelestagePuissance").value = F.DelestagePuissance !== undefined ? F.DelestagePuissance : 6000;
     GID("DelestageMarge").value = F.DelestageMarge !== undefined ? F.DelestageMarge : 10;
@@ -246,6 +261,8 @@ function SendValues() {
   F.FanTdemarrage = parseInt(GID("FanTdemarrage").value, 10) || 40;
   F.FanTmax = parseInt(GID("FanTmax").value, 10) || 60;
   F.FanVitesseMin = parseInt(GID("FanVitesseMin").value, 10) || 30;
+  F.NotifOn = GID("NotifOn").checked ? 1 : 0;
+  F.NotifUrl = GID("NotifUrl").value.trim();
   F.DelestageOn = GID("DelestageOn").checked ? 1 : 0;
   F.DelestagePuissance = parseInt(GID("DelestagePuissance").value, 10) || 6000;
   F.DelestageMarge = parseInt(GID("DelestageMarge").value, 10);
@@ -391,6 +408,10 @@ function checkDisabled() {
     // Ventilateur SSR : champs détaillés visibles seulement si un GPIO est sélectionné
     const fanVisible = GID("FanGpio").value != "0";
     document.querySelectorAll(".ligneFan").forEach(l => { l.style.display = fanVisible ? "" : "none"; });
+
+    // Notifications : adresse et test visibles seulement si le service est activé
+    const notifVisible = GID("NotifOn").checked;
+    document.querySelectorAll(".ligneNotif").forEach(l => { l.style.display = notifVisible ? "" : "none"; });
 
     // Délestage : puissance souscrite et marge visibles seulement si la protection est active
     const delestVisible = GID("DelestageOn").checked;

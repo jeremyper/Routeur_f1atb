@@ -66,6 +66,7 @@ void Init_Server() {
   server.on("/CouleurUpdate", handleCouleurUpdate);
   server.on("/commun.css", handleCommunCSS);
   server.on("/theme.js", handleThemeJS);  //Bascule clair/sombre partagée par toutes les pages
+  server.on("/ajax_testNotif", handleTestNotif);  //Envoi de test depuis la page Réglages
   server.on("/favicon.ico", handleFavicon);
   server.on("/favicon192.ico", handleFavicon192);
   server.on("/manifest.json", handleManifest);
@@ -1005,6 +1006,11 @@ void handleCouleurUpdate() {
   EcritureEnROM();
 
   server.send(200, "text/plain", "OK couleurs");
+}
+void handleTestNotif() {
+  if (!AccesAutorise()) return;
+  NotifTest();
+  server.send(200, "text/plain", NotifOn == 1 ? "OK" : "Notifications desactivees");
 }
 void handleThemeJS() {
   CacheEtClose(300);

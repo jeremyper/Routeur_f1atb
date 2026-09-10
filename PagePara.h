@@ -253,6 +253,15 @@ body{padding-bottom:90px}
 </div>
 </details>
 
+<details class="acc" id="accNotif">
+<summary><span class="aico">🔔</span><span class="atit">Notifications<small>Être prévenu sans ouvrir la page</small></span><span class="chev">▼</span></summary>
+<div class="abody">
+<div class="rowh"><label for="NotifOn">Activer les notifications<span class="hint">Les événements du journal (chauffe anti-légionelle, délestage, marche forcée, bilan du jour) sont envoyés vers un service de notification. Fonctionne avec ntfy.sh, gratuit et sans compte, ou tout webhook acceptant du texte en POST.</span></label><label class="sw"><input type="checkbox" id="NotifOn" name="NotifOn" onclick="checkDisabled();"><span class="kn"></span></label></div>
+<div class="row ligneNotif" style="display:none"><label for="NotifUrl">Adresse de destination<span class="hint">Pour ntfy : installez l'application, choisissez un nom de sujet difficile à deviner, et indiquez ici <code>https://ntfy.sh/votre-sujet-prive</code>. Toute personne connaissant ce nom recevra vos notifications.</span></label><input type="text" id="NotifUrl" name="NotifUrl" placeholder="https://ntfy.sh/mon-sujet-prive"></div>
+<div class="row ligneNotif" style="display:none"><label>Vérifier<span class="hint">Envoie un message de test immédiat. Enregistrez vos réglages avant de tester.</span></label><button type="button" class="ghost" id="btnTestNotif" onclick="TestNotif();">🔔 Envoyer un test</button></div>
+</div>
+</details>
+
 <details class="acc" id="accDelestage">
 <summary><span class="aico">🛡️</span><span class="atit">Protection du disjoncteur<small>Bride les actions avant la disjonction</small></span><span class="chev">▼</span></summary>
 <div class="abody">

@@ -656,6 +656,10 @@ int AbsenceJoursSansChauffe = 0; //Nb de jours sans que le ballon atteigne sa ci
 bool ModeAbsenceActif = false;   //Calculé : absence réellement active en ce moment
 bool AntiLegioEnCours = false;   //Cycle de chauffe anti-légionelle en cours
 
+//Notifications sortantes (ntfy.sh ou webhook) sur les événements du journal
+byte NotifOn = 0;      //1 = notifications actives
+String NotifUrl = "";  //ex. https://ntfy.sh/mon-topic-prive
+
 //Délestage de protection d'abonnement : coupe progressivement les actions routées quand
 //la puissance soutirée approche le calibre du disjoncteur, pour éviter la disjonction.
 byte DelestageOn = 0;            //1 = protection active
@@ -1353,6 +1357,7 @@ void Task_Reseau(void *pvParameters) {
       Call_Meteo_data();
       Call_SMA_data();
       CalculBallon();
+      NotifTraiteFile();  //Envoi des notifications en attente, hors chemin de régulation
     }
     vTaskDelay(pdMS_TO_TICKS(30000));
   }

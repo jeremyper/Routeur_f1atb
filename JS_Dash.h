@@ -102,8 +102,25 @@ function MajFlux(){
   let rout=0;
   if(pv!==null&&ssrOuvre>0)rout=Math.min(pv,pv*(parseFloat(V.BallonCoefAuto)||0)/100);
   const maison=(pv!==null)?Math.max(0,pv+net-rout):Math.max(0,net);
-  GH("flowKw",pv!==null?fmt1(pv/1000):"—");
-  GH("flowEur",(pv!==null&&pv>0&&V)?("+"+eur(pv/1000*(parseFloat(V.PrixActuel)||0))+" €/h économisés"):"");
+  //Au repos (nuit, ou pas d'onduleur declare) le cercle affichait un tiret :
+  //on montre plutot la prevision utile — celle du jour le matin, celle de demain le soir.
+  if(pv!==null&&pv>50){
+    GH("flowKw",fmt1(pv/1000));
+    GH("flowUnit","kW produits");
+    GH("flowEur","+"+eur(pv/1000*(parseFloat(V.PrixActuel)||0))+" €/h économisés");
+  }else{
+    const soir=new Date().getHours()>=14;
+    const prev=V?parseFloat(soir?V.PrevisionDemain:V.PrevisionJour):NaN;
+    if(V&&V.MeteoOn==1&&!isNaN(prev)&&prev>=0){
+      GH("flowKw",fmt1(prev));
+      GH("flowUnit","kWh attendus "+(soir?"demain":"aujourd'hui"));
+      GH("flowEur",prev>0?("≈ "+eur(prev*(parseFloat(V.PrixActuel)||0))+" € d'économies en vue"):"");
+    }else{
+      GH("flowKw",pv!==null?fmt1(pv/1000):"—");
+      GH("flowUnit","kW produits");
+      GH("flowEur","");
+    }
+  }
   const crete=(F&&parseFloat(F.MeteoPVcrete)>0)?parseFloat(F.MeteoPVcrete)*1000:3000;
   const ratio=(pv!==null)?Math.min(1,pv/crete):0;
   GID("arcSun").setAttribute("stroke-dashoffset",String(Math.round(754*(1-ratio))));

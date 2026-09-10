@@ -57,5 +57,7 @@ void JournalAjoute(const String &msg) {
     f.print(contenu);
     f.close();
   }
+  //Empilé sous le même verrou ; l'envoi HTTP se fera depuis le cœur 0
+  NotifEmpile(msg);
   xSemaphoreGive(MutexJournal);
 }
