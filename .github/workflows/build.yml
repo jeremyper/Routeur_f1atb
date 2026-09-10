@@ -52,6 +52,16 @@ jobs:
         id: nom
         run: |
           VERSION=$(grep -oP '#define Version "\K[^"]+' Solar_Router_V17_16.ino)
+          # Sur un tag, le #define doit correspondre au tag : sans ce garde-fou on peut
+          # publier une release vX.Y dont le firmware s'annonce en vZ.W, et l'utilisateur
+          # croit alors que sa mise à jour a échoué.
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            ATTENDU="${GITHUB_REF_NAME#v}"
+            if [ "${VERSION}" != "${ATTENDU}" ]; then
+              echo "::error::Le tag ${GITHUB_REF_NAME} attend #define Version \"${ATTENDU}\", or le source déclare \"${VERSION}\"."
+              exit 1
+            fi
+          fi
           cp artefacts/Solar_Router_V17_16.ino.bin "Routeur_Soleo_v${VERSION}.bin"
           echo "Version compilée : ${VERSION}"
           ls -l "Routeur_Soleo_v${VERSION}.bin"
