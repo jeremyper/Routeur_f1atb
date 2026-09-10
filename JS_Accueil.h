@@ -638,7 +638,7 @@ function PlotCommun(SVG,cT,Vmax,label){
   }
 
  
-  const style = 'background:linear-gradient( #' + Koul[Coul_Graphe][5] + ',#' + Koul[Coul_Graphe][3] + ',#' + Koul[Coul_Graphe][5] + ');border-color:#' + Koul[Coul_Tab][5] + ';';
+  const style = 'background:var(--card);border-color:var(--line);';
   
   let S = "<svg viewbox='0 0 1030 500' style='" + style + "' height='500' width='100%' id='S_" + SVG + "' onmousemove ='DispVal(this,event);' >";
   S += "<line x1='100' y1='20' x2='100' y2='480' style='stroke:" + cT + ";stroke-width:2' />"; //Axe vertical
@@ -712,7 +712,7 @@ function Plot_ouvertures(Gr) {
   const LesVals = [];
   const LesCouls = [];
   const cT = "#" + Koul[Coul_Graphe][1];
-  const style = 'background:linear-gradient(#' + Koul[Coul_Graphe][5] + ',#' + Koul[Coul_Graphe][3] + ',#' + Koul[Coul_Graphe][5] + ');border-color:#' + Koul[Coul_Tab][5] + ';';
+  const style = 'background:var(--card);border-color:var(--line);';
   
   let S = "<svg viewbox='0 0 1030 " + Hmax + "' height='" + Hmax + "' style='" + style + "' width='100%' id='S_Ouvertures' onmousemove ='DispVal(this,event);'>";
   S += "<line x1='100' y1='" + Y0 + "' x2='1000' y2='" + Y0 + "' style='stroke:" + cT + ";stroke-width:2' />";
@@ -779,7 +779,7 @@ function Plot_ouvertures_2s() {
   const LesVals = [];
   const LesCouls = [];
   const cT = "#" + Koul[Coul_Graphe][1];
-  const style = 'background:linear-gradient(#' + Koul[Coul_Graphe][5] + ',#' + Koul[Coul_Graphe][3] + ',#' + Koul[Coul_Graphe][5] + ');border-color:#' + Koul[Coul_Tab][5] + ';';
+  const style = 'background:var(--card);border-color:var(--line);';
   
   let S = "<svg viewbox='0 0 1030 " + Hmax + "' height='" + Hmax + "' style='" + style + "' width='100%' id='S_Ouvertures_2s' onmousemove ='DispVal(this,event);'>";
   S += "<line x1='100' y1='" + Y0 + "' x2='1000' y2='" + Y0 + "' style='stroke:" + cT + ";stroke-width:2' />";
@@ -1376,7 +1376,7 @@ function ListeGraph(){
   } 
   Gnom +=`</div><input type="button" value="Valider" onclick="Gr_Select();location.reload();" >`;
   GH("B_Graph",Gnom);
-  GID("B_Graph").style= 'background:linear-gradient( #' + Koul[Coul_Graphe][5] + ',#' + Koul[Coul_Graphe][3] + ',#' + Koul[Coul_Graphe][5] + ');';
+  GID("B_Graph").style.background = "var(--card)";
   GID("B_Graph").style.display="block";
 }
 function decalG(i,s){
@@ -1438,8 +1438,8 @@ const char * Favicon192 = R"====(
 // Manifest pour Android
 const char * Manifest = R"====(
 {
-  "name": "Routeur F1ATB",
-  "short_name": "Routeur",
+  "name": "Soleo — Routeur solaire",
+  "short_name": "Soleo",
   "start_url": "/",
   "display": "standalone",
   "icons": [

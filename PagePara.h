@@ -348,7 +348,7 @@ body{padding-bottom:90px}
 </div>
 </details>
 
-<div class="foot"><span id="version"></span> · <a href="https://f1atb.fr/fr" target="_blank">F1ATB.fr</a></div>
+<div class="foot">Soleo <span id="version"></span> · <a href="https://github.com/jeremyper/Routeur_f1atb" target="_blank" rel="noopener">code source</a></div>
 <div id="donEnv">
 <form action="https://www.paypal.com/donate" method="post" target="_top">
 <input type="hidden" name="hosted_button_id" value="Z35E9D5D9N9DN">

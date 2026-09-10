@@ -81,7 +81,7 @@ bool testMQTTconnected() {
       WiFi.macAddress(mac);
       snprintf(ESP_ID, sizeof(ESP_ID), "%02x%02x%02x%02x%02x", mac[4], mac[3], mac[2], mac[1], mac[0]);  // ID de l'entité pour HA
       snprintf(mdl, sizeof(mdl), "%s%s", "ESP32 - ", ESP_ID);                                         // ID de l'entité pour HA
-      String mf = "F1ATB - https://f1atb.fr";
+      String mf = "Soleo (fork F1ATB) - https://github.com/jeremyper/Routeur_f1atb";
       String hw = String(ESP.getChipModel()) + " rev." + String(ESP.getChipRevision());
       String sw = Version;
       snprintf(DEVICE, sizeof(DEVICE), "{\"ids\":\"%s\",\"name\":\"%s\",\"mdl\":\"%s\",\"mf\":\"%s\",\"hw\":\"%s\",\"sw\":\"%s\",\"cu\":\"%s\"}", ESP_ID, nomRouteur.c_str(), mdl, mf.c_str(), hw.c_str(), sw.c_str(), cu.c_str());

@@ -1,12 +1,13 @@
-# Routeur Solaire — fork du Routeur RMS F1ATB
+# Soleo — routeur solaire
 
-Fork personnel du **routeur photovoltaïque RMS de [F1ATB](https://f1atb.fr)** (base V17.16),
-enrichi d'automatismes autour du chauffe-eau, de la prévision météo et de la tarification,
-avec une interface web entièrement repensée pour le mobile.
+Firmware ESP32 pour routeur photovoltaïque : automatismes autour du chauffe-eau,
+prévision météo, tarification Tempo et protection du disjoncteur, avec une interface web
+pensée pour le mobile.
 
-Le cœur de régulation, les pilotes de sources de mesure et l'essentiel du firmware sont
-l'œuvre de F1ATB. Ce dépôt n'ajoute que des fonctions périphériques.
-Documentation d'origine : **https://f1atb.fr**, section Domotique.
+> **Soleo est un fork du routeur RMS de [F1ATB](https://f1atb.fr)**, basé sur sa V17.16.
+> Le cœur de régulation, les pilotes de mesure et l'essentiel du firmware sont son œuvre ;
+> ce dépôt n'ajoute que des fonctions périphériques et une nouvelle interface.
+> Documentation d'origine : **https://f1atb.fr**, section Domotique.
 
 > ⚠️ **Fork personnel, sans garantie.** Testé sur une seule installation, avec un périmètre
 > matériel réduit (voir plus bas). Ce n'est pas un remplacement du firmware officiel.

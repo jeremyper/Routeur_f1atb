@@ -960,7 +960,7 @@ void setup() {
   Serial.begin(115200);
   delay(500);
   Serial.println();
-  StockMessage("Booting Routeur F1ATB");
+  StockMessage("Booting Soleo");
   Serial.println(Version);
   //Watchdog initialisation
   esp_task_wdt_deinit();

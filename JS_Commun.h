@@ -73,7 +73,7 @@ const char *ParaCommunJS = R"====(
       S +="<div id='Bwifi' class='Bonglet2 Bwifi'><a href='/Wifi'>WIFI</a></div><div class='Bonglet2 Bcouleurs'><a href='/Couleurs'>Couleurs</a></div></div>";
       S +="<h2 id='nom_R'>Routeur Solaire - RMS</h2>";
       GH("lesOnglets",S);
-      GH("pied","<div>Routeur Version : <span id='version'></span></div><div><a href='https:F1ATB.fr/fr' target='_blank' >F1ATB.fr</a></div>");
+      GH("pied","<div>Soleo <span id='version'></span></div><div><a href='https://github.com/jeremyper/Routeur_f1atb' target='_blank' rel='noopener'>code source</a></div>");
   }
 // ================================
 // Conversion décimale -> HH:MM

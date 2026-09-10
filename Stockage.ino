@@ -377,7 +377,7 @@ void DeserializeConfiguration(String json) {
 String SerializeConfiguration() {
   JsonDocument conf;
 
-  conf["Routeur"] = "F1ATB";
+  conf["Routeur"] = "Soleo";
   String V = Version;
   int VersionStocke = round(100 * V.toFloat());
   conf["VersionStocke"] = VersionStocke;
