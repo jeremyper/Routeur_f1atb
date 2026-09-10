@@ -1,0 +1,71 @@
+name: Compilation
+
+# Compile le firmware sans qu'aucune machine locale ne soit nécessaire.
+#  - sur chaque push et chaque pull request : vérifie que le code compile encore
+#  - sur chaque tag vX.Y : compile et attache le binaire à la release
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:        # bouton "Run workflow" dans l'onglet Actions
+
+permissions:
+  contents: write           # nécessaire pour attacher le binaire à une release
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Arduino exige que le dossier porte le nom du croquis principal.
+      # Le dépôt s'appelle Routeur_f1atb : on recrée l'arborescence attendue.
+      - name: Préparer le dossier de croquis
+        run: |
+          mkdir -p sketch/Solar_Router_V17_16
+          cp *.ino *.h *.cpp partitions.csv sketch/Solar_Router_V17_16/
+
+      - name: Installer arduino-cli
+        uses: arduino/setup-arduino-cli@v2
+
+      - name: Installer le cœur ESP32 et les bibliothèques
+        run: |
+          arduino-cli config init --overwrite
+          arduino-cli config add board_manager.additional_urls \
+            https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
+          arduino-cli core update-index
+          arduino-cli core install esp32:esp32@3.3.7
+          # OneWire n'est PAS installé : la version fournie dans le dépôt fait foi.
+          arduino-cli lib install ArduinoJson PubSubClient
+          arduino-cli lib install --no-deps DallasTemperature
+
+      - name: Compiler
+        run: |
+          arduino-cli compile \
+            --fqbn esp32:esp32:esp32:PartitionScheme=custom,FlashSize=4M \
+            --output-dir artefacts \
+            sketch/Solar_Router_V17_16
+
+      - name: Nommer le binaire selon la version du firmware
+        id: nom
+        run: |
+          VERSION=$(grep -oP '#define Version "\K[^"]+' Solar_Router_V17_16.ino)
+          cp artefacts/Solar_Router_V17_16.ino.bin "Routeur_Soleo_v${VERSION}.bin"
+          echo "Version compilée : ${VERSION}"
+          ls -l "Routeur_Soleo_v${VERSION}.bin"
+
+      # Téléchargeable depuis l'onglet Actions, même sans release
+      - name: Publier le binaire comme artefact
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware
+          path: Routeur_Soleo_v*.bin
+
+      # Sur un tag vX.Y : attache le binaire à la release, sans toucher à son texte
+      - name: Attacher le binaire à la release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: Routeur_Soleo_v*.bin
