@@ -1055,9 +1055,14 @@ void handleNotFound() {  // Page Web pas trouvé
 void CacheEtClose(int16_t seconde) {
   server.sendHeader("Cache-Control", "max-age=" + String(seconde));
 }
-void lectureCookie(String S) {
+// Les pages sont des const char* en flash. Recevoir un String en construisait une copie
+// intégrale en tas à chaque requête : 34 Ko pour la page Réglages, la plus lourde, avant
+// même que le serveur ne bâtisse sa réponse. Sur un tas fragmenté — d'autant plus depuis
+// qu'une connexion TLS permanente peut être ouverte pour MQTT — l'allocation échouait et
+// la page arrivait vide. On envoie désormais directement depuis la flash.
+void lectureCookie(const char *S) {
   ExtraitCookie();
-  if (S != "") {
+  if (S != NULL && S[0] != '\0') {
 
     if (CleAccesRef == CleAcces) {
       server.send(200, "text/html", S);
