@@ -309,7 +309,9 @@ body{padding-bottom:90px}
 <div class="subt" id="subtMqtt" style="display:none">Serveur domotique (MQTT)</div>
 <div class="row" id="l_wifi_1" style="display:none"><label for="MQTTRepet">Envoi des mesures à la domotique<span class="hint">période en secondes entre deux envois (0 = pas d'envoi, 10 mini conseillé)</span></label><input type="number" id="MQTTRepet" name="MQTTRepet" onclick="checkDisabled();" onchange="checkDisabled();"></div>
 <div id="Zmqtt" style="display:none">
-<div class="row"><label for="MQTTIP">Serveur domotique (adresse IP)<span class="hint">Home Assistant, Domoticz…</span></label><input type="text" id="MQTTIP" name="MQTTIP"></div>
+<div class="row"><label for="MQTTIP">Serveur domotique (adresse IP)<span class="hint">Home Assistant, Domoticz… sur votre réseau local. Laissez vide si vous utilisez un broker distant ci-dessous.</span></label><input type="text" id="MQTTIP" name="MQTTIP"></div>
+<div class="row"><label for="MQTTHost">Broker distant (nom d'hôte)<span class="hint">Pour suivre votre routeur depuis l'extérieur sans ouvrir de port. Créez un compte gratuit sur hivemq.cloud et recopiez ici l'adresse fournie, du type <code>a1b2c3d4.s1.eu.hivemq.cloud</code>. Renseigné, ce champ remplace l'adresse IP ci-dessus.</span></label><input type="text" id="MQTTHost" name="MQTTHost" placeholder="xxxxx.s1.eu.hivemq.cloud"></div>
+<div class="rowh"><label for="MQTTSecure">Connexion chiffrée (TLS)<span class="hint">Obligatoire pour un broker distant — port 8883. À laisser désactivé pour un serveur local.</span></label><label class="sw"><input type="checkbox" id="MQTTSecure" name="MQTTSecure"><span class="kn"></span></label></div>
 <div class="row"><label for="MQTTPort">Port MQTT</label><input type="number" id="MQTTPort" name="MQTTPort"></div>
 <div class="row"><label for="MQTTUser">Identifiant de connexion</label><input type="text" id="MQTTUser" name="MQTTUser" autocomplete="on"></div>
 <div class="row"><label for="MQTTPwd">Mot de passe de connexion</label><input type="password" id="MQTTPwd" name="MQTTPwd" autocomplete="on"></div>

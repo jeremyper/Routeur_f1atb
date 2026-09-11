@@ -410,6 +410,10 @@ unsigned long dns = 0;
 unsigned long RMSextIP = 0;
 unsigned int MQTTRepet = 0;
 unsigned long MQTTIP = 0;
+//Broker distant : HiveMQ Cloud et consorts fournissent un nom d'hôte, pas une adresse IP,
+//qui ne tient donc pas dans MQTTIP. Renseigné, MQTTHost l'emporte sur l'IP.
+String MQTTHost = "";   //ex. a1b2c3d4.s1.eu.hivemq.cloud (vide = on utilise MQTTIP)
+byte MQTTSecure = 0;    //1 = TLS. Obligatoire sur les brokers cloud, inutile en local.
 unsigned int MQTTPort = 1883;
 String MQTTUser = "User";
 String MQTTPwd = "password";
@@ -815,7 +819,11 @@ String TopicT[4];
 String AllTemp = "";
 
 //MQTT
+//Deux transports possibles pour MQTT : en clair vers un broker local, ou chiffré vers un
+//broker distant. Le contexte TLS n'est alloué qu'à la connexion : l'instance inutilisée
+//ne coûte rien. PubSubClient::setClient() permet de basculer à la connexion.
 WiFiClient MqttClient;
+WiFiClientSecure MqttClientTLS;
 PubSubClient clientMQTT(MqttClient);
 bool Discovered = false;
 

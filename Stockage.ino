@@ -8,8 +8,13 @@ String Record_Conf = "";
 
 void EcritureEnROM() {
   if (ModePara == 0) {
-    MQTTRepet = 0;
+    //La souscription aux commandes reste interdite hors mode Expert : en mode Standard,
+    //MQTT ne fait que publier.
     subMQTT = 0;
+    //La publication, elle, reste permise si un broker distant est configuré : c'est le
+    //cas d'usage « supervision depuis l'extérieur » pour qui n'a que le routeur, et
+    //l'imposer en mode Expert le rendrait inaccessible à ceux qu'il vise.
+    if (MQTTHost.length() == 0) MQTTRepet = 0;
   }
 
   Calibration();
@@ -305,6 +310,8 @@ void DeserializeConfiguration(String json) {
   EnphaseSerial = conf["EnphaseSerial"].as<String>();
   MQTTRepet = conf["MQTTRepet"];
   MQTTIP = conf["MQTTIP"];
+  MQTTHost = conf["MQTTHost"].isNull() ? MQTTHost : conf["MQTTHost"].as<String>();
+  MQTTSecure = conf["MQTTSecure"] | 0;
   MQTTPort = conf["MQTTPort"];
   MQTTUser = conf["MQTTUser"].as<String>();
   MQTTPwd = conf["MQTTPwd"].as<String>();
@@ -482,6 +489,8 @@ String SerializeConfiguration() {
   }
   conf["MQTTRepet"] = MQTTRepet;
   conf["MQTTIP"] = MQTTIP;
+  conf["MQTTHost"] = MQTTHost;
+  conf["MQTTSecure"] = MQTTSecure;
   conf["MQTTPort"] = MQTTPort;
   conf["MQTTUser"] = MQTTUser;
   conf["MQTTPwd"] = MQTTPwd;

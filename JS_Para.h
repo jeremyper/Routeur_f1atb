@@ -135,6 +135,8 @@ function SetParaFixe() {
     GID("sources").value = F.Source;
     GID("MQTTRepet").value = F.MQTTRepet;
     GID("MQTTIP").value = int2ip(F.MQTTIP);
+    GID("MQTTHost").value = F.MQTTHost !== undefined ? F.MQTTHost : "";
+    GID("MQTTSecure").checked = F.MQTTSecure == 1;
     GID("MQTTPort").value = F.MQTTPort;
     GID("MQTTUser").value = F.MQTTUser;
     GID("MQTTPwd").value = F.MQTTPwd;
@@ -280,6 +282,8 @@ function SendValues() {
 
   F.MQTTRepet = GID("MQTTRepet").value;
   F.MQTTIP = ip2int(GID("MQTTIP").value);
+  F.MQTTHost = GID("MQTTHost").value.trim();
+  F.MQTTSecure = GID("MQTTSecure").checked ? 1 : 0;
   F.MQTTPort = GID("MQTTPort").value;
   F.MQTTUser = GID("MQTTUser").value.trim();
   F.MQTTPwd = GID("MQTTPwd").value.trim();

@@ -37,7 +37,18 @@ bool testMQTTconnected() {
   bool connecte = true;
   if (!clientMQTT.connected()) {  // si le mqtt n'est pas connecté (utile aussi lors de la 1ere connexion)
     TelnetPrintln("Connection au serveur MQTT ...");
-    String host = IP2String(MQTTIP);
+    //Un nom d'hôte renseigné l'emporte : les brokers cloud n'ont pas d'IP fixe exploitable.
+    String host = (MQTTHost.length() > 0) ? MQTTHost : IP2String(MQTTIP);
+    if (MQTTSecure == 1) {
+      //Pas de validation de certificat : ce canal ne transporte que de la télémétrie
+      //sortante. Tant que la souscription aux commandes (subMQTT) reste désactivée,
+      //une interception permet de lire, pas d'agir.
+      MqttClientTLS.setInsecure();
+      MqttClientTLS.setTimeout(8000);
+      clientMQTT.setClient(MqttClientTLS);
+    } else {
+      clientMQTT.setClient(MqttClient);
+    }
     String S = "";
     if (MQTTPrefix != "")
       S = MQTTPrefix + "/";
