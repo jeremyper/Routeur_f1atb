@@ -395,8 +395,11 @@ function checkDisabled() {
 
     // Lignes conditionnelles réseau / expert
     SH("l_wifi_0", !isDisabledAP);
-    SH("l_wifi_1", !(isDisabledAP || !isExpertMode));
-    SH("subtMqtt", !(isDisabledAP || !isExpertMode));
+    SH("l_wifi_1", !isDisabledAP);   //Période d'envoi : indispensable à la supervision distante
+    SH("subtMqtt", !isDisabledAP);
+    //Le pilotage depuis la domotique reste réservé au mode Expert : en Standard il est
+    //forcé à 0 à l'enregistrement, une case qui se décoche seule induirait en erreur.
+    SH("rowSubMqtt", !(isDisabledAP || !isExpertMode));
     SH("l_wifi_2", !(isDisabledAP || !isExpertMode));
     SH("listerouteurs", !(isDisabledAP || !isExpertMode));
 
@@ -462,7 +465,9 @@ function checkDisabled() {
     }
 
     // Bloc MQTT
-    const isMqttVisible = (GID("MQTTRepet").value != 0 || GID("sources").value == "Pmqtt" || GID("subMQTT").checked) && isExpertMode;
+    // La section MQTT n'est plus réservée au mode Expert : la supervision à distance
+    // en dépend, et elle vise justement ceux qui ne quittent pas le mode Standard.
+    const isMqttVisible = GID("MQTTRepet").value != 0 || GID("sources").value == "Pmqtt" || GID("subMQTT").checked;
     SH("Zmqtt", isMqttVisible);
 
     // Blocs réservés au mode expert

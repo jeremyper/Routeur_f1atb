@@ -318,7 +318,7 @@ body{padding-bottom:90px}
 <div class="row"><label for="MQTTPrefix">Préfixe de découverte</label><input type="text" id="MQTTPrefix" name="MQTTPrefix"></div>
 <div class="row"><label for="MQTTPrefixEtat">Préfixe de publication</label><input type="text" id="MQTTPrefixEtat" name="MQTTPrefixEtat"></div>
 <div class="row"><label for="MQTTdeviceName">Nom de l'appareil dans la domotique</label><input type="text" id="MQTTdeviceName" name="MQTTdeviceName"></div>
-<div class="rowh"><label for="subMQTT">Piloter les actions depuis la domotique<span class="hint">souscription au forçage via MQTT</span></label><label class="sw"><input type="checkbox" id="subMQTT" name="subMQTT" onclick="checkDisabled();"><span class="kn"></span></label></div>
+<div class="rowh" id="rowSubMqtt"><label for="subMQTT">Piloter les actions depuis la domotique<span class="hint">souscription au forçage via MQTT</span></label><label class="sw"><input type="checkbox" id="subMQTT" name="subMQTT" onclick="checkDisabled();"><span class="kn"></span></label></div>
 </div>
 <div id="listerouteurs" style="display:none"><div class="subt">Autres routeurs sur le réseau</div><span class="hint">Même version de routeur recommandée</span><div id="Routeurs"></div></div>
 </div>
