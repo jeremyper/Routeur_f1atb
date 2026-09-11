@@ -44,6 +44,9 @@ Toute redistribution, modifiée ou non, doit rester sous la même licence et fou
 
 > 📖 **Vous voulez l'essayer ?** Suivez le [**guide d'installation pas à pas**](INSTALLATION.md).
 > Commencez par l'étape 0 : elle vérifie en une minute si votre installation est compatible.
+>
+> 📡 **Suivre son routeur depuis l'extérieur**, sans ouvrir de port ni installer Home Assistant :
+> voir [**Supervision à distance**](SUPERVISION_DISTANTE.md).
 
 ## Aperçu
 
