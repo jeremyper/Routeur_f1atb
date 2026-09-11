@@ -39,6 +39,22 @@ function Toast(m){
   toastT=setTimeout(()=>t.classList.remove("show"),4000);
 }
 
+//---------- Mot de passe d'accès : affichage et déconnexion ----------
+function VoirCle(){
+  const c = GID("CleAcces");
+  const cache = c.type === "password";
+  c.type = cache ? "text" : "password";
+  GH("btnVoirCle", cache ? "🙈" : "👁");
+}
+
+// Le mot de passe est conservé en cookie par le navigateur. Sans moyen de l'effacer,
+// il restait indéfiniment sur tout appareil ayant servi à se connecter une fois.
+function Deconnexion(){
+  document.cookie = "CleAcces=;path=/;max-age=0";
+  Toast("Déconnecté — rechargement…");
+  setTimeout(() => { location.href = "/Para"; }, 900);
+}
+
 //---------- Port MQTT selon le chiffrement ----------
 // 1883 avec TLS ne se connecte nulle part : les brokers cloud n'exposent que 8883.
 // On ne corrige que les deux ports usuels, pour ne pas écraser un réglage délibéré.

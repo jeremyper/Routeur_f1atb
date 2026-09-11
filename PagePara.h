@@ -343,7 +343,8 @@ body{padding-bottom:90px}
 <details class="acc" id="accSysteme" style="display:none">
 <summary><span class="aico">🧰</span><span class="atit">Système<small>Sécurité, mises à jour, maintenance</small></span><span class="chev">▼</span></summary>
 <div class="abody">
-<div class="row"><label for="CleAcces">Mot de passe d'accès<span class="hint">protège les réglages — pas de « ; », vide = accès libre</span></label><input type="text" id="CleAcces" name="CleAcces"></div>
+<div class="row"><label for="CleAcces">Mot de passe d'accès<span class="hint">protège les réglages — pas de « ; », vide = accès libre</span></label><div class="duo"><input type="password" id="CleAcces" name="CleAcces" autocomplete="new-password" style="flex:1"><button type="button" class="ghost" id="btnVoirCle" onclick="VoirCle();" title="Afficher ou masquer">👁</button></div></div>
+<div class="rowh"><label>Se déconnecter<span class="hint">Oublie le mot de passe enregistré dans ce navigateur. À faire sur un appareil que vous ne gardez pas.</span></label><button type="button" class="ghost" onclick="Deconnexion();">🚪 Déconnexion</button></div>
 <div class="subt">Outils</div>
 <div class="links">
 <a class="lnk" href="/OTA">⬆️ Mise à jour du logiciel</a>
