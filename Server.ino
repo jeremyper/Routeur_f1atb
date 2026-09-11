@@ -1068,15 +1068,29 @@ void CacheEtClose(int16_t seconde) {
 // La longueur est annoncée d'avance, puis le contenu part depuis la flash par tranches
 // que la pile réseau peut absorber.
 void EnvoiPageHtml(const char *page) {
-  const size_t MORCEAU = 1024;
-  size_t reste = strlen(page);
-  server.setContentLength(reste);
+  size_t taille = strlen(page);
+
+  //Sous ce seuil, l'envoi direct fonctionne depuis toujours : on ne le remplace pas.
+  //Découper systématiquement avait rendu intermittentes des pages qui n'avaient jamais
+  //posé de problème.
+  const size_t SEUIL_DECOUPE = 20000;
+  if (taille < SEUIL_DECOUPE) {
+    server.send(200, "text/html", page);
+    return;
+  }
+
+  //Au-delà, l'envoi en un bloc se tronque. On émet par tranches en rendant la main
+  //entre chacune : sans cela la boucle sature la pile réseau, qui n'a pas le temps
+  //d'écouler ce qu'elle a déjà reçu.
+  const size_t MORCEAU = 1460;  //Charge utile d'un segment TCP courant
+  server.setContentLength(taille);
   server.send(200, "text/html", "");
-  while (reste > 0) {
-    size_t n = (reste > MORCEAU) ? MORCEAU : reste;
+  while (taille > 0 && server.client().connected()) {
+    size_t n = (taille > MORCEAU) ? MORCEAU : taille;
     server.sendContent(page, n);
     page += n;
-    reste -= n;
+    taille -= n;
+    delay(1);  //Laisse la pile réseau écouler la tranche précédente
   }
 }
 
