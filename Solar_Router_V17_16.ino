@@ -326,6 +326,7 @@
 #include <Update.h>
 #include <esp_task_wdt.h>  //Pour deinitialiser le watchdog. Nécessaire pour les gros program en ROM. Mystère non élucidé
 #include <freertos/semphr.h>  //Mutex de synchronisation entre le cœur 0 (réseau) et le cœur 1 (régulation)
+#include <esp_wifi.h>  //Accès IDF bas niveau : esp_wifi_connect() après appairage WPS (cœur ESP 3.3.6+)
 #include <esp_wps.h>  //Librairie WPS pour appairage automatique connexion WiFi //SR19
 #include "Actions.h"
 #include "FS.h"
@@ -936,7 +937,11 @@ void WiFiEvent(WiFiEvent_t event) {  //SR19
     case ARDUINO_EVENT_WPS_ER_SUCCESS:                                                  //SR19
       TelnetPrintln("WPS réussi! Stop WPS et connexion vers: " + String(WiFi.SSID()));  //SR19
       wpsStop();                                                                        //Must disable WPS before connecting                                                //SR19
-      WiFi.begin();                                                                     //Connect using credentials from WPS                                             //SR19
+      delay(10);
+      //WiFi.begin() ne connecte plus depuis le cœur ESP 3.3.6 : l'appairage réussissait
+      //mais la connexion échouait ensuite. La configuration WPS étant déjà chargée dans
+      //l'IDF, on s'y connecte directement. Correctif amont V17.20.
+      esp_wifi_connect();
       break;                                                                            //SR19
     case ARDUINO_EVENT_WIFI_STA_CONNECTED:                                              //SR19
       TelnetPrintln("WiFi Reconnecté en Mode Station");
