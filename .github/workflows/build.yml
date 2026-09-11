@@ -52,19 +52,25 @@ jobs:
         id: nom
         run: |
           VERSION=$(grep -oP '#define Version "\K[^"]+' Solar_Router_V17_16.ino)
+          NOM="${VERSION}"
           # Sur un tag, le #define doit correspondre au tag : sans ce garde-fou on peut
           # publier une release vX.Y dont le firmware s'annonce en vZ.W, et l'utilisateur
           # croit alors que sa mise à jour a échoué.
           if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
-            ATTENDU="${GITHUB_REF_NAME#v}"
+            NOM="${GITHUB_REF_NAME#v}"
+            # Un tag de préversion (v1.20-beta, v1.20-rc1) porte un suffixe que le #define
+            # ne peut pas contenir : Stockage.ino convertit la version en décimal.
+            # On ne compare donc que la partie numérique, mais le binaire garde le suffixe
+            # pour qu'une préversion ne soit pas confondue avec la version définitive.
+            ATTENDU="${NOM%%-*}"
             if [ "${VERSION}" != "${ATTENDU}" ]; then
               echo "::error::Le tag ${GITHUB_REF_NAME} attend #define Version \"${ATTENDU}\", or le source déclare \"${VERSION}\"."
               exit 1
             fi
           fi
-          cp artefacts/Solar_Router_V17_16.ino.bin "Routeur_Soleo_v${VERSION}.bin"
-          echo "Version compilée : ${VERSION}"
-          ls -l "Routeur_Soleo_v${VERSION}.bin"
+          cp artefacts/Solar_Router_V17_16.ino.bin "Routeur_Soleo_v${NOM}.bin"
+          echo "Version compilée : ${VERSION} — binaire : Routeur_Soleo_v${NOM}.bin"
+          ls -l "Routeur_Soleo_v${NOM}.bin"
 
       # Téléchargeable depuis l'onglet Actions, même sans release
       - name: Publier le binaire comme artefact
