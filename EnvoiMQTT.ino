@@ -98,7 +98,21 @@ bool testMQTTconnected() {
       snprintf(DEVICE, sizeof(DEVICE), "{\"ids\":\"%s\",\"name\":\"%s\",\"mdl\":\"%s\",\"mf\":\"%s\",\"hw\":\"%s\",\"sw\":\"%s\",\"cu\":\"%s\"}", ESP_ID, nomRouteur.c_str(), mdl, mf.c_str(), hw.c_str(), sw.c_str(), cu.c_str());
       PeriodeMQTTMillis = 500;
     } else {  // si utilisateur pas connecté au mqtt
-      StockMessage("Echec connexion MQTT : " + host);
+      //Sans la cause, un échec est indiagnosticable : identifiants refusés et broker
+      //injoignable produisaient le même message.
+      String cause;
+      switch (clientMQTT.state()) {
+        case -4: cause = "délai dépassé"; break;
+        case -3: cause = "connexion perdue"; break;
+        case -2: cause = "serveur injoignable (adresse, port, ou TLS non activé ?)"; break;
+        case  1: cause = "version de protocole refusée"; break;
+        case  2: cause = "nom d'appareil refusé"; break;
+        case  3: cause = "broker indisponible"; break;
+        case  4: cause = "identifiant ou mot de passe incorrect"; break;
+        case  5: cause = "accès non autorisé (droits de publication manquants ?)"; break;
+        default: cause = "code " + String(clientMQTT.state()); break;
+      }
+      StockMessage("Echec connexion MQTT : " + host + " — " + cause);
       connecte = false;
       delay(1);
       PeriodeMQTTMillis = 30000;  // Penalisé 30s
