@@ -39,6 +39,16 @@ function Toast(m){
   toastT=setTimeout(()=>t.classList.remove("show"),4000);
 }
 
+//---------- Port MQTT selon le chiffrement ----------
+// 1883 avec TLS ne se connecte nulle part : les brokers cloud n'exposent que 8883.
+// On ne corrige que les deux ports usuels, pour ne pas écraser un réglage délibéré.
+function PortSelonTLS(){
+  const p = GID("MQTTPort"), tls = GID("MQTTSecure").checked;
+  if (tls && p.value == "1883") { p.value = "8883"; Toast("Port passé à 8883, requis par le chiffrement"); }
+  else if (!tls && p.value == "8883") { p.value = "1883"; Toast("Port revenu à 1883"); }
+  markDirty();
+}
+
 //---------- Test de notification ----------
 function TestNotif(){
   GH("btnTestNotif","⏳ Envoi…");
