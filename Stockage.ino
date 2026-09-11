@@ -125,6 +125,42 @@ void StockFichier(String filename, String Contenu) {  //Fichier de données
   file.close();
   Serial.println("Ecriture fichier : " + filename);
 }
+// Sauvegarde des compteurs juste avant un redémarrage volontaire (reset ou OTA).
+// Reprise du correctif amont V17.19.
+//
+// Les sources UxI, NotDef et UxIx3 intègrent l'énergie en RAM : un redémarrage
+// remettait leurs totaux à zéro, et l'énergie du jour repartait de la dernière
+// photo de minuit. Avec la mise à jour par OTA devenue le chemin normal, la perte
+// se produisait à chaque nouvelle version. UxIx2 n'est pas concerné : le module
+// JSY conserve ses propres compteurs et les relit au démarrage.
+//
+// On conserve les références de minuit telles quelles, pour que l'énergie du jour
+// reste juste, et on ajoute les accumulateurs RAM propres à la source.
+void RecordEnergieEncours(String date) {
+  JsonDocument conf;
+
+  conf["Date"] = date;
+  conf["Energie_M_Soutiree"] = EAS_M_J0;  //Références de minuit, pas les totaux courants
+  conf["Energie_M_Injectee"] = EAI_M_J0;
+  conf["Energie_T_Soutiree"] = EAS_T_J0;
+  conf["Energie_T_Injectee"] = EAI_T_J0;
+
+  if (Source == "UxIx3") {
+    conf["Energie_jour_Soutiree"] = Energie_jour_Soutiree;
+    conf["Energie_jour_Injectee"] = Energie_jour_Injectee;
+  } else if (Source == "UxI" || Source == "NotDef") {
+    conf["EASfloat"] = EASfloat;
+    conf["EAIfloat"] = EAIfloat;
+  }
+
+  String Json;
+  serializeJson(conf, Json);
+  File file = LittleFS.open("/EnergieMinuit.eng", FILE_WRITE);
+  file.print(Json);
+  file.close();
+  Serial.println("Ecriture compteurs avant redemarrage");
+}
+
 void RecordEnergieMinuit(String date) {
   JsonDocument conf;
 
@@ -164,6 +200,30 @@ void LectureConsoMatinJour(void) {
   EAI_T_J0 = conf["Energie_T_Injectee"];
   EAS_M_J0 = conf["Energie_M_Soutiree"];  //Maison
   EAI_M_J0 = conf["Energie_M_Injectee"];
+
+  //Restauration des accumulateurs RAM sauvés par RecordEnergieEncours() avant un
+  //redémarrage volontaire. Les champs sont absents d'un fichier écrit à minuit ou
+  //par une version antérieure : .isNull() laisse alors les valeurs à zéro, ce qui
+  //correspond à l'ancien comportement. Source est déjà connue ici, ReadFichierParametres()
+  //étant appelée juste avant dans setup().
+  //Les accumulateurs sont bornés aux références de minuit : sans cela, le calage
+  //plus bas relèverait Energie_M_* sans toucher au flottant, que la prochaine
+  //intégration ferait aussitôt retomber.
+  if (Source == "UxIx3") {
+    if (!conf["Energie_jour_Soutiree"].isNull()) Energie_jour_Soutiree = conf["Energie_jour_Soutiree"].as<float>();
+    if (!conf["Energie_jour_Injectee"].isNull()) Energie_jour_Injectee = conf["Energie_jour_Injectee"].as<float>();
+    Energie_jour_Soutiree = max(Energie_jour_Soutiree, float(EAS_M_J0));
+    Energie_jour_Injectee = max(Energie_jour_Injectee, float(EAI_M_J0));
+    Energie_M_Soutiree = int(Energie_jour_Soutiree);
+    Energie_M_Injectee = int(Energie_jour_Injectee);
+  } else if (Source == "UxI" || Source == "NotDef") {
+    if (!conf["EASfloat"].isNull()) EASfloat = conf["EASfloat"].as<float>();
+    if (!conf["EAIfloat"].isNull()) EAIfloat = conf["EAIfloat"].as<float>();
+    EASfloat = max(EASfloat, float(EAS_M_J0));
+    EAIfloat = max(EAIfloat, float(EAI_M_J0));
+    Energie_M_Soutiree = int(EASfloat);
+    Energie_M_Injectee = int(EAIfloat);
+  }
 
   if (Energie_T_Soutiree < EAS_T_J0) {
     Energie_T_Soutiree = EAS_T_J0;

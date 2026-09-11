@@ -228,6 +228,7 @@ String urlDecode(const String &src) {
 //*****************
 void ReseT(String MesSage) {
   Record_Data( DateAMJ,  MesSage,HeureCouranteDeci);
+  RecordEnergieEncours(DateAMJ);  //Préserve les compteurs d'énergie du redémarrage (reset ou OTA)
   delay(500);
   ESP.restart();
 }

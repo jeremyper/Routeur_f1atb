@@ -436,6 +436,16 @@ Gestion d'un ventilateur de refroidissement pour le SSR/Triac.
 
 ## 16. Historiques et économies
 
+### Conservation des compteurs au redémarrage
+Les sources **UxI** et **UxIx3** intègrent l'énergie en mémoire vive : un redémarrage
+remettait leurs totaux à zéro et l'énergie du jour repartait de la dernière photo de
+minuit. Les compteurs sont désormais écrits dans `/EnergieMinuit.eng` avant un
+redémarrage volontaire — reset demandé ou mise à jour OTA — puis restaurés au démarrage.
+UxIx2 n'est pas concerné : le module JSY conserve ses propres compteurs.
+
+Une coupure de courant ou un reset watchdog ne laissent pas le temps d'écrire : dans ces
+cas, la perte subsiste.
+
 ### Historique 48h
 - Puissance mesurée toutes les 2 secondes, moyennée sur 10 minutes
 - Graphiques SVG des puissances (importée, exportée, routée)
