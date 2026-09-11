@@ -198,7 +198,7 @@ void Init_Server() {
 
 void handleRoot() {  // Page d'accueil : tableau de bord Soleo
 
-  server.send(200, "text/html", DashHtml);
+  EnvoiPageHtml(DashHtml);
 }
 void handleDashJS() {  // Code Javascript du tableau de bord
   CacheEtClose(300);
@@ -206,7 +206,7 @@ void handleDashJS() {  // Code Javascript du tableau de bord
 }
 void handleMesures() {  // Ancienne page d'accueil : mesures détaillées et graphiques
 
-  server.send(200, "text/html", MainHtml);
+  EnvoiPageHtml(MainHtml);
 }
 void handleWifi() {
   lectureCookie(ConnectAP_Html);
@@ -230,7 +230,7 @@ void handleMainJS3() {  // Code Javascript
 
 void handleBrute() {  // Page données brutes
   CacheEtClose(300);
-  server.send(200, "text/html", PageBrute);
+  EnvoiPageHtml(PageBrute);
 }
 void handleBruteJS1() {  // Code Javascript
   CacheEtClose(300);
@@ -1060,15 +1060,31 @@ void CacheEtClose(int16_t seconde) {
 // même que le serveur ne bâtisse sa réponse. Sur un tas fragmenté — d'autant plus depuis
 // qu'une connexion TLS permanente peut être ouverte pour MQTT — l'allocation échouait et
 // la page arrivait vide. On envoie désormais directement depuis la flash.
+// Envoi d'une page par morceaux.
+// Un server.send() en un bloc se tronquait au-delà d'une vingtaine de kilo-octets :
+// la page Réglages (34 Ko) arrivait amputée de ses balises <script> finales et restait
+// donc invisible, puisqu'elle ne se dévoile qu'une fois son JavaScript exécuté. Les
+// pages plus légères passaient, ce qui rendait le défaut trompeur.
+// La longueur est annoncée d'avance, puis le contenu part depuis la flash par tranches
+// que la pile réseau peut absorber.
+void EnvoiPageHtml(const char *page) {
+  const size_t MORCEAU = 1024;
+  size_t reste = strlen(page);
+  server.setContentLength(reste);
+  server.send(200, "text/html", "");
+  while (reste > 0) {
+    size_t n = (reste > MORCEAU) ? MORCEAU : reste;
+    server.sendContent(page, n);
+    page += n;
+    reste -= n;
+  }
+}
+
 void lectureCookie(const char *S) {
   ExtraitCookie();
   if (S != NULL && S[0] != '\0') {
-
-    if (CleAccesRef == CleAcces) {
-      server.send(200, "text/html", S);
-    } else {
-      server.send(200, "text/html", ParaCleHtml);  // Demande clé d'acces / mot de passe
-    }
+    //Page demandée si la clé correspond, écran de saisie sinon
+    EnvoiPageHtml((CleAccesRef == CleAcces) ? S : ParaCleHtml);
   }
 }
 void ExtraitCookie() {
