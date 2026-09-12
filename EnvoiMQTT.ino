@@ -80,6 +80,7 @@ bool testMQTTconnected() {
     clientMQTT.setCallback(callback);                                                                                         // Déclaration de la fonction de souscription
     if (clientMQTT.connect(MQTTdeviceName.c_str(), MQTTUser.c_str(), MQTTPwd.c_str(), AvailableTopic, 2, true, "offline")) {  // si l'utilisateur est connecté au mqtt
       StockMessage(MQTTdeviceName + " connecté au broker MQTT");
+      JalonTas("apres poignee de main MQTT");
       clientMQTT.publish(AvailableTopic, "online", true);
       for (int C = 0; C < 4; C++) {
         if (Source_Temp[C] == "tempMqtt") {

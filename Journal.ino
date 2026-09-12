@@ -83,3 +83,11 @@ void JournalAjoute(const String &msg) {
   NotifEmpile(msg);
   xSemaphoreGive(MutexJournal);
 }
+
+//Le tas minimum est reste a 1196 octets alors que le tas au repos atteint
+//87 Ko : quelque chose consomme transitoirement pres de 86 Ko au demarrage.
+//Ces jalons situent le creux au lieu de le laisser deviner.
+void JalonTas(const String &etape) {
+  StockMessage("Tas " + etape + " : " + String(esp_get_free_internal_heap_size())
+               + " o libres, minimum " + String(esp_get_minimum_free_heap_size()) + " o");
+}
