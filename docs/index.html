@@ -132,7 +132,17 @@ button.sec{background:none;border:1px solid var(--line);color:var(--txt-soft);
     <button class="pri" id="btnConnect">Se connecter</button>
     <div class="err" id="errCfg"></div>
   </div>
-  <p class="pied">Les identifiants sont conservés dans ce navigateur uniquement.</p>
+  <p class="pied">Les identifiants sont conservés dans ce navigateur uniquement.<br>
+    <button class="sec" onclick="diagnostic()">🔍 Diagnostic d'installation</button></p>
+</main>
+
+<!-- ======== Diagnostic d'installation ======== -->
+<main id="vueDiag" hidden>
+  <div class="carte">
+    <p class="titre">Pourquoi l'installation est-elle possible ou non</p>
+    <div id="diag"></div>
+    <button class="sec" onclick="vue('config')">← Retour</button>
+  </div>
 </main>
 
 <!-- ======== Tableau de bord ======== -->
@@ -183,7 +193,7 @@ const lireCfg = () => { try { return JSON.parse(localStorage.getItem(CLE)||"null
 const ecrireCfg = c => { try { localStorage.setItem(CLE, JSON.stringify(c)); } catch(e){} };
 
 const $ = id => document.getElementById(id);
-const vue = n => { $("vueConfig").hidden = (n!=="config"); $("vueBord").hidden = (n!=="bord"); };
+const vue = n => { $("vueConfig").hidden = (n!=="config"); $("vueBord").hidden = (n!=="bord"); $("vueDiag").hidden = (n!=="diag"); };
 
 function majApercuTopic(){
   $("apercuTopic").textContent = ($("prefixe").value||"homeassistant")+"/"+($("appareil").value||"routeur_rms")+"_state";
@@ -399,6 +409,55 @@ function remplir(c){
   if (c && c.host){ remplir(c); connecter(c); }
   else { vue("config"); etat("ko","non configuré"); }
 })();
+
+/* ---------- Diagnostic d'installation ---------- */
+// Un navigateur n'explique jamais pourquoi il refuse d'installer une application.
+// On vérifie donc chaque critère nous-mêmes et on nomme celui qui manque.
+async function diagnostic(){
+  vue("diag");
+  const res = [];
+  const add = (ok, quoi, detail) => res.push(
+    `<div class="ligne"><span class="k">${quoi}<br><span style="font-size:11.5px;color:var(--txt-dim)">${detail||""}</span></span>`+
+    `<span class="v" style="color:${ok===null?"var(--sun)":ok?"var(--exp)":"var(--imp)"}">${ok===null?"?":ok?"✓":"✗"}</span></div>`);
+
+  add(location.protocol === "https:", "Connexion sécurisée", location.protocol);
+
+  const autonome = window.matchMedia("(display-mode: standalone)").matches;
+  if (autonome) add(true, "Déjà installée", "vous utilisez l'application installée");
+
+  // Service worker
+  try{
+    const r = await navigator.serviceWorker.getRegistration();
+    add(!!(r && r.active), "Service worker actif", r ? ("portée " + r.scope) : "aucun enregistrement");
+  }catch(e){ add(false, "Service worker", String(e.message||e)); }
+
+  // Manifeste et icônes
+  try{
+    const rep = await fetch("manifest.webmanifest", {cache:"no-store"});
+    add(rep.ok, "Manifeste accessible", "HTTP " + rep.status + " · " + (rep.headers.get("content-type")||"type inconnu"));
+    const m = await rep.json();
+    const png = (m.icons||[]).filter(i => i.type === "image/png");
+    add(png.some(i => i.sizes === "192x192"), "Icône 192 px déclarée", "");
+    add(png.some(i => i.sizes === "512x512"), "Icône 512 px déclarée", "");
+    for (const i of png.slice(0,2)){
+      try{ const ri = await fetch(i.src, {cache:"no-store"});
+        add(ri.ok && (ri.headers.get("content-type")||"").includes("image"),
+            "Fichier " + i.src, "HTTP " + ri.status + " · " + (ri.headers.get("content-type")||"?"));
+      }catch(e){ add(false, "Fichier " + i.src, String(e.message||e)); }
+    }
+  }catch(e){ add(false, "Manifeste", String(e.message||e)); }
+
+  const supporte = "onbeforeinstallprompt" in window;
+  add(supporte, "Navigateur compatible", supporte ? "" : "Firefox et iOS n'exposent pas ce mécanisme : passez par le menu du navigateur");
+  add(invite ? true : null, "Proposition d'installation reçue",
+      invite ? "le bouton ⬇️ est disponible" : "pas encore émise — voir ci-dessous");
+
+  $("diag").innerHTML = res.join("") +
+    `<p style="font-size:12.5px;color:var(--txt-soft);margin-top:14px">`+
+    `Si tous les points sont verts sauf le dernier, le navigateur a probablement déjà proposé `+
+    `puis mémorisé un refus. Effacez les données du site dans ses réglages, ou installez `+
+    `manuellement par <strong>menu ⋮ → Ajouter à l'écran d'accueil</strong>, qui fonctionne dans tous les cas.</p>`;
+}
 
 /* ---------- Installation sur l'écran d'accueil ---------- */
 // Le navigateur n'émet cet évènement que si les critères sont réunis : HTTPS,
