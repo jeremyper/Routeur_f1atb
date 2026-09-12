@@ -228,7 +228,8 @@ button.sec{background:none;border:1px solid var(--line);color:var(--txt-soft);
 
   <p class="pied">
     <span id="maj">—</span><br>
-    <a href="https://github.com/jeremyper/Routeur_f1atb" target="_blank" rel="noopener">Soleo — code source</a>
+    <a href="https://github.com/jeremyper/Routeur_f1atb" target="_blank" rel="noopener">Soleo — code source</a><br>
+    <button class="sec" onclick="diagnostic()">🔍 Diagnostic d'installation</button>
   </p>
 </main>
 
@@ -527,6 +528,14 @@ async function diagnostic(){
     add(!!(r && r.active), "Service worker actif", r ? ("portée " + r.scope) : "aucun enregistrement");
   }catch(e){ add(false, "Service worker", String(e.message||e)); }
 
+  // Le fichier du service worker lui-même : un 404 ou un type MIME erroné
+  // empêche l'enregistrement, donc l'installation, sans message visible.
+  try{
+    const rs = await fetch("sw.js", {cache:"no-store"});
+    const ct = rs.headers.get("content-type")||"?";
+    add(rs.ok && /javascript|ecmascript/i.test(ct), "Fichier sw.js servi", "HTTP " + rs.status + " · " + ct);
+  }catch(e){ add(false, "Fichier sw.js", String(e.message||e)); }
+
   // Manifeste et icônes
   try{
     const rep = await fetch("manifest.webmanifest", {cache:"no-store"});
@@ -542,6 +551,10 @@ async function diagnostic(){
       }catch(e){ add(false, "Fichier " + i.src, String(e.message||e)); }
     }
   }catch(e){ add(false, "Manifeste", String(e.message||e)); }
+
+  const modes = ["standalone","fullscreen","minimal-ui"].filter(m => window.matchMedia(`(display-mode: ${m})`).matches);
+  add(modes.length > 0 ? true : null, "Mode d'affichage",
+      modes.length ? modes.join(", ") : "navigateur — un raccourci n'est pas une installation");
 
   const supporte = "onbeforeinstallprompt" in window;
   add(supporte, "Navigateur compatible", supporte ? "" : "Firefox et iOS n'exposent pas ce mécanisme : passez par le menu du navigateur");
