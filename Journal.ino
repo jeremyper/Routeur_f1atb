@@ -18,8 +18,30 @@ float PrixKwhActuel() {
 
 //Economie estimée du jour en € : toute la production PV est considérée autoconsommée (routeur)
 //Utilise le tarif courant (couleur Tempo prise en compte) pour rester cohérent
+// Économie du jour : accumulée en continu depuis l'énergie réellement détournée.
+//
+// L'ancien calcul créditait toute la production de l'onduleur SMA, ce qui exigeait un
+// onduleur SMA — donc rien pour la plupart des installations — et surestimait le gain en
+// comptant aussi ce qui repartait vers le réseau.
+//
+// On ne retient désormais que la puissance envoyée aux charges pendant que la maison
+// n'achète rien : c'est de l'énergie obtenue sans la payer. Ce qui est chauffé en marche
+// forcée est acheté au réseau, donc explicitement exclu. Le tarif est appliqué à l'instant
+// où l'énergie est détournée, ce qui respecte les changements heure pleine / heure creuse
+// et les couleurs Tempo au fil de la journée.
+//
+// Appelée depuis la boucle 2 s ; dt est la durée réelle écoulée en millisecondes.
+void SuiviEconomieRoutee(unsigned long dt) {
+  if (PuissanceS_M > 20) return;  //La maison soutire : ce n'est pas du surplus
+  int pRoutee = PuissanceS_T - PuissanceI_T;
+  if (pRoutee <= 0) return;
+  float wh = float(pRoutee) * float(dt) / 3600000.0;
+  EnergieRouteeJour += wh;
+  EconomieJour += wh / 1000.0 * PrixKwhActuel();
+}
+
+//Conservée pour les appelants existants : le cumul se fait désormais en continu.
 void MajEconomieJour() {
-  if (SmaOn == 1 && EnergieJourPV > 0) EconomieJour = float(EnergieJourPV) / 1000.0 * PrixKwhActuel();
 }
 
 //Ajoute un événement en tête du journal et tronque à 30 lignes.

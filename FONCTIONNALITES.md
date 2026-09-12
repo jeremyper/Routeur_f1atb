@@ -460,6 +460,21 @@ Gestion d'un ventilateur de refroidissement pour le SSR/Triac.
 
 ## 16. Historiques et économies
 
+### Calcul des économies
+Le gain affiché repose sur l'**énergie réellement détournée** : la puissance envoyée aux
+charges pendant que la maison n'achète rien au réseau. Cette énergie aurait autrement été
+exportée ; l'avoir consommée sur place évite de l'acheter plus tard.
+
+Ce qui est chauffé en **marche forcée** est acheté au réseau et se trouve donc exclu du
+calcul. Le tarif appliqué est celui en vigueur à l'instant du détournement, ce qui respecte
+les bascules heure pleine / heure creuse et les couleurs Tempo au fil de la journée.
+
+Le compteur `Energie_Routee_Jour` (Wh) est publié en MQTT aux côtés de `Economie_Jour` et
+`Economie_Mois`, sans condition : la mesure ne dépend d'aucun onduleur.
+
+> Auparavant, le calcul créditait la production de l'onduleur SMA. Il exigeait donc un
+> onduleur SMA, et surestimait le gain en comptant aussi l'énergie repartie vers le réseau.
+
 ### Conservation des compteurs au redémarrage
 Les sources **UxI** et **UxIx3** intègrent l'énergie en mémoire vive : un redémarrage
 remettait leurs totaux à zéro et l'énergie du jour repartait de la dernière photo de

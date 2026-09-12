@@ -70,17 +70,20 @@ void JourHeureChange() {
       PuisMaxS_M = 0;
       PuisMaxI_T = 0;
       PuisMaxI_M = 0;
-      //Bilan des économies du jour écoulé : production autoconsommée x tarif courant (couleur Tempo incluse)
-      if (SmaOn == 1 && EnergieJourPV > 0) {
-        EconomieJour = float(EnergieJourPV) / 1000.0 * PrixKwhActuel();
+      //Bilan du jour écoulé. EconomieJour est déjà cumulée en continu par
+      //SuiviEconomieRoutee() : il n'y a plus qu'à la reporter, sans condition sur
+      //l'onduleur — la mesure repose sur l'énergie détournée, disponible partout.
+      if (EconomieJour > 0) {
         if (DateAMJ.substring(6, 8) == "01") EconomieMois = 0;  //Premier du mois : nouveau compteur mensuel
         EconomieMois += EconomieJour;
         EconomieTotal += EconomieJour;
+        JournalAjoute("Bilan : " + String(EnergieRouteeJour / 1000.0, 1) + " kWh détournés, " + String(EconomieJour, 2) + " € économisés");
         RecordFichierParametres();  //Persistance des compteurs (1 écriture par jour)
       }
       ApprentissageBallon();  //Ajuste le coefficient routable et cale le compteur PV du jour
       if (AbsenceJoursSansChauffe < 99) AbsenceJoursSansChauffe++;  //Compteur anti-légionelle (remis à 0 quand le ballon atteint sa cible)
-      EconomieJour = 0;       //Nouvelle journée
+      EconomieJour = 0;         //Nouvelle journée
+      EnergieRouteeJour = 0;
     }
     old_Heure = Int_Heure;
     old_Minute = Int_Minute;

@@ -713,7 +713,8 @@ float PrixBlancHP = 0.1894;  //€/kWh Tempo Blanc Heure Pleine
 float PrixBlancHC = 0.1486;  //€/kWh Tempo Blanc Heure Creuse
 float PrixRougeHP = 0.7562;  //€/kWh Tempo Rouge Heure Pleine
 float PrixRougeHC = 0.1568;  //€/kWh Tempo Rouge Heure Creuse
-float EconomieJour = 0;   //€ économisés aujourd'hui (production autoconsommée x tarif HP)
+float EnergieRouteeJour = 0;  //Wh réellement détournés vers les charges aujourd'hui, hors marche forcée
+float EconomieJour = 0;   //€ économisés aujourd'hui (énergie détournée x tarif du moment)
 float EconomieMois = 0;   //€ économisés depuis le début du mois (persisté)
 float EconomieTotal = 0;  //€ économisés depuis l'installation (persisté)
 
@@ -1471,6 +1472,7 @@ void loop() {
       JourHeureChange();
       EnergieQuotidienne();
       H_Ouvre_Equivalent(dt);
+      SuiviEconomieRoutee(dt);  //Cumul continu de l'énergie détournée et de son équivalent en euros
       SuiviUsageBallon();  //Estimation de la consommation d'eau chaude (ballon intelligent)
       GestionAbsence();    //État mode absence + sécurité anti-légionelle
       // Ventilateur SSR thermorégulé (rampe linéaire Tdemarrage → Tmax)
