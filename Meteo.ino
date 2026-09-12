@@ -23,6 +23,8 @@ void Call_Meteo_data() {
   String Host = String(adr_Meteo_Host);
   String url = "/v1/forecast?latitude=" + String(MeteoLat, 4) + "&longitude=" + String(MeteoLon, 4) + "&daily=shortwave_radiation_sum&timezone=auto&forecast_days=2";
   String MeteoData = "";
+  MeteoData.reserve(2048);  //voir Tempo_RTE.ino : evite les reallocations en boucle
+  uint32_t minAvantMeteo = esp_get_minimum_free_heap_size();
   String line = "";
 
   //Le tas total ne dit pas tout : mbedTLS reclame un bloc contigu d'une
@@ -35,6 +37,7 @@ void Call_Meteo_data() {
     return;
   }
   LibereTLSpourAppelSortant();  //place au tas : voir EnvoiMQTT.ino
+  uint32_t minAvantTLS = esp_get_minimum_free_heap_size();
   clientSecuMeteo.setInsecure();  //skip verification
   clientSecuMeteo.setTimeout(6000);
   if (!clientSecuMeteo.connect(adr_Meteo_Host, 443, 5000)) {
@@ -51,6 +54,7 @@ void Call_Meteo_data() {
                  + " o, plus gros bloc " + String(blocEchec) + " o)");
     return;
   }
+  SuiviPlancher("Poignee de main meteo", minAvantTLS);
   clientSecuMeteo.print(String("GET ") + url + " HTTP/1.1\r\n" + "Host: " + Host + "\r\n" + "Connection: close\r\n\r\n");
   unsigned long timeout = millis();
   while (clientSecuMeteo.available() == 0) {
@@ -69,6 +73,7 @@ void Call_Meteo_data() {
     yield();
   }
   clientSecuMeteo.stop();
+  SuiviPlancher("Lecture reponse meteo", minAvantMeteo);
 
   // Extraction du tableau "shortwave_radiation_sum":[jour,demain]
   int p = MeteoData.lastIndexOf("\"shortwave_radiation_sum\":[");

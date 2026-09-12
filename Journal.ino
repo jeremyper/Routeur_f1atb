@@ -84,10 +84,13 @@ void JournalAjoute(const String &msg) {
   xSemaphoreGive(MutexJournal);
 }
 
-//Le tas minimum est reste a 1196 octets alors que le tas au repos atteint
-//87 Ko : quelque chose consomme transitoirement pres de 86 Ko au demarrage.
-//Ces jalons situent le creux au lieu de le laisser deviner.
-void JalonTas(const String &etape) {
-  StockMessage("Tas " + etape + " : " + String(esp_get_free_internal_heap_size())
-               + " o libres, minimum " + String(esp_get_minimum_free_heap_size()) + " o");
+//Le minimum de tas est monotone : comparer sa valeur avant et apres une
+//operation dit si c'est bien elle qui a creuse le plancher. La sonde ne parle
+//que dans ce cas — le journal ne retient que 10 messages, des jalons bavards
+//chassent justement ceux du demarrage qu'on cherche a lire.
+void SuiviPlancher(const String &etape, uint32_t minAvant) {
+  uint32_t minApres = esp_get_minimum_free_heap_size();
+  if (minApres < minAvant)
+    StockMessage(etape + " : plancher du tas abaisse a " + String(minApres)
+                 + " o (etait " + String(minAvant) + " o)");
 }

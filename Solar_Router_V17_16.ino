@@ -2,7 +2,7 @@
 // celle du firmware officiel F1ATB (V17.26 et suivantes). La base amont est la V17.16.
 // Format imposé par Stockage.ino : décimal à deux chiffres, converti en entier par
 // round(100 * toFloat()) — "1.00" est stocké 100 et affiché 1.00.
-#define Version "1.24"
+#define Version "1.25"
 #define HOSTNAME "RMS-ESP32-"
 
 /*
@@ -987,14 +987,12 @@ void setup() {
   //c'est precisement ce qui manquait aux poignees de main TLS : elles reclament
   //une quarantaine de Ko alors qu'il n'en restait pas plus au repos.
   //A appeler avant toute initialisation radio.
-  //La difference mesuree ici est ressortie nulle alors que le tas au repos a
-  //gagne pres de 46 Ko : le gain existe mais n'est pas visible a cet instant
-  //precis. On journalise donc les chiffres bruts et le code de retour plutot
-  //qu'une soustraction qui pretend conclure.
-  uint32_t tasAvantBT = esp_get_free_internal_heap_size();
-  esp_err_t libBT = esp_bt_controller_mem_release(ESP_BT_MODE_BTDM);
-  StockMessage("Bluetooth : " + String(esp_err_to_name(libBT)) + " — tas " + String(tasAvantBT)
-               + " o avant, " + String(esp_get_free_internal_heap_size()) + " o apres");
+  //Le coeur ESP32 3.x libere deja cette reserve au demarrage quand aucun BLE
+  //n'est initialise : l'appel renvoie ESP_OK mais ne rend rien, mesure faite.
+  //Il reste par securite sur un coeur qui ne le ferait pas, et ne s'annonce
+  //plus dans le journal — j'ai d'abord cru y voir 46 Ko gagnes, alors que ce
+  //relevé avait ete pris pendant que la session TLS du broker etait coupee.
+  esp_bt_controller_mem_release(ESP_BT_MODE_BTDM);
   //Watchdog initialisation
   esp_task_wdt_deinit();
   // Initialisation de la structure de configuration pour la WDT
@@ -1081,9 +1079,7 @@ void setup() {
   InitTemperature();
 
 
-  JalonTas("avant lecture config");
   ReadFichierParametres();  //On remplace par les paramètres du fichier  qui sera éventuellement crée avec les données en ROM
-  JalonTas("apres lecture config");
 
   LectureConsoMatinJour();
 

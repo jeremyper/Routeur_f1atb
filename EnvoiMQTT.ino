@@ -52,6 +52,7 @@ void LibereTLSpourAppelSortant() {
 
 bool testMQTTconnected() {
   bool connecte = true;
+  uint32_t minAvant = esp_get_minimum_free_heap_size();
   if (!clientMQTT.connected()) {  // si le mqtt n'est pas connecté (utile aussi lors de la 1ere connexion)
     TelnetPrintln("Connection au serveur MQTT ...");
     //Un nom d'hôte renseigné l'emporte : les brokers cloud n'ont pas d'IP fixe exploitable.
@@ -80,7 +81,7 @@ bool testMQTTconnected() {
     clientMQTT.setCallback(callback);                                                                                         // Déclaration de la fonction de souscription
     if (clientMQTT.connect(MQTTdeviceName.c_str(), MQTTUser.c_str(), MQTTPwd.c_str(), AvailableTopic, 2, true, "offline")) {  // si l'utilisateur est connecté au mqtt
       StockMessage(MQTTdeviceName + " connecté au broker MQTT");
-      JalonTas("apres poignee de main MQTT");
+      SuiviPlancher("Poignee de main MQTT", minAvant);
       clientMQTT.publish(AvailableTopic, "online", true);
       for (int C = 0; C < 4; C++) {
         if (Source_Temp[C] == "tempMqtt") {

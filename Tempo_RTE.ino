@@ -9,6 +9,10 @@ void Call_RTE_data() {
   String Host = String(adr_RTE_Host);
   String urlJSON = "/cms/open_data/v1/tempoLight";
   String RTEdata = "";
+  //Reserve d'emblee : « RTEdata += line » dans la boucle de lecture
+  //reallouait a chaque ligne, ce qui fragmente le tas au pire moment.
+  RTEdata.reserve(4096);
+  uint32_t minAvantRTE = esp_get_minimum_free_heap_size();
   String line = "";
   String DateRTE = "";                //an-mois-jour
   String DateRTE2 = "";               //an-mois-jour lendemain
@@ -52,6 +56,7 @@ void Call_RTE_data() {
     if (TempoRTEon == 1 && ModeReseau == 0) {
       // Use clientSecu class to create TCP connections
       LibereTLSpourAppelSortant();  //place au tas : voir EnvoiMQTT.ino
+      uint32_t minAvantTLS = esp_get_minimum_free_heap_size();
       clientSecuRTE.setInsecure();  //skip verification
       //mbedTLS connait la raison exacte de l'echec ; connect() la reduit a un simple
       //false. lastError() la restitue : -0x7F00 = allocation impossible (memoire),
@@ -85,6 +90,7 @@ void Call_RTE_data() {
         TelnetPrint("DateRTE lendemain:");
         TelnetPrintln(DateRTE2);
         TelnetPrintln(urlJSON);
+        SuiviPlancher("Poignee de main RTE", minAvantTLS);
         clientSecuRTE.print(String("GET ") + urlJSON + " HTTP/1.1\r\n" + "Host: " + Host + "\r\n" + "Connection: close\r\n\r\n");
         TelnetPrintln("Request vers RTE Envoyé");
         unsigned long timeout = millis();
@@ -104,6 +110,7 @@ void Call_RTE_data() {
           if (line.indexOf("}}") >= 0) fin = 2;
         }
         clientSecuRTE.stop();
+        SuiviPlancher("Lecture reponse RTE", minAvantRTE);
         TelnetPrint("RTEdata:");
         TelnetPrintln(RTEdata);
         // C'est RTE qui donne la couleur
