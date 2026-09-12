@@ -37,8 +37,11 @@ void Call_Meteo_data() {
   clientSecuMeteo.setInsecure();  //skip verification
   clientSecuMeteo.setTimeout(6000);
   if (!clientSecuMeteo.connect(adr_Meteo_Host, 443, 5000)) {
+    char errTLS[100] = "";
+    int codeTLS = clientSecuMeteo.lastError(errTLS, sizeof(errTLS));
     clientSecuMeteo.stop();  //libere le contexte TLS, voir Tempo_RTE.ino
-    StockMessage("Connection failed to Open-Meteo : " + Host + " (DNS ok " + ipMeteo.toString()
+    StockMessage("Connection failed to Open-Meteo : " + Host + " (TLS " + String(codeTLS)
+                 + " " + String(errTLS) + ", DNS ok " + ipMeteo.toString()
                  + ", tas libre " + String(esp_get_free_internal_heap_size())
                  + " o, plus gros bloc " + String(ESP.getMaxAllocHeap()) + " o)");
     return;

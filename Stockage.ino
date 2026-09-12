@@ -123,6 +123,24 @@ void ReadFichierParametres() {
   String content = file.readString();  // lit tout le fichier
   file.close();
   DeserializeConfiguration(content);
+  MigrePaletteTableaux();  //apres chargement complet : peut donc etre persistee
+}
+
+//Migration v1.21 : l'ancienne palette peignait les tableaux en gris clair, ce qui
+//donne du texte pale sur fond pale avec le theme sombre. On ne compare que le
+//triplet « Tableaux » (4e entree, 3 couleurs de 6 caracteres a partir de l'offset
+//54) : comparer la chaine entiere ne migrait personne, une seule autre couleur
+//modifiee suffisait a faire echouer l'egalite. Qui a choisi la couleur de ses
+//tableaux garde la sienne.
+void MigrePaletteTableaux() {
+  const int OFFSET = 54;
+  if (Couleurs.length() < OFFSET + 18) return;
+  if (Couleurs.substring(OFFSET, OFFSET + 18) != "000000cccccc888888") return;
+  Couleurs = Couleurs.substring(0, OFFSET) + "e8edf61c22302c3444" + Couleurs.substring(OFFSET + 18);
+  //Indispensable : handleParaFixe() ressert le fichier, pas la variable en RAM.
+  //Sans cette ecriture la page continuerait d'afficher l'ancienne palette.
+  RecordFichierParametres();
+  StockMessage("Palette des tableaux migree vers le theme sombre");
 }
 void StockFichier(String filename, String Contenu) {  //Fichier de données
   File file = LittleFS.open("/" + filename, FILE_WRITE);
@@ -286,19 +304,6 @@ void DeserializeConfiguration(String json) {
   hostname = conf["hostname"] | hostname;
   Couleurs = conf["Couleurs"] | Couleurs;
   if (Couleurs.length() == 0) Couleurs = String(CouleurDefaut);
-  //Migration v1.21 : l'ancienne palette peignait les tableaux en gris clair, ce
-  //qui donne du texte pale sur fond pale avec le theme sombre. Comparer toute la
-  //chaine ne migrait personne : il suffit d'avoir touche une seule autre couleur
-  //pour que l'egalite echoue. On ne regarde donc que le triplet "Tableaux"
-  //(4e entree, 3 couleurs de 6 caracteres a partir de l'offset 54). Celui qui a
-  //choisi la couleur de ses tableaux garde la sienne.
-  const int OFFSET_TABLEAUX = 54;
-  if (Couleurs.length() >= OFFSET_TABLEAUX + 18
-      && Couleurs.substring(OFFSET_TABLEAUX, OFFSET_TABLEAUX + 18) == "000000cccccc888888") {
-    Couleurs = Couleurs.substring(0, OFFSET_TABLEAUX) + "e8edf61c22302c3444"
-             + Couleurs.substring(OFFSET_TABLEAUX + 18);
-    StockMessage("Palette des tableaux migree vers le theme sombre");
-  }
   ModePara = conf["ModePara"];
   ModeReseau = conf["ModeReseau"];
   Horloge = conf["Horloge"];

@@ -52,12 +52,20 @@ void Call_RTE_data() {
     if (TempoRTEon == 1 && ModeReseau == 0) {
       // Use clientSecu class to create TCP connections
       clientSecuRTE.setInsecure();  //skip verification
+      //mbedTLS connait la raison exacte de l'echec ; connect() la reduit a un simple
+      //false. lastError() la restitue : -0x7F00 = allocation impossible (memoire),
+      //-0x7280 = la poignee de main a echoue, les codes reseau pointent vers la
+      //liaison. C'est ce code qui doit trancher, pas nos suppositions.
       if (!clientSecuRTE.connect(adr_RTE_Host, 443, 3000)) {
         //Une connexion TLS ratee laisse son contexte mbedTLS alloue : sans ce
         //stop(), plusieurs dizaines de Ko restent prises et l'appel suivant
         //(la meteo) echoue a son tour faute de tas.
+        char errTLS[100] = "";
+        int codeTLS = clientSecuRTE.lastError(errTLS, sizeof(errTLS));
         clientSecuRTE.stop();
-        StockMessage("Connection failed to RTE server :" + Host + " (tas libre " + String(esp_get_free_internal_heap_size()) + " o)");
+        StockMessage("Connection failed to RTE server :" + Host + " (TLS " + String(codeTLS)
+                     + " " + String(errTLS) + ", tas libre " + String(esp_get_free_internal_heap_size())
+                     + " o, plus gros bloc " + String(ESP.getMaxAllocHeap()) + " o)");
       } else {
         time_t timestamp = time(NULL) - 21600;  //Decallage début période couleur  RTE de 6h.
         struct tm* pTime = localtime(&timestamp);
