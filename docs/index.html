@@ -24,10 +24,16 @@
   --sun:#ffb547;--sun-soft:#ffd27d;--home:#4ab3f4;--water:#ff6f91;
   --imp:#e5604d;--exp:#4cd28b;--accent:#6ee7c7;
   --shadow:0 10px 30px rgba(0,0,0,.35);--r:16px;--r-s:12px;
+  /* Volumes de la scene isometrique : le soleil vient d'en haut a gauche,
+     le mur gauche est donc eclaire et le mur droit dans l'ombre. */
+  --toit:#3c4964;--mur-c:#2f3a52;--mur-o:#232b3e;--arete:#4e5c79;
+  --vitre:#ffd27d;--porte:#1b2231;--metal:#6b7585;--ombre:rgba(0,0,0,.30);
 }
 html[data-theme=light]{
   --bg:#eef2f8;--bg-soft:#fff;--card:#fff;--card-2:#f3f6fb;--line:#e0e6f0;
   --txt:#1a2230;--txt-soft:#586273;--txt-dim:#8a93a4;--shadow:0 8px 24px rgba(20,30,50,.10);
+  --toit:#fff;--mur-c:#f3f7fd;--mur-o:#dfe7f3;--arete:#b9c6da;
+  --vitre:#ffb547;--porte:#c3cfe0;--metal:#9aa6b8;--ombre:rgba(30,45,70,.10);
 }
 *,*::before,*::after{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;background:var(--bg);color:var(--txt);line-height:1.45;
@@ -54,9 +60,9 @@ header{display:flex;align-items:center;justify-content:space-between;gap:10px;
   color:var(--txt-dim);margin:0 0 12px}
 
 /* ----- Synoptique ----- */
-.scene{padding:8px 6px 14px;position:relative;overflow:hidden}
+.scene{padding:6px 4px 14px;position:relative;overflow:hidden}
 .scene svg{display:block;width:100%;height:auto}
-.rail{fill:none;stroke:var(--line);stroke-width:2.5;stroke-linecap:round;opacity:.55}
+.rail{fill:none;stroke:var(--arete);stroke-width:2.5;stroke-linecap:round;opacity:.7}
 /* Le trait de flux est un pointillé qui défile : la vitesse dit le débit,
    le sens de défilement dit la direction. */
 .flux{fill:none;stroke-width:3;stroke-linecap:round;opacity:0;
@@ -76,12 +82,20 @@ header{display:flex;align-items:center;justify-content:space-between;gap:10px;
 @keyframes parcours{to{offset-distance:100%}}
 html.sans-grain .grain{display:none}
 .plot{transition:opacity .6s ease}
-.jauge{fill:none;stroke-width:3.5;stroke-linecap:round;
-  transition:stroke-dashoffset .9s cubic-bezier(.22,1,.36,1),stroke .5s,opacity .5s}
-.nom{font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
-  paint-order:stroke;stroke:var(--card);stroke-width:3.5px;stroke-linejoin:round}
-.val{font-size:15px;font-weight:800;font-variant-numeric:tabular-nums}
-.uni{font-size:8.5px;font-weight:700;letter-spacing:.06em}
+#maison,#soleil,#pylone,#cumulus{transition:opacity .6s ease}
+#jaugeEau{transition:opacity .8s ease}
+
+/* Cartes d'etat, une par poste : le dessin montre, les cartes chiffrent */
+.postes{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.poste{background:var(--card);border:1px solid var(--line);border-radius:var(--r-s);
+  padding:11px 13px;transition:opacity .5s ease}
+.poste.muet{opacity:.5}
+.poste .pt{display:inline-block;vertical-align:middle;margin-right:6px}
+.pn{font-size:11.5px;font-weight:700;color:var(--txt-dim)}
+.pv{font-size:20px;font-weight:800;margin-top:4px;font-variant-numeric:tabular-nums;
+  display:flex;align-items:baseline;gap:4px}
+.pu{font-size:11.5px;font-weight:700;color:var(--txt-dim)}
+.ps{font-size:11.5px;color:var(--txt-soft);margin-top:1px}
 .verdict{text-align:center;font-size:14px;font-weight:700;margin:6px 0 0;min-height:20px}
 .resume{text-align:center;font-size:11.5px;color:var(--txt-dim);margin-top:2px}
 @media (prefers-reduced-motion:reduce){
@@ -187,112 +201,161 @@ button.sec{background:none;border:1px solid var(--line);color:var(--txt-soft);
 <!-- ======== Tableau de bord ======== -->
 <main id="vueBord" hidden>
   <div class="carte scene">
-    <svg viewBox="0 0 340 300" role="img" aria-labelledby="fluxTitre">
-      <title id="fluxTitre">Synoptique de circulation de l'énergie</title>
+    <svg viewBox="0 0 360 264" role="img" aria-labelledby="fluxTitre">
+      <title id="fluxTitre">Circulation de l'énergie entre les panneaux, le réseau, la maison et le chauffe-eau</title>
       <defs>
         <pattern id="pois" width="16" height="16" patternUnits="userSpaceOnUse">
           <circle cx="1.2" cy="1.2" r="1.2" fill="currentColor" opacity=".16"/>
         </pattern>
         <filter id="halo" x="-60%" y="-60%" width="220%" height="220%">
-          <feGaussianBlur stdDeviation="4" result="f"/>
+          <feGaussianBlur stdDeviation="3.5" result="f"/>
           <feMerge><feMergeNode in="f"/><feMergeNode in="SourceGraphic"/></feMerge>
         </filter>
-        <linearGradient id="gSol" x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id="gCiel" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="var(--sun)" stop-opacity=".13"/>
+          <stop offset="1" stop-color="var(--sun)" stop-opacity="0"/>
+        </linearGradient>
+        <radialGradient id="gSoleil">
+          <stop offset="0" stop-color="var(--sun-soft)"/><stop offset="1" stop-color="var(--sun)"/>
+        </radialGradient>
+        <linearGradient id="gPan" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#2d4d85"/><stop offset=".55" stop-color="#1b2f57"/>
+          <stop offset="1" stop-color="#14223f"/>
+        </linearGradient>
+        <linearGradient id="gLueur" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="var(--sun-soft)" stop-opacity=".75"/>
+          <stop offset="1" stop-color="var(--sun)" stop-opacity=".1"/>
+        </linearGradient>
+        <linearGradient id="gFluxSol" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stop-color="var(--sun)"/><stop offset="1" stop-color="var(--accent)"/>
         </linearGradient>
-        <linearGradient id="gMai" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="var(--accent)"/><stop offset="1" stop-color="var(--home)"/>
-        </linearGradient>
-        <linearGradient id="gEau" x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id="gFluxEau" x1="1" y1="0" x2="0" y2="1">
           <stop offset="0" stop-color="var(--accent)"/><stop offset="1" stop-color="var(--water)"/>
         </linearGradient>
       </defs>
 
-      <rect x="0" y="0" width="340" height="300" fill="url(#pois)" color="var(--txt)"/>
+      <rect x="0" y="0" width="360" height="264" fill="url(#pois)" color="var(--txt)"/>
+      <rect x="0" y="0" width="360" height="150" fill="url(#gCiel)"/>
 
-      <!-- structure au repos : le synoptique se lit même à l'arrêt -->
-      <path id="rSol" class="rail" d="M111 63 C130 86 142 113 159 139"/>
-      <path id="rRes" class="rail" d="M229 63 C210 86 198 113 181 139"/>
-      <path id="rMai" class="rail" d="M159 161 C142 187 130 214 111 237"/>
-      <path id="rEau" class="rail" d="M181 161 C198 187 210 214 229 237"/>
+      <!-- ombres portees -->
+      <ellipse cx="180" cy="252" rx="104" ry="13" fill="var(--ombre)"/>
+      <ellipse cx="48"  cy="246" rx="20"  ry="6"  fill="var(--ombre)"/>
+      <ellipse cx="318" cy="238" rx="24"  ry="6"  fill="var(--ombre)"/>
 
-      <!-- flux actifs -->
-      <path id="pSol" class="flux" stroke="url(#gSol)" filter="url(#halo)" d="M111 63 C130 86 142 113 159 139"/>
-      <path id="pRes" class="flux" stroke="var(--imp)"  filter="url(#halo)" d="M229 63 C210 86 198 113 181 139"/>
-      <path id="pMai" class="flux" stroke="url(#gMai)" filter="url(#halo)" d="M159 161 C142 187 130 214 111 237"/>
-      <path id="pEau" class="flux" stroke="url(#gEau)" filter="url(#halo)" d="M181 161 C198 187 210 214 229 237"/>
+      <!-- pylone du reseau -->
+      <g id="pylone" stroke="var(--metal)" stroke-width="2" fill="none" stroke-linecap="round">
+        <path d="M304 236 L314 128 M332 236 L322 128"/>
+        <path d="M314.0 132.0 L324.0 152.8 M322.0 132.0 L312.0 152.8" stroke-width="1.2" opacity=".75"/>
+        <path d="M312.0 152.8 L324.0 152.8" stroke-width="1.2" opacity=".55"/>
+        <path d="M312.0 152.8 L326.0 173.6 M324.0 152.8 L310.0 173.6" stroke-width="1.2" opacity=".75"/>
+        <path d="M310.0 173.6 L326.0 173.6" stroke-width="1.2" opacity=".55"/>
+        <path d="M310.0 173.6 L328.0 194.4 M326.0 173.6 L308.0 194.4" stroke-width="1.2" opacity=".75"/>
+        <path d="M308.0 194.4 L328.0 194.4" stroke-width="1.2" opacity=".55"/>
+        <path d="M308.0 194.4 L330.0 215.2 M328.0 194.4 L306.0 215.2" stroke-width="1.2" opacity=".75"/>
+        <path d="M306.0 215.2 L330.0 215.2" stroke-width="1.2" opacity=".55"/>
+        <path d="M306.0 215.2 L332.0 236.0 M330.0 215.2 L304.0 236.0" stroke-width="1.2" opacity=".75"/>
+        <path d="M304.0 236.0 L332.0 236.0" stroke-width="1.2" opacity=".55"/>
+        <path d="M300 140 L336 140 M303 126 L333 126"/>
+        <path d="M306 140 L306 146 M330 140 L330 146 M310 126 L310 131 M326 126 L326 131" stroke-width="1.6"/>
+      </g>
 
-      <!-- grains de courant -->
+      <!-- chauffe-eau -->
+      <g id="cumulus">
+        <path d="M31 182 L31 240 A17 7 0 0 0 65 240 L65 182 Z" fill="var(--mur-c)" stroke="var(--arete)" stroke-width="1.5"/>
+        <ellipse cx="48" cy="182" rx="17" ry="7" fill="var(--toit)" stroke="var(--arete)" stroke-width="1.5"/>
+        <path d="M31 226 L65 226" stroke="var(--arete)" stroke-width="1.2" opacity=".8"/>
+        <path id="jaugeEau" d="M31 182 L31 240 A17 7 0 0 0 65 240 L65 182 Z" fill="var(--water)" opacity="0"/>
+        <path d="M40 178 L40 168 Q40 163 45 163 L53 163" stroke="var(--metal)" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+      </g>
+
+      <!-- maison -->
+      <g id="maison">
+        <polygon points="180.0,200.0 258.0,156.0 258.0,206.0 180.0,250.0" fill="var(--mur-o)" stroke="var(--arete)" stroke-width="1.5" stroke-linejoin="round"/>
+        <polygon points="180.0,200.0 102.0,156.0 102.0,206.0 180.0,250.0" fill="var(--mur-c)" stroke="var(--arete)" stroke-width="1.5" stroke-linejoin="round"/>
+        <g id="vitres" fill="var(--vitre)" opacity=".28">
+          <polygon points="193.3,202.5 211.2,192.4 211.2,209.4 193.3,219.5" />
+          <polygon points="222.9,185.8 240.8,175.7 240.8,192.7 222.9,202.8" />
+          <polygon points="134.8,183.5 116.0,172.9 116.0,188.9 134.8,199.5" />
+        </g>
+        <polygon points="159.7,203.6 144.1,194.8 144.1,229.8 159.7,238.6" fill="var(--porte)" stroke="var(--arete)" stroke-width="1.2"/>
+        <polygon points="180.0,200.0 258.0,156.0 180.0,112.0 102.0,156.0" fill="var(--toit)" stroke="var(--arete)" stroke-width="1.5" stroke-linejoin="round"/>
+        <polygon points="180.0,200.0 258.0,156.0 180.0,112.0 102.0,156.0" id="lueurToit" fill="url(#gLueur)" opacity="0" style="transition:opacity .8s ease"/>
+        <g id="panneaux">
+          <polygon points="115.3,156.0 130.2,164.4 145.1,156.0 130.2,147.6" fill="url(#gPan)" stroke="#4a6ea8" stroke-width=".6"/>
+          <polygon points="131.4,146.9 146.4,155.3 161.3,146.9 146.4,138.4" fill="url(#gPan)" stroke="#4a6ea8" stroke-width=".6"/>
+          <polygon points="147.6,137.7 162.6,146.2 177.5,137.7 162.6,129.3" fill="url(#gPan)" stroke="#4a6ea8" stroke-width=".6"/>
+          <polygon points="163.8,128.6 178.8,137.0 193.7,128.6 178.8,120.2" fill="url(#gPan)" stroke="#4a6ea8" stroke-width=".6"/>
+          <polygon points="131.4,165.1 146.4,173.6 161.3,165.1 146.4,156.7" fill="url(#gPan)" stroke="#4a6ea8" stroke-width=".6"/>
+          <polygon points="147.6,156.0 162.6,164.4 177.5,156.0 162.6,147.6" fill="url(#gPan)" stroke="#4a6ea8" stroke-width=".6"/>
+          <polygon points="163.8,146.9 178.8,155.3 193.7,146.9 178.8,138.4" fill="url(#gPan)" stroke="#4a6ea8" stroke-width=".6"/>
+          <polygon points="180.0,137.7 194.9,146.2 209.9,137.7 194.9,129.3" fill="url(#gPan)" stroke="#4a6ea8" stroke-width=".6"/>
+          <polygon points="147.6,174.3 162.6,182.7 177.5,174.3 162.6,165.8" fill="url(#gPan)" stroke="#4a6ea8" stroke-width=".6"/>
+          <polygon points="163.8,165.1 178.8,173.6 193.7,165.1 178.8,156.7" fill="url(#gPan)" stroke="#4a6ea8" stroke-width=".6"/>
+          <polygon points="180.0,156.0 194.9,164.4 209.9,156.0 194.9,147.6" fill="url(#gPan)" stroke="#4a6ea8" stroke-width=".6"/>
+          <polygon points="196.2,146.9 211.1,155.3 226.1,146.9 211.1,138.4" fill="url(#gPan)" stroke="#4a6ea8" stroke-width=".6"/>
+          <polygon points="163.8,183.4 178.8,191.8 193.7,183.4 178.8,175.0" fill="url(#gPan)" stroke="#4a6ea8" stroke-width=".6"/>
+          <polygon points="180.0,174.3 194.9,182.7 209.9,174.3 194.9,165.8" fill="url(#gPan)" stroke="#4a6ea8" stroke-width=".6"/>
+          <polygon points="196.2,165.1 211.1,173.6 226.1,165.1 211.1,156.7" fill="url(#gPan)" stroke="#4a6ea8" stroke-width=".6"/>
+          <polygon points="212.4,156.0 227.3,164.4 242.2,156.0 227.3,147.6" fill="url(#gPan)" stroke="#4a6ea8" stroke-width=".6"/>
+        </g>
+      </g>
+
+      <!-- soleil -->
+      <g id="soleil">
+        <circle cx="46" cy="44" r="16" fill="url(#gSoleil)" filter="url(#halo)"/>
+        <path d="M65.4 52.0 L70.9 54.3" stroke="var(--sun)" stroke-width="2.4" stroke-linecap="round" opacity=".7"/>
+        <path d="M54.0 63.4 L56.3 68.9" stroke="var(--sun)" stroke-width="2.4" stroke-linecap="round" opacity=".7"/>
+        <path d="M38.0 63.4 L35.7 68.9" stroke="var(--sun)" stroke-width="2.4" stroke-linecap="round" opacity=".7"/>
+        <path d="M26.6 52.0 L21.1 54.3" stroke="var(--sun)" stroke-width="2.4" stroke-linecap="round" opacity=".7"/>
+        <path d="M26.6 36.0 L21.1 33.7" stroke="var(--sun)" stroke-width="2.4" stroke-linecap="round" opacity=".7"/>
+        <path d="M38.0 24.6 L35.7 19.1" stroke="var(--sun)" stroke-width="2.4" stroke-linecap="round" opacity=".7"/>
+        <path d="M54.0 24.6 L56.3 19.1" stroke="var(--sun)" stroke-width="2.4" stroke-linecap="round" opacity=".7"/>
+        <path d="M65.4 36.0 L70.9 33.7" stroke="var(--sun)" stroke-width="2.4" stroke-linecap="round" opacity=".7"/>
+      </g>
+
+      <!-- liaisons : grises au repos, animees des qu'un courant passe -->
+      <path id="rSol" class="rail" d="M58 58 C80 82 104 110 137 133"/>
+      <path id="rRes" class="rail" d="M304 134 C280 150 248 150 221 136"/>
+      <path id="rEau" class="rail" d="M126 212 C104 216 82 208 65 196"/>
+      <path id="pSol" class="flux" stroke="url(#gFluxSol)" filter="url(#halo)" d="M58 58 C80 82 104 110 137 133"/>
+      <path id="pRes" class="flux" stroke="var(--imp)" filter="url(#halo)" d="M304 134 C280 150 248 150 221 136"/>
+      <path id="pEau" class="flux" stroke="url(#gFluxEau)" filter="url(#halo)" d="M126 212 C104 216 82 208 65 196"/>
       <g id="grains">
-        <circle class="grain" id="grSol1" r="3.4" cx="0" cy="0" fill="var(--sun)"
-                style="offset-path:path('M111 63 C130 86 142 113 159 139');"/>
-        <circle class="grain" id="grSol2" r="3.4" cx="0" cy="0" fill="var(--sun)"
-                style="offset-path:path('M111 63 C130 86 142 113 159 139');animation-delay:-1s;"/>
-        <circle class="grain" id="grRes1" r="3.4" cx="0" cy="0" fill="var(--imp)"
-                style="offset-path:path('M229 63 C210 86 198 113 181 139');"/>
-        <circle class="grain" id="grRes2" r="3.4" cx="0" cy="0" fill="var(--imp)"
-                style="offset-path:path('M229 63 C210 86 198 113 181 139');animation-delay:-1s;"/>
-        <circle class="grain" id="grMai1" r="3.4" cx="0" cy="0" fill="var(--home)"
-                style="offset-path:path('M159 161 C142 187 130 214 111 237');"/>
-        <circle class="grain" id="grMai2" r="3.4" cx="0" cy="0" fill="var(--home)"
-                style="offset-path:path('M159 161 C142 187 130 214 111 237');animation-delay:-1s;"/>
-        <circle class="grain" id="grEau1" r="3.4" cx="0" cy="0" fill="var(--water)"
-                style="offset-path:path('M181 161 C198 187 210 214 229 237');"/>
-        <circle class="grain" id="grEau2" r="3.4" cx="0" cy="0" fill="var(--water)"
-                style="offset-path:path('M181 161 C198 187 210 214 229 237');animation-delay:-1s;"/>
-      </g>
-
-      <!-- nœud central -->
-      <circle cx="170" cy="150" r="15" fill="var(--card-2)" stroke="var(--line)" stroke-width="2"/>
-      <circle id="coeur" cx="170" cy="150" r="5" fill="var(--accent)" opacity=".3" filter="url(#halo)"/>
-
-      <!-- ================= nœuds ================= -->
-      <g id="nSol" class="plot">
-        <circle cx="90" cy="42" r="29" fill="var(--card-2)" stroke="var(--line)" stroke-width="1.5"/>
-        <circle cx="90" cy="42" r="29" fill="none" stroke="var(--sun)" stroke-width="3.5"
-                class="jauge" id="jSol" stroke-dasharray="182" stroke-dashoffset="182"
-                transform="rotate(-90 90 42)" stroke-linecap="round"/>
-        <text x="90" y="32" text-anchor="middle" font-size="13">☀️</text>
-        <text x="90" y="49" text-anchor="middle" class="val" id="vSol" fill="var(--txt)">—</text>
-        <text x="90" y="61" text-anchor="middle" class="uni" id="uSol" fill="var(--txt-dim)"></text>
-        <text x="76" y="88" text-anchor="middle" class="nom" fill="var(--txt-dim)">Production</text>
-      </g>
-
-      <g id="nRes" class="plot">
-        <circle cx="250" cy="42" r="29" fill="var(--card-2)" stroke="var(--line)" stroke-width="1.5"/>
-        <circle cx="250" cy="42" r="29" fill="none" stroke="var(--imp)" stroke-width="3.5"
-                class="jauge" id="jRes" stroke-dasharray="182" stroke-dashoffset="182"
-                transform="rotate(-90 250 42)" stroke-linecap="round"/>
-        <text x="250" y="32" text-anchor="middle" font-size="13">⚡</text>
-        <text x="250" y="49" text-anchor="middle" class="val" id="vRes" fill="var(--txt)">—</text>
-        <text x="250" y="61" text-anchor="middle" class="uni" id="uRes" fill="var(--txt-dim)"></text>
-        <text x="264" y="88" text-anchor="middle" class="nom" id="nomRes" fill="var(--txt-dim)">Réseau</text>
-      </g>
-
-      <g id="nMai" class="plot">
-        <circle cx="90" cy="258" r="29" fill="var(--card-2)" stroke="var(--line)" stroke-width="1.5"/>
-        <circle cx="90" cy="258" r="29" fill="none" stroke="var(--home)" stroke-width="3.5"
-                class="jauge" id="jMai" stroke-dasharray="182" stroke-dashoffset="182"
-                transform="rotate(-90 90 258)" stroke-linecap="round"/>
-        <text x="90" y="248" text-anchor="middle" font-size="13">🏠</text>
-        <text x="90" y="265" text-anchor="middle" class="val" id="vMai" fill="var(--txt)">—</text>
-        <text x="90" y="277" text-anchor="middle" class="uni" id="uMai" fill="var(--txt-dim)"></text>
-        <text x="76" y="216" text-anchor="middle" class="nom" fill="var(--txt-dim)">Maison</text>
-      </g>
-
-      <g id="nEau" class="plot">
-        <circle cx="250" cy="258" r="29" fill="var(--card-2)" stroke="var(--line)" stroke-width="1.5"/>
-        <circle cx="250" cy="258" r="29" fill="none" stroke="var(--water)" stroke-width="3.5"
-                class="jauge" id="jEau" stroke-dasharray="182" stroke-dashoffset="182"
-                transform="rotate(-90 250 258)" stroke-linecap="round"/>
-        <text x="250" y="248" text-anchor="middle" font-size="13">🚿</text>
-        <text x="250" y="265" text-anchor="middle" class="val" id="vEau" fill="var(--txt)">—</text>
-        <text x="250" y="277" text-anchor="middle" class="uni" id="uEau" fill="var(--txt-dim)"></text>
-        <text x="264" y="216" text-anchor="middle" class="nom" fill="var(--txt-dim)">Eau chaude</text>
+        <circle class="grain" id="grSol1" r="3.2" cx="0" cy="0" fill="var(--sun)"
+                style="offset-path:path('M58 58 C80 82 104 110 137 133');"/>
+        <circle class="grain" id="grSol2" r="3.2" cx="0" cy="0" fill="var(--sun)"
+                style="offset-path:path('M58 58 C80 82 104 110 137 133');animation-delay:-1s;"/>
+        <circle class="grain" id="grRes1" r="3.2" cx="0" cy="0" fill="var(--imp)"
+                style="offset-path:path('M304 134 C280 150 248 150 221 136');"/>
+        <circle class="grain" id="grRes2" r="3.2" cx="0" cy="0" fill="var(--imp)"
+                style="offset-path:path('M304 134 C280 150 248 150 221 136');animation-delay:-1s;"/>
+        <circle class="grain" id="grEau1" r="3.2" cx="0" cy="0" fill="var(--water)"
+                style="offset-path:path('M126 212 C104 216 82 208 65 196');"/>
+        <circle class="grain" id="grEau2" r="3.2" cx="0" cy="0" fill="var(--water)"
+                style="offset-path:path('M126 212 C104 216 82 208 65 196');animation-delay:-1s;"/>
       </g>
     </svg>
     <p class="verdict" id="fluxQuoi">en attente de données</p>
     <p class="resume" id="fluxResume"></p>
+  </div>
+
+  <div class="postes">
+    <div class="poste" id="qSol"><span class="pt" style="background:var(--sun)"></span>
+      <span class="pn">Solaire</span>
+      <div class="pv"><span id="vSol">—</span><span class="pu" id="uSol"></span></div>
+      <div class="ps" id="sSol">—</div></div>
+    <div class="poste" id="qRes"><span class="pt" id="ptRes" style="background:var(--imp)"></span>
+      <span class="pn" id="nomRes">Réseau</span>
+      <div class="pv"><span id="vRes">—</span><span class="pu" id="uRes"></span></div>
+      <div class="ps" id="sRes">—</div></div>
+    <div class="poste" id="qMai"><span class="pt" style="background:var(--home)"></span>
+      <span class="pn">Maison</span>
+      <div class="pv"><span id="vMai">—</span><span class="pu" id="uMai"></span></div>
+      <div class="ps" id="sMai">—</div></div>
+    <div class="poste" id="qEau"><span class="pt" style="background:var(--water)"></span>
+      <span class="pn">Eau chaude</span>
+      <div class="pv"><span id="vEau">—</span><span class="pu" id="uEau"></span></div>
+      <div class="ps" id="sEau">—</div></div>
   </div>
 
   <div class="tuiles" id="tuiles"></div>
@@ -393,18 +456,18 @@ function afficher(d){
   if (pv !== null)      maison = Math.max(0, pv + net - eau);
   else if (net > 20)    maison = Math.max(0, net - eau);
 
-  // Échelle commune aux quatre jauges : le plus gros flux du moment, jamais
-  // sous 1,5 kW pour qu'un four qui démarre ne remette pas tout le cadran à plat.
+  // Échelle commune : le plus gros flux du moment, jamais sous 1,5 kW pour
+  // qu'un four qui démarre ne remette pas tout le dessin à plat.
   const ref = Math.max(1500, pv||0, Math.abs(net), eau, maison||0);
 
   // Épaisseur et cadence proportionnelles à la puissance : un filet lent pour
   // quelques watts, un trait large et rapide pour plusieurs kilowatts.
   const epaisseur = w => Math.max(2, Math.min(7, 2 + Math.abs(w)/450));
-  const cadence   = w => Math.max(.45, Math.min(2.6, 900/Math.max(60,Math.abs(w)))) ;
+  const cadence   = w => Math.max(.45, Math.min(2.6, 900/Math.max(60,Math.abs(w))));
 
-  // Une branche = un tracé pointillé + deux grains. `sens` négatif inverse les
+  // Une liaison = un tracé pointillé + deux grains. `sens` négatif inverse les
   // deux animations d'un coup : c'est ce qui montre le courant qui repart.
-  function branche(cle, w, sens){
+  function liaison(cle, w, sens){
     const actif = Math.abs(w) > 20, t = cadence(w), inv = sens < 0;
     const trait = $("p" + cle);
     trait.classList.toggle("on", actif);
@@ -420,50 +483,45 @@ function afficher(d){
     }
   }
 
-  // Chiffre et unité dans la pastille ; « — » quand la grandeur est indéterminable.
-  function valeur(cle, w){
+  // Carte de poste : chiffre, unité, et une ligne d'état en clair.
+  // `null` = grandeur indéterminable, la carte s'estompe et affiche « — ».
+  function poste(cle, w, etat){
     const [n, u] = (w === null) ? ["—", ""] : duo(w);
     $("v" + cle).textContent = n;
     $("u" + cle).textContent = u;
+    $("s" + cle).textContent = etat;
+    $("q" + cle).classList.toggle("muet", w === null || Math.abs(w) <= 20);
   }
 
-  // Jauge annulaire : r = 29 → circonférence 182. Pleine = flux le plus fort.
-  function jauge(cle, w){
-    const part = (w === null) ? 0 : Math.min(1, Math.abs(w) / ref);
-    const j = $("j" + cle);
-    j.setAttribute("stroke-dashoffset", (182 * (1 - part)).toFixed(1));
-    j.style.opacity = (part < .01) ? "0" : "1";
-  }
-
-  // Production : nœud et branche masqués si l'installation ne publie pas d'onduleur
+  // Sans onduleur, toute la branche solaire disparaît : rien n'est inventé.
   const sansPV = (pv === null);
-  $("nSol").style.display = sansPV ? "none" : "";
-  $("pSol").style.display = sansPV ? "none" : "";
-  $("grSol1").style.display = $("grSol2").style.display = sansPV ? "none" : "";
-  $("rSol").style.display = sansPV ? "none" : "";
-  if (!sansPV){ valeur("Sol", pv); branche("Sol", pv, 1); jauge("Sol", pv); }
+  for (const id of ["soleil", "pSol", "rSol", "grSol1", "grSol2"])
+    $(id).style.display = sansPV ? "none" : "";
+  $("qSol").hidden = sansPV;
+  if (sansPV){
+    $("lueurToit").style.opacity = 0;
+  } else {
+    poste("Sol", pv, pv > 20 ? "en production" : "à l'arrêt");
+    liaison("Sol", pv, 1);
+    $("lueurToit").style.opacity = Math.min(.55, pv / ref);   // le platelage s'illumine
+  }
 
-  // Réseau : la couleur et le sens du défilement suivent celui du courant
+  // Réseau : couleur et sens du défilement suivent celui du courant
   const versReseau = net < -20;
-  valeur("Res", Math.abs(net));
-  $("nomRes").textContent = versReseau ? "Injection" : "Réseau";
-  $("jRes").setAttribute("stroke", versReseau ? "var(--exp)" : "var(--imp)");
-  $("pRes").setAttribute("stroke", versReseau ? "var(--exp)" : "var(--imp)");
-  for (const n of [1, 2])
-    $("grRes" + n).setAttribute("fill", versReseau ? "var(--exp)" : "var(--imp)");
-  branche("Res", net, versReseau ? -1 : 1);
-  jauge("Res", net);
+  const teinte = versReseau ? "var(--exp)" : "var(--imp)";
+  poste("Res", Math.abs(net), versReseau ? "injection" :
+               net > 20 ? "soutirage" : "aucun échange");
+  $("ptRes").style.background = teinte;
+  $("pRes").setAttribute("stroke", teinte);
+  for (const n of [1, 2]) $("grRes" + n).setAttribute("fill", teinte);
+  liaison("Res", net, versReseau ? -1 : 1);
 
-  valeur("Mai", maison);
-  branche("Mai", (maison === null) ? 0 : maison, 1);
-  jauge("Mai", maison);
-  valeur("Eau", eau);
-  branche("Eau", eau, 1);
-  jauge("Eau", eau);
-
-  $("coeur").style.opacity = (Math.abs(net) > 20 || eau > 20) ? ".95" : ".25";
-  $("nMai").style.opacity = (maison === null) ? ".45" : "1";
-  $("nEau").style.opacity = (eau > 20) ? "1" : ".6";
+  poste("Mai", maison, (maison === null) ? "inconnu sans onduleur"
+                     : maison > 20 ? "hors eau chaude" : "veille");
+  poste("Eau", eau, eau > 20 ? "en chauffe" : "à l'arrêt");
+  liaison("Eau", eau, 1);
+  $("jaugeEau").style.opacity = (eau > 20) ? Math.min(.5, .18 + eau / ref) : 0;
+  $("vitres").style.opacity = (maison !== null && maison > 20) ? ".45" : ".2";
 
   if (net > 20)
     $("fluxQuoi").innerHTML = `<span style="color:var(--imp)">La maison achète ${kW(net)} au réseau</span>`;
@@ -481,9 +539,6 @@ function afficher(d){
   /* Tuiles : seulement ce que l'installation publie réellement */
   let t = "";
   const routee = Number(d.PuissanceS_T||0) - Number(d.PuissanceI_T||0);
-  if (d.PuissanceS_T !== undefined)
-    t += tuile("Eau chaude","var(--water)", kW(Math.max(0,routee)),
-               routee > 20 ? "en chauffe" : "à l'arrêt");
   if (d.Temperature_0 !== undefined && Number(d.Temperature_0) > -50)
     t += tuile("Température","var(--exp)", nb(d.Temperature_0,1)+" °C", "ballon");
   if (d.LTARF)
@@ -696,16 +751,28 @@ async function diagnostic(){
   add(modes.length > 0 ? true : null, "Mode d'affichage",
       modes.length ? modes.join(", ") : "navigateur — un raccourci n'est pas une installation");
 
-  const supporte = "onbeforeinstallprompt" in window;
-  add(supporte, "Navigateur compatible", supporte ? "" : "Firefox et iOS n'exposent pas ce mécanisme : passez par le menu du navigateur");
+  // Brave est bâti sur Chromium et expose donc l'interface, mais ne déclenche
+  // pas la proposition d'installation : le « ? » ci-dessous vient de lui, pas
+  // du site. On le nomme au lieu de laisser l'utilisateur chercher.
+  let brave = false;
+  try { brave = !!(navigator.brave && await navigator.brave.isBrave()); } catch(e){}
+  const supporte = "onbeforeinstallprompt" in window && !brave;
+  add(supporte, "Navigateur compatible",
+      brave ? "Brave n'émet pas la proposition d'installation : essayez Chrome sur le même téléphone"
+            : supporte ? "" : "Firefox et iOS n'exposent pas ce mécanisme : passez par le menu du navigateur");
   add(invite ? true : null, "Proposition d'installation reçue",
       invite ? "le bouton ⬇️ est disponible" : "pas encore émise — voir ci-dessous");
 
   $("diag").innerHTML = res.join("") +
     `<p style="font-size:12.5px;color:var(--txt-soft);margin-top:14px">`+
-    `Si tous les points sont verts sauf le dernier, le navigateur a probablement déjà proposé `+
-    `puis mémorisé un refus. Effacez les données du site dans ses réglages, ou installez `+
-    `manuellement par <strong>menu ⋮ → Ajouter à l'écran d'accueil</strong>, qui fonctionne dans tous les cas.</p>`;
+    (brave
+      ? `Tout ce qui dépend du site est vert : l'hébergement, le manifeste, le service worker et `+
+        `les icônes sont corrects. C'est <strong>Brave</strong> qui n'installe pas. Ouvrez cette `+
+        `même adresse dans <strong>Chrome</strong> : le menu ⋮ doit y proposer `+
+        `« Installer l'application ».`
+      : `Si tous les points sont verts sauf le dernier, le navigateur a probablement déjà proposé `+
+        `puis mémorisé un refus. Effacez les données du site dans ses réglages, ou installez `+
+        `manuellement par <strong>menu ⋮ → Ajouter à l'écran d'accueil</strong>.`) + `</p>`;
 }
 
 /* ---------- Installation sur l'écran d'accueil ---------- */
@@ -736,6 +803,12 @@ function marcheASuivre(){
   if (/Firefox/.test(ua))
     return ["Sur Firefox",
       "<li>Menu <strong>⋮</strong> → <strong>Installer</strong> ou <strong>Ajouter à l'écran d'accueil</strong>.</li>", ""];
+  if (navigator.brave)
+    return ["Sur Brave (Android)",
+      "<li>Brave n'émet pas la proposition d'installation des applications web.</li>" +
+      "<li>Ouvrez cette adresse dans <strong>Chrome</strong>, puis <strong>menu ⋮ → Installer l'application</strong>.</li>",
+      "Le « Ajouter à l'écran d'accueil » de Brave ne crée qu'un raccourci, qui rouvre Brave — " +
+      "c'est bien ce que vous constatez, et cela ne vient pas du site."];
   return ["Sur Android",
     "<li>Menu <strong>⋮</strong> du navigateur.</li>" +
     "<li><strong>Installer l'application</strong> — ou <strong>Ajouter à l'écran d'accueil</strong>.</li>",
