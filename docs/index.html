@@ -87,6 +87,30 @@ html.sans-grain .grain{display:none}
   .flux{stroke-dasharray:none!important;animation:none!important}
 }
 
+/* ----- Historique ----- */
+.entete{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.periodes{display:flex;gap:4px}
+.per{background:var(--card-2);border:1px solid var(--line);color:var(--txt-dim);
+  border-radius:8px;padding:5px 10px;font-size:11.5px;font-weight:700;cursor:pointer}
+.per.actif{background:var(--accent);border-color:var(--accent);color:#08221a}
+#graphe{display:block;width:100%;height:auto;overflow:visible}
+.axe{stroke:var(--line);stroke-width:1;stroke-dasharray:3 3}
+.trace{fill:none;stroke-width:1.8;stroke-linejoin:round;stroke-linecap:round}
+.aire{stroke:none}
+.ech{font-size:8.5px;font-weight:700;fill:var(--txt-dim)}
+.legende{display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  font-size:11px;color:var(--txt-soft);margin-top:8px}
+.legende i{display:inline-block;width:9px;height:9px;border-radius:3px;
+  margin-right:5px;vertical-align:-1px}
+.legende .etendue{margin-left:auto;color:var(--txt-dim);font-variant-numeric:tabular-nums}
+.vide{font-size:11.5px;color:var(--txt-dim);margin:10px 0 0;text-align:center}
+.calc{display:flex;justify-content:space-between;align-items:baseline;gap:12px;
+  padding:9px 0;border-bottom:1px solid var(--line);font-size:14px}
+.calc:last-child{border-bottom:none}
+.calc .k{color:var(--txt-soft)}
+.calc .k small{display:block;font-size:11px;color:var(--txt-dim);font-weight:400}
+.calc .v{font-weight:700;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+
 .tuiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .tuile{background:var(--card);border:1px solid var(--line);border-radius:var(--r-s);padding:13px}
 .tuile .lbl{font-size:11px;color:var(--txt-dim);font-weight:700;display:flex;align-items:center;gap:5px}
@@ -272,6 +296,48 @@ button.sec{background:none;border:1px solid var(--line);color:var(--txt-soft);
     <p class="resume" id="fluxResume"></p>
   </div>
 
+  <div class="carte">
+    <div class="entete">
+      <p class="titre" style="margin:0">Historique</p>
+      <div class="periodes">
+        <button class="per actif" data-h="1">1 h</button>
+        <button class="per" data-h="6">6 h</button>
+        <button class="per" data-h="24">24 h</button>
+      </div>
+    </div>
+    <svg id="graphe" viewBox="0 0 330 132" role="img" aria-label="Courbes de puissance">
+      <defs>
+        <linearGradient id="gRes" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="132">
+          <stop id="gResHaut" offset="0.5" stop-color="var(--imp)"/>
+          <stop id="gResBas"  offset="0.5" stop-color="var(--exp)"/>
+        </linearGradient>
+        <linearGradient id="gAireEau" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="var(--water)" stop-opacity=".45"/>
+          <stop offset="1" stop-color="var(--water)" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <line id="axeZero" class="axe" x1="0" x2="330"/>
+      <path id="cEau" class="aire" fill="url(#gAireEau)"/>
+      <path id="cRes" class="trace" stroke="url(#gRes)"/>
+      <path id="cSol" class="trace" stroke="var(--sun)"/>
+      <text id="axeHaut" class="ech" x="2" y="10">—</text>
+      <text id="axeBas"  class="ech" x="2" y="128">—</text>
+    </svg>
+    <div class="legende">
+      <span><i style="background:var(--imp)"></i>Soutiré<i style="background:var(--exp);margin-left:10px"></i>Injecté</span>
+      <span><i style="background:var(--water)"></i>Eau chaude</span>
+      <span id="legSol" hidden><i style="background:var(--sun)"></i>Solaire</span>
+      <span class="etendue" id="etendue"></span>
+    </div>
+    <p class="vide" id="grapheVide">L'historique se constitue pendant que l'application
+      est ouverte, et il est conservé sur cet appareil.</p>
+  </div>
+
+  <div class="carte" id="carteCalculs" hidden>
+    <p class="titre">Ce que disent les mesures</p>
+    <div id="ligneCalculs"></div>
+  </div>
+
   <div class="tuiles" id="tuiles"></div>
 
   <div class="carte" id="carteJour" hidden>
@@ -356,6 +422,243 @@ function tuile(lbl, couleur, valeur, sub){
 }
 function ligne(k,v){ return `<div class="ligne"><span class="k">${k}</span><span class="v">${v}</span></div>`; }
 
+/* ================= Historique local =================
+   Le routeur ne conserve rien de fin : ses compteurs sont journaliers et ses
+   historiques a la maille 5 mn. Le telephone, lui, peut garder la trace de ce
+   qu'il recoit. On stocke donc un point par minute sur 24 h, dans le
+   navigateur — rien ne part ailleurs, et l'historique survit a un rechargement. */
+const HISTO_CLE = "soleoHisto";
+const HISTO_MIN = 24 * 60;          // 24 h a la maille minute
+let histo = [];                     // [minute epoch, reseau W, eau W, pv W|null, temp °C|null]
+let enCours = null;                 // moyenne en construction pour la minute courante
+
+function histoCharge(){
+  try{
+    const b = localStorage.getItem(HISTO_CLE);
+    if (b) histo = JSON.parse(b) || [];
+  }catch(e){ histo = []; }
+  histoElague();
+}
+function histoElague(){
+  const limite = Math.floor(Date.now()/60000) - HISTO_MIN;
+  let i = 0; while (i < histo.length && histo[i][0] < limite) i++;
+  if (i) histo = histo.slice(i);
+}
+function histoEnregistre(){
+  // Un quota plein ne doit pas casser l'application : on abandonne l'ecriture
+  // plutot que de laisser remonter l'exception.
+  try{ localStorage.setItem(HISTO_CLE, JSON.stringify(histo)); }catch(e){}
+}
+
+// Moyenne les echantillons d'une meme minute : le routeur publie souvent plus
+// vite que la maille, et garder le dernier point ferait clignoter la courbe.
+function histoAjoute(reseau, eau, pv, temp){
+  const m = Math.floor(Date.now()/60000);
+  if (!enCours || enCours.m !== m){
+    if (enCours) histoPousse(enCours);
+    enCours = {m:m, n:0, r:0, e:0, p:0, np:0, t:0, nt:0};
+  }
+  enCours.n++; enCours.r += reseau; enCours.e += eau;
+  if (pv   !== null){ enCours.p += pv;   enCours.np++; }
+  if (temp !== null){ enCours.t += temp; enCours.nt++; }
+}
+function histoPousse(c){
+  histo.push([c.m, Math.round(c.r/c.n), Math.round(c.e/c.n),
+              c.np ? Math.round(c.p/c.np) : null,
+              c.nt ? Math.round(c.t/c.nt*10)/10 : null]);
+  histoElague();
+  histoEnregistre();
+}
+// Points de la fenetre demandee, echantillon en cours inclus pour que la
+// courbe avance sans attendre la fin de la minute.
+function histoFenetre(heures){
+  const depuis = Math.floor(Date.now()/60000) - heures*60;
+  const pts = histo.filter(p => p[0] >= depuis);
+  if (enCours && enCours.n)
+    pts.push([enCours.m, Math.round(enCours.r/enCours.n), Math.round(enCours.e/enCours.n),
+              enCours.np ? Math.round(enCours.p/enCours.np) : null,
+              enCours.nt ? Math.round(enCours.t/enCours.nt*10)/10 : null]);
+  return pts;
+}
+
+/* ================= Trace ================= */
+let fenetreH = 1;
+const G_L = 330, G_H = 132, G_MG = 26;   // largeur, hauteur, marge gauche pour l'echelle
+
+function dessineGraphe(){
+  const pts = histoFenetre(fenetreH);
+  const assez = pts.length >= 2;
+  $("grapheVide").hidden = assez;
+  for (const id of ["cRes","cEau","cSol","axeZero","axeHaut","axeBas"])
+    $(id).style.display = assez ? "" : "none";
+  if (!assez){ $("etendue").textContent = ""; return; }
+
+  const t0 = pts[0][0], t1 = pts[pts.length-1][0];
+  const duree = Math.max(1, t1 - t0);
+  const avecPV = pts.some(p => p[3] !== null);
+  $("legSol").hidden = !avecPV;
+
+  // Echelle asymetrique : une echelle centree gaspillait la moitie de la
+  // hauteur les jours sans injection. L'axe zero se place donc selon ce que
+  // les donnees contiennent reellement au-dessus et au-dessous.
+  let haut = 0, bas = 0;
+  for (const p of pts){
+    haut = Math.max(haut, p[1], p[2], p[3] === null ? 0 : p[3]);
+    bas  = Math.max(bas, -p[1]);
+  }
+  const rond = v => v <= 0 ? 0 : Math.ceil(v/250)*250;
+  haut = rond(haut); bas = rond(bas);
+  if (haut + bas === 0) haut = 500;
+  const HT = 10, HB = G_H - 10;                       // marges verticales
+  const yZero = HT + (HB - HT) * haut / (haut + bas);
+  const x = t => G_MG + (t - t0)/duree * (G_L - G_MG - 4);
+  const y = w => w >= 0 ? yZero - (haut ? w/haut * (yZero - HT) : 0)
+                        : yZero + (bas ? -w/bas * (HB - yZero) : 0);
+
+  const trace = i => pts.map((p,k) =>
+    (k ? "L" : "M") + x(p[0]).toFixed(1) + " " + y(p[i] || 0).toFixed(1)).join(" ");
+
+  $("cRes").setAttribute("d", trace(1));
+  $("cEau").setAttribute("d",
+    "M" + x(t0).toFixed(1) + " " + y(0).toFixed(1) + " " +
+    pts.map(p => "L" + x(p[0]).toFixed(1) + " " + y(p[2]).toFixed(1)).join(" ") +
+    " L" + x(t1).toFixed(1) + " " + y(0).toFixed(1) + " Z");
+  if (avecPV){
+    $("cSol").setAttribute("d",
+      pts.filter(p => p[3] !== null).map((p,k) =>
+        (k ? "L" : "M") + x(p[0]).toFixed(1) + " " + y(p[3]).toFixed(1)).join(" "));
+    $("cSol").style.display = "";
+  } else $("cSol").style.display = "none";
+
+  $("axeZero").setAttribute("y1", yZero); $("axeZero").setAttribute("y2", yZero);
+  const coupe = (yZero / G_H).toFixed(4);
+  $("gResHaut").setAttribute("offset", coupe);
+  $("gResBas").setAttribute("offset", coupe);
+  $("axeHaut").textContent = haut ? kW(haut) : "";
+  $("axeHaut").setAttribute("y", HT + 2);
+  $("axeBas").textContent  = bas ? "-" + kW(bas) : "";
+  $("axeBas").setAttribute("y", HB - 1);
+  const h = m => new Date(m*60000).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
+  $("etendue").textContent = h(t0) + " → " + h(t1);
+}
+
+document.querySelectorAll(".per").forEach(b => b.onclick = () => {
+  document.querySelectorAll(".per").forEach(o => o.classList.remove("actif"));
+  b.classList.add("actif");
+  fenetreH = Number(b.dataset.h);
+  try{ localStorage.setItem("soleoFenetre", String(fenetreH)); }catch(e){}
+  dessineGraphe();
+});
+
+/* ================= Indicateurs derives =================
+   Rien de tout cela n'est publie par le routeur : ce sont des grandeurs que
+   l'on reconstruit, soit a partir de l'instantane, soit a partir de la trace
+   accumulee ici. Chaque ligne porte la phrase qui dit d'ou elle sort. */
+let pMaxJour = 0;
+
+function calc(k, sous, v){
+  return `<div class="calc"><span class="k">${k}<small>${sous}</small></span>`+
+         `<span class="v">${v}</span></div>`;
+}
+
+// Pente de la temperature par moindres carres sur la fenetre demandee : plus
+// robuste qu'une difference entre deux points, que le moindre bruit affole.
+let penteMemo = {};                 // vide a chaque affichage
+function penteTemp(minutes){
+  if (minutes in penteMemo) return penteMemo[minutes];
+  const pts = histoFenetre(24).filter(p => p[4] !== null);
+  const depuis = Math.floor(Date.now()/60000) - minutes;
+  const f = pts.filter(p => p[0] >= depuis);
+  if (f.length < 4){ penteMemo[minutes] = null; return null; }
+  const n = f.length;
+  let sx=0, sy=0, sxy=0, sxx=0;
+  for (const p of f){ sx += p[0]; sy += p[4]; sxy += p[0]*p[4]; sxx += p[0]*p[0]; }
+  const d = n*sxx - sx*sx;
+  const r = Math.abs(d) < 1e-9 ? null : (n*sxy - sx*sy) / d * 60;   // °C par heure
+  penteMemo[minutes] = r;
+  return r;
+}
+
+function majCalculs(d, net, eau, pv){
+  let c = "";
+  const routeJour  = Number(d.Energie_Routee_Jour || 0) / 1000;      // kWh
+  const injecteJour = Number(d.EnergieJour_M_Injectee || 0) / 1000;  // kWh
+  const ecoJour    = Number(d.Economie_Jour || 0);
+
+  // Part du surplus effectivement captee plutot que renvoyee au reseau.
+  // Se calcule sans onduleur : c'est le chiffre qui dit si le routeur travaille.
+  if (routeJour + injecteJour > 0.05){
+    const part = routeJour / (routeJour + injecteJour) * 100;
+    c += calc("Surplus valorisé",
+              `${nb(routeJour,2)} kWh détournés contre ${nb(injecteJour,2)} kWh rendus au réseau`,
+              `<span style="color:${part>60?"var(--exp)":part>30?"var(--sun)":"var(--imp)"}">`+
+              `${Math.round(part)} %</span>`);
+  }
+
+  // Prix du kWh deduit du couple economie / energie detournee : le routeur ne
+  // publie pas le tarif configure, mais le rapport des deux le restitue.
+  let prix = null;
+  if (routeJour > 0.05 && ecoJour > 0){
+    prix = ecoJour / routeJour;
+    if (prix > 0.03 && prix < 0.80)
+      c += calc("Prix du kWh évité", "déduit des économies rapportées à l'énergie détournée",
+                nb(prix,3) + " €");
+    else prix = null;
+  }
+
+  // Debit financier instantane, a partir du prix deduit.
+  if (prix !== null){
+    if (eau > 20)
+      c += calc("Gain en cours", "l'eau chaude tourne au solaire plutôt qu'au réseau",
+                `<span style="color:var(--exp)">+${nb(eau/1000*prix,2)} €/h</span>`);
+    if (net > 20)
+      c += calc("Coût en cours", "au tarif déduit ci-dessus",
+                `<span style="color:var(--imp)">−${nb(net/1000*prix,2)} €/h</span>`);
+  }
+
+  if (pv !== null && pv > 50){
+    const injecte = Number(d.PuissanceI_M || 0);
+    const auto = Math.max(0, Math.min(100, (pv - injecte) / pv * 100));
+    c += calc("Autoconsommation", "part de la production consommée sur place",
+              Math.round(auto) + " %");
+  }
+
+  // Ballon : pente mesuree, et projection a une heure.
+  const t = (d.Temperature_0 !== undefined && Number(d.Temperature_0) > -50)
+            ? Number(d.Temperature_0) : null;
+  if (t !== null){
+    const p20 = penteTemp(20);
+    if (p20 !== null && Math.abs(p20) > 0.3){
+      const sens = p20 > 0 ? "monte" : "descend";
+      c += calc("Ballon : " + sens,
+                `projection dans 1 h : ${nb(t + p20, 1)} °C`,
+                `<span style="color:${p20>0?"var(--exp)":"var(--water)"}">`+
+                `${p20>0?"+":""}${nb(p20,1)} °C/h</span>`);
+    }
+    // Une chute rapide n'est pas un refroidissement : c'est un puisage.
+    const p5 = penteTemp(6);
+    if (p5 !== null && p5 < -6)
+      c += calc("Puisage détecté", "chute rapide de la sonde du ballon",
+                `<span style="color:var(--water)">${nb(p5,0)} °C/h</span>`);
+  }
+
+  pMaxJour = Math.max(pMaxJour, net);
+  if (pMaxJour > 100)
+    c += calc("Pointe vue depuis l'ouverture", "puissance soutirée la plus forte observée ici",
+              kW(pMaxJour));
+
+  if (d.Tension_M !== undefined)
+    c += calc("Réseau", "tension, fréquence et facteur de puissance",
+              `${nb(d.Tension_M,1)} V · ${nb(d.Frequence,2)} Hz · ${nb(d.PowerFactor_M,2)}`);
+
+  if (d.Ouverture_Triac !== undefined)
+    c += calc("Modulation du triac", "part du sinus laissée passer vers le chauffe-eau",
+              Math.round(Number(d.Ouverture_Triac)) + " %");
+
+  $("ligneCalculs").innerHTML = c;
+  $("carteCalculs").hidden = (c === "");
+}
+
 function afficher(d){
   /* ---- Schéma de flux ---- */
   const soutire = Number(d.PuissanceS_M||0), injecte = Number(d.PuissanceI_M||0);
@@ -435,6 +738,13 @@ function afficher(d){
   else
     $("fluxQuoi").innerHTML = `<span style="color:var(--exp)">Équilibre — rien n'est gaspillé</span>`;
 
+  /* ---- Historique et calculs ---- */
+  penteMemo = {};
+  histoAjoute(net, eau, pv, (d.Temperature_0 !== undefined && Number(d.Temperature_0) > -50)
+                            ? Number(d.Temperature_0) : null);
+  dessineGraphe();
+  majCalculs(d, net, eau, pv);
+
   $("fluxResume").textContent = (maison === null)
     ? "Consommation de la maison indéterminable sans onduleur"
     : (eau > 20) ? "Le chauffe-eau absorbe " + kW(eau) : "Chauffe-eau à l'arrêt";
@@ -446,7 +756,9 @@ function afficher(d){
     t += tuile("Eau chaude","var(--water)", kW(Math.max(0,routee)),
                routee > 20 ? "en chauffe" : "à l'arrêt");
   if (d.Temperature_0 !== undefined && Number(d.Temperature_0) > -50)
-    t += tuile("Température","var(--exp)", nb(d.Temperature_0,1)+" °C", "ballon");
+    t += tuile("Température","var(--exp)", nb(d.Temperature_0,1)+" °C",
+               "ballon" + (penteTemp(20) !== null && Math.abs(penteTemp(20)) > 0.3
+                 ? " · " + (penteTemp(20) > 0 ? "+" : "") + nb(penteTemp(20),1) + " °C/h" : ""));
   if (d.LTARF)
     t += tuile("Tarif","", `<span class="badge ${couleurTempo(d.LTARF)}">${d.LTARF.replace(/_/g," ")}</span>`,
                d.RTE_Demain ? "demain : "+String(d.RTE_Demain).replace(/_/g," ").toLowerCase() : "");
@@ -488,8 +800,9 @@ function afficher(d){
 
   /* Détail */
   let x = "";
-  if (d.Tension_M !== undefined)   x += ligne("Tension", nb(d.Tension_M,1)+" V");
-  if (d.Frequence !== undefined)   x += ligne("Fréquence", nb(d.Frequence,2)+" Hz");
+  //Tension et frequence sont desormais portees par la ligne « Reseau » des
+  //calculs, qui y ajoute le facteur de puissance : les repeter ici ferait
+  //doublon a deux cartes d'intervalle.
   if (d.Intensite_T !== undefined) x += ligne("Courant eau chaude", nb(d.Intensite_T,1)+" A");
   if (d.ESP32_On !== undefined){
     const h = Number(d.ESP32_On);
@@ -744,6 +1057,14 @@ if (!autonome()) $("btnInstall").hidden = false;
 /* offset-path porte les grains du synoptique ; sans lui, seul le pointillé anime */
 if (!(window.CSS && CSS.supports && CSS.supports("offset-path", "path('M0 0L1 1')")))
   document.documentElement.classList.add("sans-grain");
+
+histoCharge();
+try{ const f = Number(localStorage.getItem("soleoFenetre")); if (f) {
+  fenetreH = f;
+  document.querySelectorAll(".per").forEach(b =>
+    b.classList.toggle("actif", Number(b.dataset.h) === f));
+} }catch(e){}
+dessineGraphe();
 
 if ("serviceWorker" in navigator)
   navigator.serviceWorker.register("sw.js").catch(()=>{});

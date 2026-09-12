@@ -1,6 +1,6 @@
 // Coquille applicative mise en cache : l'application s'ouvre sans réseau.
 // Les mesures, elles, viennent toujours du broker en direct — rien n'est stocké.
-const CACHE = "soleo-v6";
+const CACHE = "soleo-v7";
 const COQUILLE = ["./", "./index.html", "./manifest.webmanifest",
                  "./icon.svg", "./icon-192.png", "./icon-512.png",
                  "./apple-touch-icon.png"];
