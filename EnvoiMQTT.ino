@@ -40,7 +40,9 @@ void GestionMQTT() {
 //allocation failed » releve dans le journal. On libere donc la session MQTT juste
 //avant un appel HTTPS sortant ; testMQTTconnected() la retablit au passage
 //suivant du cycle reseau, sans declencher le testament (disconnect propre).
-bool TLSlibereePourAppel = false;  //coupure MQTT voulue, pas une panne
+bool TLSlibereePourAppel = false;      //coupure MQTT voulue, pas une panne
+unsigned long TLSlibereeMillis = 0;    //instant de la derniere liberation
+const unsigned long FenetreAppelsSortants = 10000;  //ms laissees aux appels HTTPS
 
 void LibereTLSpourAppelSortant() {
   if (MQTTSecure != 1) return;        //en clair, la session ne coute presque rien
@@ -48,11 +50,19 @@ void LibereTLSpourAppelSortant() {
   clientMQTT.disconnect();
   MqttClientTLS.stop();
   TLSlibereePourAppel = true;
+  //Chaque appel sortant repousse la fenetre : RTE puis la meteo s'enchainent
+  //ainsi sans que le broker se reconnecte entre les deux.
+  TLSlibereeMillis = millis();
 }
 
 bool testMQTTconnected() {
   bool connecte = true;
   uint32_t minAvant = esp_get_minimum_free_heap_size();
+  //Le journal a montre le broker se reconnectant entre l'appel RTE et l'appel
+  //meteo : sa poignee de main refragmente le tas, et la meteo echouait ensuite
+  //sur X509 - Allocation of memory failed alors que le total restait
+  //confortable. On lui laisse donc la fenetre libre.
+  if (TLSlibereeMillis != 0 && millis() - TLSlibereeMillis < FenetreAppelsSortants) return false;
   if (!clientMQTT.connected()) {  // si le mqtt n'est pas connecté (utile aussi lors de la 1ere connexion)
     TelnetPrintln("Connection au serveur MQTT ...");
     //Un nom d'hôte renseigné l'emporte : les brokers cloud n'ont pas d'IP fixe exploitable.

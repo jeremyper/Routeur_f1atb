@@ -55,6 +55,7 @@ void Call_Meteo_data() {
     return;
   }
   SuiviPlancher("Poignee de main meteo", minAvantTLS);
+  minAvantMeteo = esp_get_minimum_free_heap_size();  //voir Tempo_RTE.ino
   clientSecuMeteo.print(String("GET ") + url + " HTTP/1.1\r\n" + "Host: " + Host + "\r\n" + "Connection: close\r\n\r\n");
   unsigned long timeout = millis();
   while (clientSecuMeteo.available() == 0) {

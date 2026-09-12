@@ -91,6 +91,9 @@ void Call_RTE_data() {
         TelnetPrintln(DateRTE2);
         TelnetPrintln(urlJSON);
         SuiviPlancher("Poignee de main RTE", minAvantTLS);
+        //Repart d ici, sinon la sonde de lecture reproduit le creux de la
+        //poignee de main et les deux lignes disent la meme chose.
+        minAvantRTE = esp_get_minimum_free_heap_size();
         clientSecuRTE.print(String("GET ") + urlJSON + " HTTP/1.1\r\n" + "Host: " + Host + "\r\n" + "Connection: close\r\n\r\n");
         TelnetPrintln("Request vers RTE Envoyé");
         unsigned long timeout = millis();
