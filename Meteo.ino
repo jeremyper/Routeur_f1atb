@@ -34,16 +34,21 @@ void Call_Meteo_data() {
     StockMessage("Open-Meteo : resolution DNS impossible pour " + Host);
     return;
   }
+  LibereTLSpourAppelSortant();  //place au tas : voir EnvoiMQTT.ino
   clientSecuMeteo.setInsecure();  //skip verification
   clientSecuMeteo.setTimeout(6000);
   if (!clientSecuMeteo.connect(adr_Meteo_Host, 443, 5000)) {
+    //Mesure avant stop() : apres liberation le tas parait confortable et
+    //masque justement la penurie qui a fait echouer la poignee de main.
+    uint32_t tasEchec = esp_get_free_internal_heap_size();
+    uint32_t blocEchec = ESP.getMaxAllocHeap();
     char errTLS[100] = "";
     int codeTLS = clientSecuMeteo.lastError(errTLS, sizeof(errTLS));
     clientSecuMeteo.stop();  //libere le contexte TLS, voir Tempo_RTE.ino
     StockMessage("Connection failed to Open-Meteo : " + Host + " (TLS " + String(codeTLS)
                  + " " + String(errTLS) + ", DNS ok " + ipMeteo.toString()
-                 + ", tas libre " + String(esp_get_free_internal_heap_size())
-                 + " o, plus gros bloc " + String(ESP.getMaxAllocHeap()) + " o)");
+                 + ", tas a l'echec " + String(tasEchec)
+                 + " o, plus gros bloc " + String(blocEchec) + " o)");
     return;
   }
   clientSecuMeteo.print(String("GET ") + url + " HTTP/1.1\r\n" + "Host: " + Host + "\r\n" + "Connection: close\r\n\r\n");

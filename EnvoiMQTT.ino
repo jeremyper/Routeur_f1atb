@@ -33,6 +33,20 @@ void GestionMQTT() {
   }
 }
 
+//Un ESP32 n'a pas le tas necessaire a deux sessions TLS simultanees. La session
+//MQTT en retient une trentaine de Ko en permanence ; la poignee de main suivante
+//place ses deux tampons de 16 Ko, puis echoue faute de place au moment des
+//calculs RSA — d'ou le « RSA - The public key operation failed : BIGNUM - Memory
+//allocation failed » releve dans le journal. On libere donc la session MQTT juste
+//avant un appel HTTPS sortant ; testMQTTconnected() la retablit au passage
+//suivant du cycle reseau, sans declencher le testament (disconnect propre).
+void LibereTLSpourAppelSortant() {
+  if (MQTTSecure != 1) return;        //en clair, la session ne coute presque rien
+  if (!clientMQTT.connected()) return;
+  clientMQTT.disconnect();
+  MqttClientTLS.stop();
+}
+
 bool testMQTTconnected() {
   bool connecte = true;
   if (!clientMQTT.connected()) {  // si le mqtt n'est pas connecté (utile aussi lors de la 1ere connexion)

@@ -51,6 +51,7 @@ void Call_RTE_data() {
   if (LastHeureRTE == -1 || estHeureDeConsulter) { // si l'heure actuelle fait partie des horaires à consulter
     if (TempoRTEon == 1 && ModeReseau == 0) {
       // Use clientSecu class to create TCP connections
+      LibereTLSpourAppelSortant();  //place au tas : voir EnvoiMQTT.ino
       clientSecuRTE.setInsecure();  //skip verification
       //mbedTLS connait la raison exacte de l'echec ; connect() la reduit a un simple
       //false. lastError() la restitue : -0x7F00 = allocation impossible (memoire),
@@ -60,12 +61,16 @@ void Call_RTE_data() {
         //Une connexion TLS ratee laisse son contexte mbedTLS alloue : sans ce
         //stop(), plusieurs dizaines de Ko restent prises et l'appel suivant
         //(la meteo) echoue a son tour faute de tas.
+        //Mesure avant stop() : apres liberation le tas parait confortable et
+        //masque justement la penurie qui a fait echouer la poignee de main.
+        uint32_t tasEchec = esp_get_free_internal_heap_size();
+        uint32_t blocEchec = ESP.getMaxAllocHeap();
         char errTLS[100] = "";
         int codeTLS = clientSecuRTE.lastError(errTLS, sizeof(errTLS));
         clientSecuRTE.stop();
         StockMessage("Connection failed to RTE server :" + Host + " (TLS " + String(codeTLS)
-                     + " " + String(errTLS) + ", tas libre " + String(esp_get_free_internal_heap_size())
-                     + " o, plus gros bloc " + String(ESP.getMaxAllocHeap()) + " o)");
+                     + " " + String(errTLS) + ", tas a l'echec " + String(tasEchec)
+                     + " o, plus gros bloc " + String(blocEchec) + " o)");
       } else {
         time_t timestamp = time(NULL) - 21600;  //Decallage début période couleur  RTE de 6h.
         struct tm* pTime = localtime(&timestamp);
