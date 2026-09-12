@@ -18,19 +18,36 @@ function SetParaVar(){}
 // Bascule de thème : /theme.js (partagé par toutes les pages)
 
 //---------- Données temps réel /ajax_data (2 s) ----------
+var echecs=0;            // échecs consécutifs de /ajax_data
 async function PollData(){
   let retry=2000;
   try{
     const r=await fetch("/ajax_data");
-    if(!r.ok)throw 0;
-    const g=(await r.text()).split(GS);
+    if(!r.ok)throw new Error("le routeur a répondu "+r.status);
+    const t=await r.text();
+    const g=t.split(GS);
+    // Une réponse tronquée ou remplacée (page de connexion) n'a pas de
+    // séparateur : on le dit, au lieu de laisser un « Connexion… » muet.
+    if(g.length<2)throw new Error("réponse inattendue du routeur ("+t.length+" octets)");
     const G1=g[1].split(RS);
     pwImport=parseFloat(G1[0])||0;       //Puissance soutirée W
     pwExport=parseFloat(G1[1])||0;       //Puissance injectée W
     kwhJourSout=(parseFloat(G1[4])||0)/1000;
     lastOk=Date.now();
+    echecs=0;
     MajFlux();MajTuiles();
-  }catch(e){retry=8000;}
+  }catch(e){
+    retry=8000;
+    echecs++;
+    // Au démarrage le routeur peut mettre un moment à répondre : on ne
+    // signale qu'après plusieurs échecs, mais alors on nomme la cause.
+    if(echecs>=3 && !lastOk){
+      let cause=(e&&e.message)?e.message:"le routeur ne répond pas";
+      if(/Failed to fetch|NetworkError/i.test(cause))cause="le routeur ne répond pas";
+      GH("heroTitle","Pas encore de données");
+      GH("heroMsg",cause+" — la page réessaie toutes les 8 s.");
+    }
+  }
   setTimeout(PollData,retry);
 }
 
@@ -96,6 +113,9 @@ async function ToggleAbsence(){
 
 //---------- Flux d'énergie + phrase statut ----------
 function MajFlux(){
+  // Tant que /ajax_data n'a jamais répondu, les puissances valent zéro : peindre
+  // « tout est calme » à partir de là reviendrait à affirmer sans rien savoir.
+  if(!lastOk)return;
   const sma=V&&V.SmaOn==1;
   const pv=sma?Math.max(0,parseFloat(V.PuissancePV)||0):null;
   const net=pwImport-pwExport; //>0 : import réseau

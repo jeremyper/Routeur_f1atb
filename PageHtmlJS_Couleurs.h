@@ -166,6 +166,8 @@ function setCouleur() {
       if (Koul[i][4]) {
         for (let j = 0; j < Koul[i][4].length; j++) {
           setBgColorQuery(Koul[i][4][j], "#" + Koul[i][3]);
+          // Pas de couleur de texte propre a cette entree : on la deduit du fond
+          if (!Koul[i][2]) setColorQuery(Koul[i][4][j], contraste("#" + Koul[i][3]));
         }
       }
     } else {
@@ -223,6 +225,17 @@ function setColorQuery(S, C) {
 
 function setBgColorQuery(S, C) {
   document.querySelectorAll(S).forEach(e => e.style.background = C);
+}
+
+// Les cellules d'unite (.W, .Wh, .V ...) recoivent un fond choisi par
+// l'utilisateur mais aucune couleur de texte : elles heritent de celle du
+// tableau, qui peut etre claire. On ecrit donc en noir ou en blanc selon la
+// luminance du fond, pour que la valeur reste lisible quel que soit le choix.
+function contraste(hex) {
+  const r = parseInt(hex.substr(1, 2), 16),
+        v = parseInt(hex.substr(3, 2), 16),
+        b = parseInt(hex.substr(5, 2), 16);
+  return (0.299 * r + 0.587 * v + 0.114 * b) > 150 ? "#101418" : "#f2f5fa";
 }
 
 function setBoColorQuery(S, C) {

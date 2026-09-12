@@ -18,7 +18,11 @@ const char *PageBrute = R"====(
 
   /* === Contenu données brutes — reskin Soleo === */
   .ri { text-align: right; }
-  /* fallback CSS (CommunCouleurJS applique les couleurs en inline) */
+  /* Secours CSS : LoadDataESP32() reinjecte son tableau toutes les 5 s sans
+     relancer setCouleur(), les cellules retombent donc sur ces fonds pastel.
+     Ils sont clairs : le texte doit l'etre aussi, sinon il devient illisible
+     des que la palette du tableau passe en clair sur fond sombre. */
+  .Wh, .A, .W, .phi, .V, .VA, .Hz, .Enph { color: #101418; }
   .Wh { background-color: #fdd; }
   .A { background-color: #ddf; }
   .W { background-color: #f88; }
@@ -28,8 +32,10 @@ const char *PageBrute = R"====(
   .Hz, .Enph { background-color: #eeb; }
   /* tableaux : Soleo card */
   .tableau { overflow: hidden; margin-bottom: 14px; }
-  .titre { background: rgba(74,179,244,.22); color: var(--txt); text-align: center; font-weight: 700; }
-  td { text-align: left; padding: 6px 8px; color: var(--txt); }
+  .titre { background: rgba(74,179,244,.22); color: inherit; text-align: center; font-weight: 700; }
+  /* La palette (page Couleurs) pose sa couleur de texte sur .tableau ;
+     forcer var(--txt) ici la masquait et laissait du pale sur du pale. */
+  td { text-align: left; padding: 6px 8px; color: inherit; }
   .dataIn { text-align: left; overflow: hidden; word-wrap: break-word; font-size: 13px; }
   svg { border: 1px solid var(--line); border-radius: var(--radius-s); }
   .Bbrut { border: 2px solid var(--accent); border-radius: var(--radius-s); }
@@ -49,7 +55,7 @@ const char *PageBrute = R"====(
   }
   #infoUxIx2,#infoUxIx3,#infoUxI,#infoNotDef,#infoLinky,
   #infoEnphase,#infoSmartG,#infoHomeW,#infoShellyEm,#infoPmqtt{display:none}
-  #DataLinky{font-size:13px;tab-size:10;color:var(--txt)}
+  #DataLinky{font-size:13px;tab-size:10;color:inherit}
   #donneeDistante{font-size:50%;color:var(--txt-soft);text-align:center;margin-bottom:10px;display:none}
   .bloc a:link,.bloc a:visited{color:var(--accent);text-decoration:none}
   .sec-title{font-size:12px;font-weight:700;color:var(--txt-soft);margin:18px 0 6px;text-transform:uppercase;letter-spacing:.08em}

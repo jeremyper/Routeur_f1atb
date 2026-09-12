@@ -135,4 +135,4 @@ function setTheme(t){
 })();
 )====";
 
-const char *CouleurDefaut = R"====(ffffff77b5fe000033ccccff333333808080000000ffffff808080000000cccccc888888ff444400ffffffff66ffaa88aaffaaaaffeeeeeebbffffff66666633333300ff00aaff0000ffaaaaffaaff883333ffaa6688ffaaff11)====";
+const char *CouleurDefaut = R"====(ffffff77b5fe000033ccccff333333808080000000ffffff808080e8edf61c22302c3444ff444400ffffffff66ffaa88aaffaaaaffeeeeeebbffffff66666633333300ff00aaff0000ffaaaaffaaff883333ffaa6688ffaaff11)====";
