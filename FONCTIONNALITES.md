@@ -397,6 +397,26 @@ téléphone, sans Home Assistant ni serveur domotique.
 > ⚠️ Le certificat du broker n'est pas validé. Acceptable pour un flux sortant de
 > télémétrie ; à reconsidérer avant d'activer le pilotage à distance.
 
+### Brèves coupures pendant les appels sortants
+
+Une négociation TLS réclame entre 55 et 90 Ko de tas sur un ESP32, et la session
+maintenue vers le broker en retient déjà une cinquantaine. Les deux ne tiennent pas
+ensemble : les appels vers RTE et Open-Meteo échouaient sur
+`RSA - The public key operation failed : BIGNUM - Memory allocation failed`.
+
+Le routeur **libère donc sa session MQTT juste avant un appel HTTPS sortant**, puis la
+rétablit — une fenêtre de dix secondes empêche entre-temps toute reconnexion, sinon la
+poignée de main du broker refragmente le tas et l'appel suivant échoue à son tour sur
+`X509 - Allocation of memory failed`.
+
+Conséquence visible : le broker perd sa connexion **deux à trois fois par jour, pendant
+une dizaine de secondes**. La déconnexion est propre, le testament (*Last Will*) ne se
+déclenche pas et Home Assistant ne voit pas le routeur passer indisponible.
+
+> Le plancher de mémoire libre est passé de 488 octets à plus de 16 Ko grâce à cet
+> ordonnancement. Les messages d'échec réseau indiquent le tas libre, le plus gros bloc
+> contigu et le code d'erreur mbedTLS — de quoi diagnostiquer sans supposer.
+
 ### Publication (topics sortants)
 Le routeur publie régulièrement :
 - Puissances mesurées (importée, exportée, produite)

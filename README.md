@@ -155,7 +155,7 @@ puissance reçue par MQTT, ESP externe.
   (+ `OneWire` fourni dans le dépôt — version spécifique, ne pas remplacer par celle du
   gestionnaire de bibliothèques)
 
-Empreinte : **1 699 336 octets (87 %)** de flash, 83 428 octets de RAM statique.
+Empreinte : **1 719 160 octets (88 %)** de flash, 83 508 octets de RAM statique.
 
 ### ⚠️ Le dossier doit être renommé
 
