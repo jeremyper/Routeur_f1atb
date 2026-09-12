@@ -92,6 +92,7 @@ button.sec{background:none;border:1px solid var(--line);color:var(--txt-soft);
   <div style="display:flex;align-items:center;gap:9px">
     <span class="etat attente" id="etat"><span class="pastille"></span><span id="etatTxt">…</span></span>
     <button class="ico" id="btnTheme" title="Thème">🌙</button>
+    <button class="ico" id="btnInstall" title="Installer" hidden>⬇️</button>
     <button class="ico" id="btnCfg" title="Réglages">⚙️</button>
   </div>
 </header>
@@ -398,6 +399,25 @@ function remplir(c){
   if (c && c.host){ remplir(c); connecter(c); }
   else { vue("config"); etat("ko","non configuré"); }
 })();
+
+/* ---------- Installation sur l'écran d'accueil ---------- */
+// Le navigateur n'émet cet évènement que si les critères sont réunis : HTTPS,
+// manifeste avec icônes PNG 192 et 512, et service worker actif. On s'en sert
+// pour n'afficher le bouton que lorsqu'il peut réellement aboutir.
+let invite = null;
+window.addEventListener("beforeinstallprompt", e => {
+  e.preventDefault();
+  invite = e;
+  $("btnInstall").hidden = false;
+});
+$("btnInstall").onclick = async () => {
+  if (!invite) return;
+  invite.prompt();
+  await invite.userChoice;
+  invite = null;
+  $("btnInstall").hidden = true;
+};
+window.addEventListener("appinstalled", () => { $("btnInstall").hidden = true; });
 
 if ("serviceWorker" in navigator)
   navigator.serviceWorker.register("sw.js").catch(()=>{});

@@ -1,7 +1,8 @@
 // Coquille applicative mise en cache : l'application s'ouvre sans réseau.
 // Les mesures, elles, viennent toujours du broker en direct — rien n'est stocké.
-const CACHE = "soleo-v1";
-const COQUILLE = ["./", "./index.html", "./manifest.webmanifest", "./icon.svg"];
+const CACHE = "soleo-v2";
+const COQUILLE = ["./", "./index.html", "./manifest.webmanifest",
+                 "./icon.svg", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(COQUILLE)).then(() => self.skipWaiting()));
