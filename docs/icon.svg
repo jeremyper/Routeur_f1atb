@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" role="img" aria-label="Soleo">
+  <defs>
+    <radialGradient id="s" cx="35%" cy="30%">
+      <stop offset="0" stop-color="#ffd27d"/>
+      <stop offset="65%" stop-color="#ffb547"/>
+      <stop offset="1" stop-color="#e98a1a"/>
+    </radialGradient>
+  </defs>
+  <rect width="192" height="192" rx="42" fill="#0d1117"/>
+  <circle cx="96" cy="82" r="34" fill="url(#s)"/>
+  <path d="M42 140 h108" stroke="#4ab3f4" stroke-width="11" stroke-linecap="round" fill="none"/>
+  <path d="M60 158 h72" stroke="#6ee7c7" stroke-width="11" stroke-linecap="round" fill="none"/>
+</svg>

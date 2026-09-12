@@ -47,6 +47,9 @@ Toute redistribution, modifiée ou non, doit rester sous la même licence et fou
 >
 > 📡 **Suivre son routeur depuis l'extérieur**, sans ouvrir de port ni installer Home Assistant :
 > voir [**Supervision à distance**](SUPERVISION_DISTANTE.md).
+>
+> 📱 **Application de suivi** — installable sur téléphone, se connecte à *votre* broker :
+> [jeremyper.github.io/Routeur_f1atb](https://jeremyper.github.io/Routeur_f1atb/)
 
 ## Aperçu
 

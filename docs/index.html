@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0d1117">
+<title>Soleo — supervision</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<style>
+:root{
+  --bg:#0d1117;--bg-soft:#161b22;--card:#1c2230;--card-2:#232b3b;--line:#2c3444;
+  --txt:#e8edf6;--txt-soft:#9aa6b8;--txt-dim:#6b7585;
+  --sun:#ffb547;--sun-soft:#ffd27d;--home:#4ab3f4;--water:#ff6f91;
+  --imp:#e5604d;--exp:#4cd28b;--accent:#6ee7c7;
+  --shadow:0 10px 30px rgba(0,0,0,.35);--r:16px;--r-s:12px;
+}
+html[data-theme=light]{
+  --bg:#eef2f8;--bg-soft:#fff;--card:#fff;--card-2:#f3f6fb;--line:#e0e6f0;
+  --txt:#1a2230;--txt-soft:#586273;--txt-dim:#8a93a4;--shadow:0 8px 24px rgba(20,30,50,.10);
+}
+*,*::before,*::after{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--txt);line-height:1.45;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  padding:0 14px calc(28px + env(safe-area-inset-bottom));max-width:560px;margin-inline:auto}
+h1{font-size:17px;font-weight:800;margin:0}
+header{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:16px 2px 12px;position:sticky;top:0;z-index:5;
+  background:color-mix(in srgb,var(--bg) 90%,transparent);backdrop-filter:blur(12px)}
+.brand{display:flex;align-items:center;gap:9px;min-width:0}
+.logo{width:26px;height:26px;border-radius:8px;flex-shrink:0;
+  background:radial-gradient(circle at 35% 30%,var(--sun-soft),var(--sun) 65%,#e98a1a);
+  box-shadow:0 0 14px rgba(255,181,71,.4)}
+.etat{display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;color:var(--txt-dim)}
+.pastille{width:9px;height:9px;border-radius:50%;background:currentColor;box-shadow:0 0 8px currentColor}
+.etat.ok{color:var(--exp)} .etat.ko{color:var(--imp)} .etat.attente{color:var(--sun)}
+.ico{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--card);
+  color:var(--txt);font-size:15px;display:grid;place-items:center;cursor:pointer;flex-shrink:0}
+.ico:active{transform:scale(.93)}
+
+.carte{background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+  padding:16px;margin-bottom:12px;box-shadow:var(--shadow)}
+.titre{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--txt-dim);margin:0 0 12px}
+
+.flux{text-align:center;padding:22px 16px}
+.flux .val{font-size:40px;font-weight:800;letter-spacing:-.02em;line-height:1;
+  font-variant-numeric:tabular-nums}
+.flux .unite{font-size:12.5px;color:var(--txt-soft);margin-top:6px}
+.flux .quoi{font-size:13.5px;font-weight:700;margin-top:10px}
+
+.tuiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tuile{background:var(--card);border:1px solid var(--line);border-radius:var(--r-s);padding:13px}
+.tuile .lbl{font-size:11px;color:var(--txt-dim);font-weight:700;display:flex;align-items:center;gap:5px}
+.tuile .n{font-size:21px;font-weight:800;margin-top:5px;font-variant-numeric:tabular-nums}
+.tuile .sub{font-size:11.5px;color:var(--txt-soft);margin-top:2px}
+.pt{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+
+.ligne{display:flex;justify-content:space-between;align-items:baseline;gap:12px;
+  padding:9px 0;border-bottom:1px solid var(--line);font-size:14px}
+.ligne:last-child{border-bottom:none}
+.ligne .k{color:var(--txt-soft)}
+.ligne .v{font-weight:700;font-variant-numeric:tabular-nums;text-align:right}
+
+.badge{display:inline-block;font-size:11px;font-weight:800;padding:3px 10px;border-radius:999px;
+  background:var(--card-2);border:1px solid var(--line)}
+.b-bleu{color:#6db3ff;border-color:#2b4a6b} .b-blanc{color:#dde5f0;border-color:#3a4456}
+.b-rouge{color:#ff8a7a;border-color:#6b2b26}
+
+label{display:block;font-size:12.5px;font-weight:700;color:var(--txt-soft);margin:14px 0 5px}
+input{width:100%;background:var(--card-2);border:1px solid var(--line);border-radius:10px;
+  color:var(--txt);font-size:16px;padding:11px 12px;outline:none}
+input:focus{border-color:var(--accent)}
+.aide{font-size:11.5px;color:var(--txt-dim);font-weight:400;margin-top:4px}
+button.pri{width:100%;margin-top:20px;height:46px;border:none;border-radius:12px;
+  background:var(--accent);color:#08221a;font-size:15px;font-weight:800;cursor:pointer}
+button.pri:active{transform:translateY(1px)}
+button.sec{background:none;border:1px solid var(--line);color:var(--txt-soft);
+  border-radius:10px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer;margin-top:10px}
+.err{color:var(--imp);font-size:13px;margin-top:12px;min-height:18px}
+.pied{text-align:center;font-size:11.5px;color:var(--txt-dim);padding:8px 0 0}
+.pied a{color:var(--txt-dim)}
+[hidden]{display:none!important}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand"><span class="logo"></span><h1>Soleo</h1></div>
+  <div style="display:flex;align-items:center;gap:9px">
+    <span class="etat attente" id="etat"><span class="pastille"></span><span id="etatTxt">…</span></span>
+    <button class="ico" id="btnTheme" title="Thème">🌙</button>
+    <button class="ico" id="btnCfg" title="Réglages">⚙️</button>
+  </div>
+</header>
+
+<!-- ======== Configuration ======== -->
+<main id="vueConfig" hidden>
+  <div class="carte">
+    <p class="titre">Connexion à votre broker</p>
+    <p style="font-size:13.5px;color:var(--txt-soft);margin:0 0 4px">
+      Ces informations restent sur cet appareil. Elles ne sont envoyées qu'à votre propre
+      broker, jamais ailleurs.</p>
+
+    <label for="host">Adresse du broker</label>
+    <input id="host" placeholder="xxxxx.s1.eu.hivemq.cloud" autocapitalize="off" autocorrect="off" spellcheck="false">
+    <div class="aide">Celle de votre cluster, sans <code>https://</code>.</div>
+
+    <label for="port">Port WebSocket sécurisé</label>
+    <input id="port" type="number" value="8884">
+    <div class="aide">8884 chez HiveMQ. Ce n'est pas le port 8883 du routeur : un navigateur
+      ne sait parler MQTT qu'à travers un WebSocket.</div>
+
+    <label for="user">Identifiant</label>
+    <input id="user" autocapitalize="off" autocorrect="off" spellcheck="false">
+    <div class="aide">Utilisez un accès en <strong>souscription seule</strong>.</div>
+
+    <label for="pass">Mot de passe</label>
+    <input id="pass" type="password">
+
+    <label for="prefixe">Préfixe de publication</label>
+    <input id="prefixe" value="homeassistant" autocapitalize="off" spellcheck="false">
+
+    <label for="appareil">Nom de l'appareil</label>
+    <input id="appareil" value="routeur_rms" autocapitalize="off" spellcheck="false">
+    <div class="aide">Ces deux champs doivent correspondre à ceux de la page Réglages du
+      routeur. Le sujet écouté sera <code id="apercuTopic">homeassistant/routeur_rms_state</code>.</div>
+
+    <button class="pri" id="btnConnect">Se connecter</button>
+    <div class="err" id="errCfg"></div>
+  </div>
+  <p class="pied">Les identifiants sont conservés dans ce navigateur uniquement.</p>
+</main>
+
+<!-- ======== Tableau de bord ======== -->
+<main id="vueBord" hidden>
+  <div class="carte flux">
+    <div class="val" id="fluxVal">—</div>
+    <div class="unite" id="fluxUnite">en attente de données</div>
+    <div class="quoi" id="fluxQuoi"></div>
+  </div>
+
+  <div class="tuiles" id="tuiles"></div>
+
+  <div class="carte" id="carteJour" hidden>
+    <p class="titre">Aujourd'hui</p>
+    <div id="ligneJour"></div>
+  </div>
+
+  <div class="carte" id="carteBallon" hidden>
+    <p class="titre">Ballon d'eau chaude</p>
+    <div id="ligneBallon"></div>
+  </div>
+
+  <div class="carte" id="carteDetail" hidden>
+    <p class="titre">Détail</p>
+    <div id="ligneDetail"></div>
+  </div>
+
+  <p class="pied">
+    <span id="maj">—</span><br>
+    <a href="https://github.com/jeremyper/Routeur_f1atb" target="_blank" rel="noopener">Soleo — code source</a>
+  </p>
+</main>
+
+<script>
+/* ---------- Thème ---------- */
+function setTheme(t){
+  document.documentElement.setAttribute("data-theme",t);
+  document.getElementById("btnTheme").textContent = (t==="dark") ? "🌙" : "☀️";
+  try{localStorage.setItem("soleoTheme",t);}catch(e){}
+}
+(function(){let t="dark";try{t=localStorage.getItem("soleoTheme")||"dark";}catch(e){}setTheme(t);})();
+document.getElementById("btnTheme").onclick = () =>
+  setTheme(document.documentElement.getAttribute("data-theme")==="dark" ? "light" : "dark");
+
+/* ---------- Réglages locaux ---------- */
+const CLE = "soleoMqtt";
+const lireCfg = () => { try { return JSON.parse(localStorage.getItem(CLE)||"null"); } catch(e){ return null; } };
+const ecrireCfg = c => { try { localStorage.setItem(CLE, JSON.stringify(c)); } catch(e){} };
+
+const $ = id => document.getElementById(id);
+const vue = n => { $("vueConfig").hidden = (n!=="config"); $("vueBord").hidden = (n!=="bord"); };
+
+function majApercuTopic(){
+  $("apercuTopic").textContent = ($("prefixe").value||"homeassistant")+"/"+($("appareil").value||"routeur_rms")+"_state";
+}
+["prefixe","appareil"].forEach(id => $(id).addEventListener("input", majApercuTopic));
+
+/* ---------- Affichage ---------- */
+function etat(classe, texte){
+  const e = $("etat");
+  e.className = "etat " + classe;
+  $("etatTxt").textContent = texte;
+}
+const nb = (v,d=0) => (v===undefined||v===null||isNaN(v)) ? null : Number(v).toFixed(d);
+const kW = w => (Math.abs(w) >= 1000) ? (w/1000).toFixed(2)+" kW" : Math.round(w)+" W";
+
+function couleurTempo(s){
+  if(!s) return "";
+  const u = s.toUpperCase();
+  if(u.includes("ROUGE")) return "b-rouge";
+  if(u.includes("BLANC")) return "b-blanc";
+  if(u.includes("BLEU"))  return "b-bleu";
+  return "";
+}
+
+function tuile(lbl, couleur, valeur, sub){
+  return `<div class="tuile"><div class="lbl">`+
+    (couleur?`<span class="pt" style="background:${couleur}"></span>`:``)+
+    `${lbl}</div><div class="n">${valeur}</div>`+
+    (sub?`<div class="sub">${sub}</div>`:``)+`</div>`;
+}
+function ligne(k,v){ return `<div class="ligne"><span class="k">${k}</span><span class="v">${v}</span></div>`; }
+
+function afficher(d){
+  /* Flux principal : ce que la maison échange avec le réseau */
+  const soutire = Number(d.PuissanceS_M||0), injecte = Number(d.PuissanceI_M||0);
+  const net = soutire - injecte;
+  $("fluxVal").textContent = kW(Math.abs(net));
+  if (net > 20){
+    $("fluxUnite").textContent = "achetés au réseau";
+    $("fluxQuoi").innerHTML = `<span style="color:var(--imp)">⚡ La maison consomme plus qu'elle ne produit</span>`;
+  } else if (net < -20){
+    $("fluxUnite").textContent = "renvoyés au réseau";
+    $("fluxQuoi").innerHTML = `<span style="color:var(--sun)">✨ Surplus non consommé</span>`;
+  } else {
+    $("fluxUnite").textContent = "échangés avec le réseau";
+    $("fluxQuoi").innerHTML = `<span style="color:var(--exp)">✓ Équilibre — rien n'est gaspillé</span>`;
+  }
+
+  /* Tuiles : seulement ce que l'installation publie réellement */
+  let t = "";
+  const routee = Number(d.PuissanceS_T||0) - Number(d.PuissanceI_T||0);
+  if (d.PuissanceS_T !== undefined)
+    t += tuile("Eau chaude","var(--water)", kW(Math.max(0,routee)),
+               routee > 20 ? "en chauffe" : "à l'arrêt");
+  if (d.Temperature_0 !== undefined && Number(d.Temperature_0) > -50)
+    t += tuile("Température","var(--exp)", nb(d.Temperature_0,1)+" °C", "ballon");
+  if (d.LTARF)
+    t += tuile("Tarif","", `<span class="badge ${couleurTempo(d.LTARF)}">${d.LTARF.replace(/_/g," ")}</span>`,
+               d.RTE_Demain ? "demain : "+String(d.RTE_Demain).replace(/_/g," ").toLowerCase() : "");
+  if (d.Economie_Mois !== undefined)
+    t += tuile("Ce mois","var(--sun)", nb(d.Economie_Mois,2)+" €", "économisés");
+  $("tuiles").innerHTML = t;
+
+  /* Bilan du jour */
+  let j = "";
+  if (d.Energie_Routee_Jour !== undefined)
+    j += ligne("Énergie détournée", nb(Number(d.Energie_Routee_Jour)/1000,2)+" kWh");
+  if (d.Economie_Jour !== undefined)
+    j += ligne("Économies", `<span style="color:var(--exp)">${nb(d.Economie_Jour,2)} €</span>`);
+  if (d.EnergieJour_M_Soutiree !== undefined)
+    j += ligne("Acheté au réseau", nb(Number(d.EnergieJour_M_Soutiree)/1000,2)+" kWh");
+  if (d.EnergieJour_M_Injectee !== undefined)
+    j += ligne("Renvoyé au réseau", nb(Number(d.EnergieJour_M_Injectee)/1000,2)+" kWh");
+  if (d.Production_PV_Jour !== undefined)
+    j += ligne("Production solaire", nb(d.Production_PV_Jour,2)+" kWh");
+  if (d.Prevision_Solaire_Jour !== undefined)
+    j += ligne("Prévision du jour", nb(d.Prevision_Solaire_Jour,1)+" kWh");
+  $("ligneJour").innerHTML = j;
+  $("carteJour").hidden = (j === "");
+
+  /* Ballon */
+  let b = "";
+  if (d.Ballon_Besoin !== undefined && Number(d.Ballon_Besoin) >= 0)
+    b += ligne("Besoin de chauffe", nb(d.Ballon_Besoin,1)+" kWh");
+  if (d.Ballon_Surplus_Prevu !== undefined && Number(d.Ballon_Surplus_Prevu) >= 0)
+    b += ligne("Surplus attendu", nb(d.Ballon_Surplus_Prevu,1)+" kWh");
+  if (b && d.Ballon_Besoin !== undefined && d.Ballon_Surplus_Prevu !== undefined){
+    const suffit = Number(d.Ballon_Surplus_Prevu) >= Number(d.Ballon_Besoin);
+    b += ligne("Verdict", suffit
+      ? `<span style="color:var(--exp)">le soleil suffira</span>`
+      : `<span style="color:var(--sun)">appoint réseau probable</span>`);
+  }
+  $("ligneBallon").innerHTML = b;
+  $("carteBallon").hidden = (b === "");
+
+  /* Détail */
+  let x = "";
+  if (d.Tension_M !== undefined)   x += ligne("Tension", nb(d.Tension_M,1)+" V");
+  if (d.Frequence !== undefined)   x += ligne("Fréquence", nb(d.Frequence,2)+" Hz");
+  if (d.Intensite_T !== undefined) x += ligne("Courant eau chaude", nb(d.Intensite_T,1)+" A");
+  if (d.ESP32_On !== undefined){
+    const h = Number(d.ESP32_On);
+    x += ligne("Routeur allumé depuis", h < 1 ? Math.round(h*60)+" min" : nb(h,1)+" h");
+  }
+  $("ligneDetail").innerHTML = x;
+  $("carteDetail").hidden = (x === "");
+
+  $("maj").textContent = "Dernière mesure à " + new Date().toLocaleTimeString("fr-FR");
+}
+
+/* ---------- MQTT ---------- */
+let client = null;
+
+function chargerMqtt(){
+  // cdnjs d'abord, jsDelivr en secours : un seul CDN inaccessible ne doit pas
+  // rendre l'application inutilisable.
+  const sources = [
+    "https://cdnjs.cloudflare.com/ajax/libs/mqtt/5.10.1/mqtt.min.js",
+    "https://cdn.jsdelivr.net/npm/mqtt@5/dist/mqtt.min.js",
+    "https://unpkg.com/mqtt@5/dist/mqtt.min.js"
+  ];
+  return new Promise((ok, ko) => {
+    let i = 0;
+    const essayer = () => {
+      if (i >= sources.length) return ko(new Error("bibliothèque MQTT inaccessible"));
+      const s = document.createElement("script");
+      s.src = sources[i++];
+      s.onload = () => window.mqtt ? ok() : essayer();
+      s.onerror = essayer;
+      document.head.appendChild(s);
+    };
+    essayer();
+  });
+}
+
+async function connecter(cfg){
+  etat("attente","connexion…");
+  try { await chargerMqtt(); }
+  catch(e){ etat("ko","hors ligne"); $("errCfg").textContent = "Bibliothèque MQTT inaccessible — vérifiez votre connexion internet."; return; }
+
+  const url = `wss://${cfg.host}:${cfg.port}/mqtt`;
+  const sujetEtat = `${cfg.prefixe}/${cfg.appareil}_state`;
+  const sujetVie  = `${cfg.prefixe}/${cfg.appareil}/Available`;
+
+  if (client) { try { client.end(true); } catch(e){} }
+  client = mqtt.connect(url, {
+    username: cfg.user, password: cfg.pass,
+    clientId: "soleo-" + Math.random().toString(16).slice(2,10),
+    clean: true, reconnectPeriod: 5000, connectTimeout: 12000
+  });
+
+  client.on("connect", () => {
+    etat("ok","connecté");
+    $("errCfg").textContent = "";
+    client.subscribe([sujetEtat, sujetVie]);
+    vue("bord");
+  });
+
+  client.on("message", (sujet, charge) => {
+    const texte = charge.toString();
+    if (sujet === sujetVie){
+      // Publié par le broker lui-même si le routeur disparaît sans prévenir
+      if (texte.trim() === "offline") etat("ko","routeur hors ligne");
+      else if (client.connected) etat("ok","connecté");
+      return;
+    }
+    try { afficher(JSON.parse(texte)); }
+    catch(e){ console.warn("charge utile illisible", e); }
+  });
+
+  client.on("error", err => {
+    const m = String(err && err.message || err);
+    etat("ko","erreur");
+    $("errCfg").textContent = /Not authorized|Bad user|auth/i.test(m)
+      ? "Identifiant ou mot de passe refusé par le broker."
+      : "Connexion impossible : " + m;
+    vue("config");
+  });
+  client.on("close",   () => { if(!client.connected) etat("ko","déconnecté"); });
+  client.on("reconnect", () => etat("attente","reconnexion…"));
+}
+
+/* ---------- Démarrage ---------- */
+$("btnConnect").onclick = () => {
+  const cfg = {
+    host: $("host").value.trim().replace(/^https?:\/\//,"").replace(/\/.*$/,""),
+    port: parseInt($("port").value,10) || 8884,
+    user: $("user").value.trim(),
+    pass: $("pass").value,
+    prefixe: $("prefixe").value.trim() || "homeassistant",
+    appareil: $("appareil").value.trim() || "routeur_rms"
+  };
+  if (!cfg.host){ $("errCfg").textContent = "Renseignez l'adresse de votre broker."; return; }
+  ecrireCfg(cfg);
+  connecter(cfg);
+};
+
+$("btnCfg").onclick = () => {
+  const c = lireCfg(); if (c) remplir(c);
+  vue("config");
+};
+
+function remplir(c){
+  $("host").value = c.host||""; $("port").value = c.port||8884;
+  $("user").value = c.user||""; $("pass").value = c.pass||"";
+  $("prefixe").value = c.prefixe||"homeassistant";
+  $("appareil").value = c.appareil||"routeur_rms";
+  majApercuTopic();
+}
+
+(function(){
+  const c = lireCfg();
+  if (c && c.host){ remplir(c); connecter(c); }
+  else { vue("config"); etat("ko","non configuré"); }
+})();
+
+if ("serviceWorker" in navigator)
+  navigator.serviceWorker.register("sw.js").catch(()=>{});
+</script>
+</body>
+</html>
