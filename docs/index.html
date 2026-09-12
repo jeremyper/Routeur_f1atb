@@ -7,7 +7,16 @@
 <title>Soleo — supervision</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="icon.svg">
+<link rel="icon" href="icon-192.png" sizes="192x192" type="image/png">
+<!-- iOS ne lit ni le manifeste pour l'icône, ni les SVG en apple-touch-icon :
+     sans ces PNG et ce meta, « Sur l'écran d'accueil » ne crée qu'un raccourci
+     qui rouvre Safari au lieu d'une application autonome. -->
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<link rel="apple-touch-icon" sizes="167x167" href="apple-touch-icon-167.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Soleo">
 <style>
 :root{
   --bg:#0d1117;--bg-soft:#161b22;--card:#1c2230;--card-2:#232b3b;--line:#2c3444;
@@ -44,21 +53,41 @@ header{display:flex;align-items:center;justify-content:space-between;gap:10px;
 .titre{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
   color:var(--txt-dim);margin:0 0 12px}
 
-/* ----- Schéma de flux ----- */
-.scene{padding:14px 10px 16px}
+/* ----- Synoptique ----- */
+.scene{padding:8px 6px 14px;position:relative;overflow:hidden}
 .scene svg{display:block;width:100%;height:auto}
-.noeud-cercle{transition:opacity .5s}
-.noeud-val{font-weight:800;font-size:15px;font-variant-numeric:tabular-nums}
-.noeud-nom{font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
-.lien{fill:none;stroke-linecap:round;opacity:0;transition:opacity .6s,stroke-width .6s}
-.lien.actif{opacity:1}
-.lien-anim{stroke-dasharray:2 12;animation:defile 1.6s linear infinite}
-.lien-anim.inverse{animation-direction:reverse}
-@keyframes defile{to{stroke-dashoffset:-14}}
-.socle{stroke:var(--line);stroke-width:1.5;fill:none;opacity:.5}
-.verdict{text-align:center;font-size:13.5px;font-weight:700;margin:2px 0 0;min-height:20px}
-.resume{text-align:center;font-size:11.5px;color:var(--txt-dim);margin-top:3px}
-@media (prefers-reduced-motion:reduce){.lien-anim{animation:none;stroke-dasharray:none}}
+.rail{fill:none;stroke:var(--line);stroke-width:2.5;stroke-linecap:round;opacity:.55}
+/* Le trait de flux est un pointillé qui défile : la vitesse dit le débit,
+   le sens de défilement dit la direction. */
+.flux{fill:none;stroke-width:3;stroke-linecap:round;opacity:0;
+  stroke-dasharray:13 11;stroke-dashoffset:0;
+  animation:defile 1.4s linear infinite;animation-play-state:paused;
+  transition:opacity .7s ease,stroke-width .7s ease}
+.flux.on{opacity:.95;animation-play-state:running}
+.flux.rev{animation-direction:reverse}
+@keyframes defile{to{stroke-dashoffset:-24}}
+/* Grains de courant : une bille parcourt le tracé. Repose sur offset-path,
+   absent des vieux navigateurs — le pointillé assure alors seul l'animation. */
+.grain{opacity:0;offset-distance:0%;
+  animation:parcours 2s linear infinite;animation-play-state:paused;
+  transition:opacity .7s ease}
+.grain.on{opacity:1;animation-play-state:running}
+.grain.rev{animation-direction:reverse}
+@keyframes parcours{to{offset-distance:100%}}
+html.sans-grain .grain{display:none}
+.plot{transition:opacity .6s ease}
+.jauge{fill:none;stroke-width:3.5;stroke-linecap:round;
+  transition:stroke-dashoffset .9s cubic-bezier(.22,1,.36,1),stroke .5s,opacity .5s}
+.nom{font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+  paint-order:stroke;stroke:var(--card);stroke-width:3.5px;stroke-linejoin:round}
+.val{font-size:15px;font-weight:800;font-variant-numeric:tabular-nums}
+.uni{font-size:8.5px;font-weight:700;letter-spacing:.06em}
+.verdict{text-align:center;font-size:14px;font-weight:700;margin:6px 0 0;min-height:20px}
+.resume{text-align:center;font-size:11.5px;color:var(--txt-dim);margin-top:2px}
+@media (prefers-reduced-motion:reduce){
+  .grain{display:none}
+  .flux{stroke-dasharray:none!important;animation:none!important}
+}
 
 .tuiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .tuile{background:var(--card);border:1px solid var(--line);border-radius:var(--r-s);padding:13px}
@@ -149,60 +178,117 @@ button.sec{background:none;border:1px solid var(--line);color:var(--txt-soft);
 <!-- ======== Diagnostic d'installation ======== -->
 <main id="vueDiag" hidden>
   <div class="carte">
-    <p class="titre">Pourquoi l'installation est-elle possible ou non</p>
+    <p class="titre" id="diagTitre">Pourquoi l'installation est-elle possible ou non</p>
     <div id="diag"></div>
-    <button class="sec" onclick="vue('config')">← Retour</button>
+    <button class="sec" onclick="retourDiag()">← Retour</button>
   </div>
 </main>
 
 <!-- ======== Tableau de bord ======== -->
 <main id="vueBord" hidden>
   <div class="carte scene">
-    <svg viewBox="0 0 320 250" role="img" aria-labelledby="fluxTitre">
-      <title id="fluxTitre">Circulation de l'énergie entre production, réseau et usages</title>
+    <svg viewBox="0 0 340 300" role="img" aria-labelledby="fluxTitre">
+      <title id="fluxTitre">Synoptique de circulation de l'énergie</title>
+      <defs>
+        <pattern id="pois" width="16" height="16" patternUnits="userSpaceOnUse">
+          <circle cx="1.2" cy="1.2" r="1.2" fill="currentColor" opacity=".16"/>
+        </pattern>
+        <filter id="halo" x="-60%" y="-60%" width="220%" height="220%">
+          <feGaussianBlur stdDeviation="4" result="f"/>
+          <feMerge><feMergeNode in="f"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <linearGradient id="gSol" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="var(--sun)"/><stop offset="1" stop-color="var(--accent)"/>
+        </linearGradient>
+        <linearGradient id="gMai" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="var(--accent)"/><stop offset="1" stop-color="var(--home)"/>
+        </linearGradient>
+        <linearGradient id="gEau" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="var(--accent)"/><stop offset="1" stop-color="var(--water)"/>
+        </linearGradient>
+      </defs>
 
-      <!-- tracés au repos, toujours visibles pour donner la structure -->
-      <path class="socle" d="M80 62 Q80 118 152 122"/>
-      <path class="socle" d="M240 62 Q240 118 168 122"/>
-      <path class="socle" d="M152 134 Q80 140 80 186"/>
-      <path class="socle" d="M168 134 Q240 140 240 186"/>
+      <rect x="0" y="0" width="340" height="300" fill="url(#pois)" color="var(--txt)"/>
 
-      <!-- flux animés -->
-      <path id="lSol"  class="lien lien-anim" d="M80 62 Q80 118 152 122"  stroke="var(--sun)"/>
-      <path id="lRes"  class="lien lien-anim" d="M240 62 Q240 118 168 122" stroke="var(--imp)"/>
-      <path id="lMai"  class="lien lien-anim" d="M152 134 Q80 140 80 186"  stroke="var(--home)"/>
-      <path id="lEau"  class="lien lien-anim" d="M168 134 Q240 140 240 186" stroke="var(--water)"/>
+      <!-- structure au repos : le synoptique se lit même à l'arrêt -->
+      <path id="rSol" class="rail" d="M111 63 C130 86 142 113 159 139"/>
+      <path id="rRes" class="rail" d="M229 63 C210 86 198 113 181 139"/>
+      <path id="rMai" class="rail" d="M159 161 C142 187 130 214 111 237"/>
+      <path id="rEau" class="rail" d="M181 161 C198 187 210 214 229 237"/>
 
-      <!-- cœur -->
-      <circle cx="160" cy="128" r="9" fill="var(--card-2)" stroke="var(--line)" stroke-width="1.5"/>
-      <circle id="coeur" cx="160" cy="128" r="3.5" fill="var(--accent)" opacity=".9"/>
+      <!-- flux actifs -->
+      <path id="pSol" class="flux" stroke="url(#gSol)" filter="url(#halo)" d="M111 63 C130 86 142 113 159 139"/>
+      <path id="pRes" class="flux" stroke="var(--imp)"  filter="url(#halo)" d="M229 63 C210 86 198 113 181 139"/>
+      <path id="pMai" class="flux" stroke="url(#gMai)" filter="url(#halo)" d="M159 161 C142 187 130 214 111 237"/>
+      <path id="pEau" class="flux" stroke="url(#gEau)" filter="url(#halo)" d="M181 161 C198 187 210 214 229 237"/>
 
-      <!-- nœuds : haut -->
-      <g id="nSol">
-        <circle class="noeud-cercle" cx="80" cy="36" r="26" fill="var(--card-2)" stroke="var(--sun)" stroke-width="1.5"/>
-        <text x="80" y="32" text-anchor="middle" font-size="17">☀️</text>
-        <text x="80" y="48" text-anchor="middle" class="noeud-val" id="vSol" fill="var(--txt)">—</text>
-        <text x="80" y="80" text-anchor="middle" class="noeud-nom" fill="var(--txt-dim)">Production</text>
+      <!-- grains de courant -->
+      <g id="grains">
+        <circle class="grain" id="grSol1" r="3.4" cx="0" cy="0" fill="var(--sun)"
+                style="offset-path:path('M111 63 C130 86 142 113 159 139');"/>
+        <circle class="grain" id="grSol2" r="3.4" cx="0" cy="0" fill="var(--sun)"
+                style="offset-path:path('M111 63 C130 86 142 113 159 139');animation-delay:-1s;"/>
+        <circle class="grain" id="grRes1" r="3.4" cx="0" cy="0" fill="var(--imp)"
+                style="offset-path:path('M229 63 C210 86 198 113 181 139');"/>
+        <circle class="grain" id="grRes2" r="3.4" cx="0" cy="0" fill="var(--imp)"
+                style="offset-path:path('M229 63 C210 86 198 113 181 139');animation-delay:-1s;"/>
+        <circle class="grain" id="grMai1" r="3.4" cx="0" cy="0" fill="var(--home)"
+                style="offset-path:path('M159 161 C142 187 130 214 111 237');"/>
+        <circle class="grain" id="grMai2" r="3.4" cx="0" cy="0" fill="var(--home)"
+                style="offset-path:path('M159 161 C142 187 130 214 111 237');animation-delay:-1s;"/>
+        <circle class="grain" id="grEau1" r="3.4" cx="0" cy="0" fill="var(--water)"
+                style="offset-path:path('M181 161 C198 187 210 214 229 237');"/>
+        <circle class="grain" id="grEau2" r="3.4" cx="0" cy="0" fill="var(--water)"
+                style="offset-path:path('M181 161 C198 187 210 214 229 237');animation-delay:-1s;"/>
       </g>
-      <g id="nRes">
-        <circle class="noeud-cercle" cx="240" cy="36" r="26" fill="var(--card-2)" stroke="var(--line)" stroke-width="1.5" id="cRes"/>
-        <text x="240" y="32" text-anchor="middle" font-size="17">⚡</text>
-        <text x="240" y="48" text-anchor="middle" class="noeud-val" id="vRes" fill="var(--txt)">—</text>
-        <text x="240" y="80" text-anchor="middle" class="noeud-nom" id="nomRes" fill="var(--txt-dim)">Réseau</text>
+
+      <!-- nœud central -->
+      <circle cx="170" cy="150" r="15" fill="var(--card-2)" stroke="var(--line)" stroke-width="2"/>
+      <circle id="coeur" cx="170" cy="150" r="5" fill="var(--accent)" opacity=".3" filter="url(#halo)"/>
+
+      <!-- ================= nœuds ================= -->
+      <g id="nSol" class="plot">
+        <circle cx="90" cy="42" r="29" fill="var(--card-2)" stroke="var(--line)" stroke-width="1.5"/>
+        <circle cx="90" cy="42" r="29" fill="none" stroke="var(--sun)" stroke-width="3.5"
+                class="jauge" id="jSol" stroke-dasharray="182" stroke-dashoffset="182"
+                transform="rotate(-90 90 42)" stroke-linecap="round"/>
+        <text x="90" y="32" text-anchor="middle" font-size="13">☀️</text>
+        <text x="90" y="49" text-anchor="middle" class="val" id="vSol" fill="var(--txt)">—</text>
+        <text x="90" y="61" text-anchor="middle" class="uni" id="uSol" fill="var(--txt-dim)"></text>
+        <text x="76" y="88" text-anchor="middle" class="nom" fill="var(--txt-dim)">Production</text>
       </g>
 
-      <!-- nœuds : bas -->
-      <g id="nMai">
-        <circle class="noeud-cercle" cx="80" cy="212" r="26" fill="var(--card-2)" stroke="var(--home)" stroke-width="1.5"/>
-        <text x="80" y="208" text-anchor="middle" font-size="17">🏠</text>
-        <text x="80" y="224" text-anchor="middle" class="noeud-val" id="vMai" fill="var(--txt)">—</text>
-        <text x="80" y="188" text-anchor="middle" class="noeud-nom" fill="var(--txt-dim)">Maison</text>
+      <g id="nRes" class="plot">
+        <circle cx="250" cy="42" r="29" fill="var(--card-2)" stroke="var(--line)" stroke-width="1.5"/>
+        <circle cx="250" cy="42" r="29" fill="none" stroke="var(--imp)" stroke-width="3.5"
+                class="jauge" id="jRes" stroke-dasharray="182" stroke-dashoffset="182"
+                transform="rotate(-90 250 42)" stroke-linecap="round"/>
+        <text x="250" y="32" text-anchor="middle" font-size="13">⚡</text>
+        <text x="250" y="49" text-anchor="middle" class="val" id="vRes" fill="var(--txt)">—</text>
+        <text x="250" y="61" text-anchor="middle" class="uni" id="uRes" fill="var(--txt-dim)"></text>
+        <text x="264" y="88" text-anchor="middle" class="nom" id="nomRes" fill="var(--txt-dim)">Réseau</text>
       </g>
-      <g id="nEau">
-        <circle class="noeud-cercle" cx="240" cy="212" r="26" fill="var(--card-2)" stroke="var(--water)" stroke-width="1.5"/>
-        <text x="240" y="208" text-anchor="middle" font-size="17">🚿</text>
-        <text x="240" y="224" text-anchor="middle" class="noeud-val" id="vEau" fill="var(--txt)">—</text>
-        <text x="240" y="188" text-anchor="middle" class="noeud-nom" fill="var(--txt-dim)">Eau chaude</text>
+
+      <g id="nMai" class="plot">
+        <circle cx="90" cy="258" r="29" fill="var(--card-2)" stroke="var(--line)" stroke-width="1.5"/>
+        <circle cx="90" cy="258" r="29" fill="none" stroke="var(--home)" stroke-width="3.5"
+                class="jauge" id="jMai" stroke-dasharray="182" stroke-dashoffset="182"
+                transform="rotate(-90 90 258)" stroke-linecap="round"/>
+        <text x="90" y="248" text-anchor="middle" font-size="13">🏠</text>
+        <text x="90" y="265" text-anchor="middle" class="val" id="vMai" fill="var(--txt)">—</text>
+        <text x="90" y="277" text-anchor="middle" class="uni" id="uMai" fill="var(--txt-dim)"></text>
+        <text x="76" y="216" text-anchor="middle" class="nom" fill="var(--txt-dim)">Maison</text>
+      </g>
+
+      <g id="nEau" class="plot">
+        <circle cx="250" cy="258" r="29" fill="var(--card-2)" stroke="var(--line)" stroke-width="1.5"/>
+        <circle cx="250" cy="258" r="29" fill="none" stroke="var(--water)" stroke-width="3.5"
+                class="jauge" id="jEau" stroke-dasharray="182" stroke-dashoffset="182"
+                transform="rotate(-90 250 258)" stroke-linecap="round"/>
+        <text x="250" y="248" text-anchor="middle" font-size="13">🚿</text>
+        <text x="250" y="265" text-anchor="middle" class="val" id="vEau" fill="var(--txt)">—</text>
+        <text x="250" y="277" text-anchor="middle" class="uni" id="uEau" fill="var(--txt-dim)"></text>
+        <text x="264" y="216" text-anchor="middle" class="nom" fill="var(--txt-dim)">Eau chaude</text>
       </g>
     </svg>
     <p class="verdict" id="fluxQuoi">en attente de données</p>
@@ -250,7 +336,14 @@ const lireCfg = () => { try { return JSON.parse(localStorage.getItem(CLE)||"null
 const ecrireCfg = c => { try { localStorage.setItem(CLE, JSON.stringify(c)); } catch(e){} };
 
 const $ = id => document.getElementById(id);
-const vue = n => { $("vueConfig").hidden = (n!=="config"); $("vueBord").hidden = (n!=="bord"); $("vueDiag").hidden = (n!=="diag"); };
+let vueAvantDiag = "config";
+const vue = n => {
+  // On mémorise d'où l'on vient pour que « Retour » ne renvoie pas les
+  // utilisateurs déjà connectés vers l'écran de configuration.
+  if (n === "diag" && $("vueDiag").hidden) vueAvantDiag = $("vueBord").hidden ? "config" : "bord";
+  $("vueConfig").hidden = (n!=="config"); $("vueBord").hidden = (n!=="bord"); $("vueDiag").hidden = (n!=="diag");
+};
+const retourDiag = () => vue(vueAvantDiag);
 
 function majApercuTopic(){
   $("apercuTopic").textContent = ($("prefixe").value||"homeassistant")+"/"+($("appareil").value||"routeur_rms")+"_state";
@@ -265,6 +358,9 @@ function etat(classe, texte){
 }
 const nb = (v,d=0) => (v===undefined||v===null||isNaN(v)) ? null : Number(v).toFixed(d);
 const kW = w => (Math.abs(w) >= 1000) ? (w/1000).toFixed(2)+" kW" : Math.round(w)+" W";
+// Valeur et unité séparées : dans les pastilles du synoptique, elles
+// tiennent sur deux lignes au lieu de déborder du cercle.
+const duo = w => (Math.abs(w) >= 1000) ? [(w/1000).toFixed(2), "kW"] : [String(Math.round(w)), "W"];
 
 function couleurTempo(s){
   if(!s) return "";
@@ -297,34 +393,77 @@ function afficher(d){
   if (pv !== null)      maison = Math.max(0, pv + net - eau);
   else if (net > 20)    maison = Math.max(0, net - eau);
 
+  // Échelle commune aux quatre jauges : le plus gros flux du moment, jamais
+  // sous 1,5 kW pour qu'un four qui démarre ne remette pas tout le cadran à plat.
+  const ref = Math.max(1500, pv||0, Math.abs(net), eau, maison||0);
+
   // Épaisseur et cadence proportionnelles à la puissance : un filet lent pour
   // quelques watts, un trait large et rapide pour plusieurs kilowatts.
-  const epaisseur = w => Math.max(1.6, Math.min(7, 1.6 + Math.abs(w)/420));
-  const cadence   = w => Math.max(.55, Math.min(3.2, 1600/Math.max(80,Math.abs(w))/10)) + "s";
-  function lien(id, w, inverse){
-    const e = $(id), actif = Math.abs(w) > 20;
-    e.classList.toggle("actif", actif);
-    e.classList.toggle("inverse", !!inverse);
-    if (actif){ e.setAttribute("stroke-width", epaisseur(w)); e.style.animationDuration = cadence(w); }
+  const epaisseur = w => Math.max(2, Math.min(7, 2 + Math.abs(w)/450));
+  const cadence   = w => Math.max(.45, Math.min(2.6, 900/Math.max(60,Math.abs(w)))) ;
+
+  // Une branche = un tracé pointillé + deux grains. `sens` négatif inverse les
+  // deux animations d'un coup : c'est ce qui montre le courant qui repart.
+  function branche(cle, w, sens){
+    const actif = Math.abs(w) > 20, t = cadence(w), inv = sens < 0;
+    const trait = $("p" + cle);
+    trait.classList.toggle("on", actif);
+    trait.classList.toggle("rev", inv);
+    trait.style.animationDuration = (t * .7).toFixed(2) + "s";
+    if (actif) trait.setAttribute("stroke-width", epaisseur(w));
+    for (const n of [1, 2]){
+      const g = $("gr" + cle + n);
+      g.classList.toggle("on", actif);
+      g.classList.toggle("rev", inv);
+      g.style.animationDuration = (t * 2).toFixed(2) + "s";
+      g.style.animationDelay = (n === 2 ? -t : 0).toFixed(2) + "s";
+    }
   }
 
-  // Production : nœud masqué si l'installation ne publie pas d'onduleur
-  $("nSol").style.display = (pv === null) ? "none" : "";
-  $("lSol").style.display = (pv === null) ? "none" : "";
-  if (pv !== null){ $("vSol").textContent = kW(pv); lien("lSol", pv, false); }
+  // Chiffre et unité dans la pastille ; « — » quand la grandeur est indéterminable.
+  function valeur(cle, w){
+    const [n, u] = (w === null) ? ["—", ""] : duo(w);
+    $("v" + cle).textContent = n;
+    $("u" + cle).textContent = u;
+  }
 
-  // Réseau : le sens du trait suit celui du courant
-  $("vRes").textContent = kW(Math.abs(net));
-  $("nomRes").textContent = net < -20 ? "Vers le réseau" : "Réseau";
-  $("cRes").setAttribute("stroke", net > 20 ? "var(--imp)" : net < -20 ? "var(--exp)" : "var(--line)");
-  $("lRes").setAttribute("stroke", net > 20 ? "var(--imp)" : "var(--exp)");
-  lien("lRes", net, net < 0);
+  // Jauge annulaire : r = 29 → circonférence 182. Pleine = flux le plus fort.
+  function jauge(cle, w){
+    const part = (w === null) ? 0 : Math.min(1, Math.abs(w) / ref);
+    const j = $("j" + cle);
+    j.setAttribute("stroke-dashoffset", (182 * (1 - part)).toFixed(1));
+    j.style.opacity = (part < .01) ? "0" : "1";
+  }
 
-  $("vMai").textContent = (maison === null) ? "—" : kW(maison);
-  lien("lMai", (maison === null) ? 0 : maison, false);
-  $("vEau").textContent = kW(eau);     lien("lEau", eau, false);
+  // Production : nœud et branche masqués si l'installation ne publie pas d'onduleur
+  const sansPV = (pv === null);
+  $("nSol").style.display = sansPV ? "none" : "";
+  $("pSol").style.display = sansPV ? "none" : "";
+  $("grSol1").style.display = $("grSol2").style.display = sansPV ? "none" : "";
+  $("rSol").style.display = sansPV ? "none" : "";
+  if (!sansPV){ valeur("Sol", pv); branche("Sol", pv, 1); jauge("Sol", pv); }
+
+  // Réseau : la couleur et le sens du défilement suivent celui du courant
+  const versReseau = net < -20;
+  valeur("Res", Math.abs(net));
+  $("nomRes").textContent = versReseau ? "Injection" : "Réseau";
+  $("jRes").setAttribute("stroke", versReseau ? "var(--exp)" : "var(--imp)");
+  $("pRes").setAttribute("stroke", versReseau ? "var(--exp)" : "var(--imp)");
+  for (const n of [1, 2])
+    $("grRes" + n).setAttribute("fill", versReseau ? "var(--exp)" : "var(--imp)");
+  branche("Res", net, versReseau ? -1 : 1);
+  jauge("Res", net);
+
+  valeur("Mai", maison);
+  branche("Mai", (maison === null) ? 0 : maison, 1);
+  jauge("Mai", maison);
+  valeur("Eau", eau);
+  branche("Eau", eau, 1);
+  jauge("Eau", eau);
+
   $("coeur").style.opacity = (Math.abs(net) > 20 || eau > 20) ? ".95" : ".25";
   $("nMai").style.opacity = (maison === null) ? ".45" : "1";
+  $("nEau").style.opacity = (eau > 20) ? "1" : ".6";
 
   if (net > 20)
     $("fluxQuoi").innerHTML = `<span style="color:var(--imp)">La maison achète ${kW(net)} au réseau</span>`;
@@ -511,6 +650,7 @@ function remplir(c){
 // Un navigateur n'explique jamais pourquoi il refuse d'installer une application.
 // On vérifie donc chaque critère nous-mêmes et on nomme celui qui manque.
 async function diagnostic(){
+  $("diagTitre").textContent = "Pourquoi l'installation est-elle possible ou non";
   vue("diag");
   const res = [];
   const add = (ok, quoi, detail) => res.push(
@@ -569,23 +709,62 @@ async function diagnostic(){
 }
 
 /* ---------- Installation sur l'écran d'accueil ---------- */
-// Le navigateur n'émet cet évènement que si les critères sont réunis : HTTPS,
-// manifeste avec icônes PNG 192 et 512, et service worker actif. On s'en sert
-// pour n'afficher le bouton que lorsqu'il peut réellement aboutir.
+// Chromium émet `beforeinstallprompt` quand les critères sont réunis et ouvre
+// alors une vraie boîte d'installation. Safari/iOS et Firefox n'exposent rien :
+// l'installation n'y existe que par le menu du navigateur. Le bouton reste donc
+// visible partout, et se rabat sur la marche à suivre exacte du navigateur.
 let invite = null;
-window.addEventListener("beforeinstallprompt", e => {
-  e.preventDefault();
-  invite = e;
-  $("btnInstall").hidden = false;
-});
+const autonome = () => window.matchMedia("(display-mode: standalone)").matches
+                    || window.navigator.standalone === true;
+
+window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); invite = e; });
+
+function marcheASuivre(){
+  const ua = navigator.userAgent;
+  const iOS = /iPad|iPhone|iPod/.test(ua)
+           || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  if (iOS && !/CriOS|FxiOS|EdgiOS/.test(ua))
+    return ["Sur iPhone et iPad",
+      "<li>Touchez <strong>Partager</strong> (le carré avec une flèche, en bas de Safari).</li>" +
+      "<li>Faites défiler jusqu'à <strong>Sur l'écran d'accueil</strong>.</li>" +
+      "<li>Touchez <strong>Ajouter</strong>.</li>",
+      "Soleo s'ouvrira alors en plein écran, sans barre d'adresse : c'est bien une application autonome."];
+  if (iOS)
+    return ["Sur iPhone, avec un autre navigateur",
+      "<li>iOS ne permet l'installation que depuis <strong>Safari</strong>.</li>" +
+      "<li>Ouvrez cette page dans Safari, puis <strong>Partager → Sur l'écran d'accueil</strong>.</li>", ""];
+  if (/Firefox/.test(ua))
+    return ["Sur Firefox",
+      "<li>Menu <strong>⋮</strong> → <strong>Installer</strong> ou <strong>Ajouter à l'écran d'accueil</strong>.</li>", ""];
+  return ["Sur Android",
+    "<li>Menu <strong>⋮</strong> du navigateur.</li>" +
+    "<li><strong>Installer l'application</strong> — ou <strong>Ajouter à l'écran d'accueil</strong>.</li>",
+    "Si seul « Ajouter à l'écran d'accueil » apparaît, l'application est peut-être déjà installée, " +
+    "ou une proposition a été refusée puis mémorisée : effacez les données du site dans ses réglages."];
+}
+
 $("btnInstall").onclick = async () => {
-  if (!invite) return;
-  invite.prompt();
-  await invite.userChoice;
-  invite = null;
-  $("btnInstall").hidden = true;
+  if (invite){
+    invite.prompt();
+    const r = await invite.userChoice;
+    invite = null;
+    if (r.outcome === "accepted") $("btnInstall").hidden = true;
+    return;
+  }
+  const [titre, etapes, note] = marcheASuivre();
+  $("diagTitre").textContent = "Installer Soleo";
+  $("diag").innerHTML = `<p style="font-size:13.5px;font-weight:700;margin:0 0 10px">${titre}</p>` +
+    `<ol style="margin:0;padding-left:20px;font-size:13.5px;line-height:1.7">${etapes}</ol>` +
+    (note ? `<p style="font-size:12.5px;color:var(--txt-soft);margin:12px 0 0">${note}</p>` : ``);
+  vue("diag");
 };
+
 window.addEventListener("appinstalled", () => { $("btnInstall").hidden = true; });
+if (!autonome()) $("btnInstall").hidden = false;
+
+/* offset-path porte les grains du synoptique ; sans lui, seul le pointillé anime */
+if (!(window.CSS && CSS.supports && CSS.supports("offset-path", "path('M0 0L1 1')")))
+  document.documentElement.classList.add("sans-grain");
 
 if ("serviceWorker" in navigator)
   navigator.serviceWorker.register("sw.js").catch(()=>{});
