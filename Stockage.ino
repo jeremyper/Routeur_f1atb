@@ -286,6 +286,11 @@ void DeserializeConfiguration(String json) {
   hostname = conf["hostname"] | hostname;
   Couleurs = conf["Couleurs"] | Couleurs;
   if (Couleurs.length() == 0) Couleurs = String(CouleurDefaut);
+  //Migration v1.21 : l'ancienne palette peignait les tableaux en gris clair, ce
+  //qui donne du texte pale sur fond pale avec le theme sombre. Les installations
+  //restees sur ce reglage d'origine basculent sur la nouvelle palette ; celles
+  //qui ont choisi leurs couleurs gardent les leurs.
+  if (Couleurs == CouleurAncienDefaut) Couleurs = String(CouleurDefaut);
   ModePara = conf["ModePara"];
   ModeReseau = conf["ModeReseau"];
   Horloge = conf["Horloge"];

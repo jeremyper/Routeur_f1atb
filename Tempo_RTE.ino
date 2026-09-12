@@ -53,7 +53,11 @@ void Call_RTE_data() {
       // Use clientSecu class to create TCP connections
       clientSecuRTE.setInsecure();  //skip verification
       if (!clientSecuRTE.connect(adr_RTE_Host, 443, 3000)) {
-        StockMessage("Connection failed to RTE server :" + Host);
+        //Une connexion TLS ratee laisse son contexte mbedTLS alloue : sans ce
+        //stop(), plusieurs dizaines de Ko restent prises et l'appel suivant
+        //(la meteo) echoue a son tour faute de tas.
+        clientSecuRTE.stop();
+        StockMessage("Connection failed to RTE server :" + Host + " (tas libre " + String(esp_get_free_internal_heap_size()) + " o)");
       } else {
         time_t timestamp = time(NULL) - 21600;  //Decallage début période couleur  RTE de 6h.
         struct tm* pTime = localtime(&timestamp);

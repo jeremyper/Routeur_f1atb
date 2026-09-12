@@ -28,7 +28,8 @@ void Call_Meteo_data() {
   clientSecuMeteo.setInsecure();  //skip verification
   clientSecuMeteo.setTimeout(6000);
   if (!clientSecuMeteo.connect(adr_Meteo_Host, 443, 5000)) {
-    StockMessage("Connection failed to Open-Meteo : " + Host);
+    clientSecuMeteo.stop();  //libere le contexte TLS, voir Tempo_RTE.ino
+    StockMessage("Connection failed to Open-Meteo : " + Host + " (tas libre " + String(esp_get_free_internal_heap_size()) + " o)");
     return;
   }
   clientSecuMeteo.print(String("GET ") + url + " HTTP/1.1\r\n" + "Host: " + Host + "\r\n" + "Connection: close\r\n\r\n");
