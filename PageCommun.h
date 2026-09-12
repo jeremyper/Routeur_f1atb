@@ -135,8 +135,4 @@ function setTheme(t){
 })();
 )====";
 
-// Palette livree jusqu'en v1.20 : tableaux gris clair, herites du theme clair
-// d'origine. Conservee pour reconnaitre les installations qui ne l'ont jamais
-// personnalisee et les migrer sans ecraser les choix de celles qui l'ont fait.
-const char *CouleurAncienDefaut = R"====(ffffff77b5fe000033ccccff333333808080000000ffffff808080000000cccccc888888ff444400ffffffff66ffaa88aaffaaaaffeeeeeebbffffff66666633333300ff00aaff0000ffaaaaffaaff883333ffaa6688ffaaff11)====";
 const char *CouleurDefaut = R"====(ffffff77b5fe000033ccccff333333808080000000ffffff808080e8edf61c22302c3444ff444400ffffffff66ffaa88aaffaaaaffeeeeeebbffffff66666633333300ff00aaff0000ffaaaaffaaff883333ffaa6688ffaaff11)====";

@@ -287,10 +287,18 @@ void DeserializeConfiguration(String json) {
   Couleurs = conf["Couleurs"] | Couleurs;
   if (Couleurs.length() == 0) Couleurs = String(CouleurDefaut);
   //Migration v1.21 : l'ancienne palette peignait les tableaux en gris clair, ce
-  //qui donne du texte pale sur fond pale avec le theme sombre. Les installations
-  //restees sur ce reglage d'origine basculent sur la nouvelle palette ; celles
-  //qui ont choisi leurs couleurs gardent les leurs.
-  if (Couleurs == CouleurAncienDefaut) Couleurs = String(CouleurDefaut);
+  //qui donne du texte pale sur fond pale avec le theme sombre. Comparer toute la
+  //chaine ne migrait personne : il suffit d'avoir touche une seule autre couleur
+  //pour que l'egalite echoue. On ne regarde donc que le triplet "Tableaux"
+  //(4e entree, 3 couleurs de 6 caracteres a partir de l'offset 54). Celui qui a
+  //choisi la couleur de ses tableaux garde la sienne.
+  const int OFFSET_TABLEAUX = 54;
+  if (Couleurs.length() >= OFFSET_TABLEAUX + 18
+      && Couleurs.substring(OFFSET_TABLEAUX, OFFSET_TABLEAUX + 18) == "000000cccccc888888") {
+    Couleurs = Couleurs.substring(0, OFFSET_TABLEAUX) + "e8edf61c22302c3444"
+             + Couleurs.substring(OFFSET_TABLEAUX + 18);
+    StockMessage("Palette des tableaux migree vers le theme sombre");
+  }
   ModePara = conf["ModePara"];
   ModeReseau = conf["ModeReseau"];
   Horloge = conf["Horloge"];

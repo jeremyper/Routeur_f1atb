@@ -25,11 +25,22 @@ void Call_Meteo_data() {
   String MeteoData = "";
   String line = "";
 
+  //Le tas total ne dit pas tout : mbedTLS reclame un bloc contigu d'une
+  //trentaine de Ko. Avec un tas fragmente, le total reste confortable alors
+  //que le plus gros bloc disponible est deja trop petit. On journalise donc
+  //les deux, et on separe l'echec DNS de l'echec TLS, que connect() confond.
+  IPAddress ipMeteo;
+  if (!WiFi.hostByName(adr_Meteo_Host, ipMeteo)) {
+    StockMessage("Open-Meteo : resolution DNS impossible pour " + Host);
+    return;
+  }
   clientSecuMeteo.setInsecure();  //skip verification
   clientSecuMeteo.setTimeout(6000);
   if (!clientSecuMeteo.connect(adr_Meteo_Host, 443, 5000)) {
     clientSecuMeteo.stop();  //libere le contexte TLS, voir Tempo_RTE.ino
-    StockMessage("Connection failed to Open-Meteo : " + Host + " (tas libre " + String(esp_get_free_internal_heap_size()) + " o)");
+    StockMessage("Connection failed to Open-Meteo : " + Host + " (DNS ok " + ipMeteo.toString()
+                 + ", tas libre " + String(esp_get_free_internal_heap_size())
+                 + " o, plus gros bloc " + String(ESP.getMaxAllocHeap()) + " o)");
     return;
   }
   clientSecuMeteo.print(String("GET ") + url + " HTTP/1.1\r\n" + "Host: " + Host + "\r\n" + "Connection: close\r\n\r\n");
