@@ -2,7 +2,7 @@
 // celle du firmware officiel F1ATB (V17.26 et suivantes). La base amont est la V17.16.
 // Format imposé par Stockage.ino : décimal à deux chiffres, converti en entier par
 // round(100 * toFloat()) — "1.00" est stocké 100 et affiché 1.00.
-#define Version "1.22"
+#define Version "1.23"
 #define HOSTNAME "RMS-ESP32-"
 
 /*
@@ -327,6 +327,7 @@
 #include <esp_task_wdt.h>  //Pour deinitialiser le watchdog. Nécessaire pour les gros program en ROM. Mystère non élucidé
 #include <freertos/semphr.h>  //Mutex de synchronisation entre le cœur 0 (réseau) et le cœur 1 (régulation)
 #include <esp_wifi.h>  //Accès IDF bas niveau : esp_wifi_connect() après appairage WPS (cœur ESP 3.3.6+)
+#include <esp_bt.h>  //Uniquement pour rendre au tas la memoire du controleur Bluetooth, jamais utilise
 #include <esp_wps.h>  //Librairie WPS pour appairage automatique connexion WiFi //SR19
 #include "Actions.h"
 #include "FS.h"
@@ -980,6 +981,17 @@ void setup() {
   Serial.println();
   StockMessage("Booting Soleo");
   Serial.println(Version);
+  //Le coeur ESP32 reserve la memoire du controleur Bluetooth meme quand le
+  //Bluetooth n'est jamais initialise — et ce firmware ne s'en sert nulle part.
+  //La rendre au tas est sans effet de bord tant qu'aucun BLE ne demarre, et
+  //c'est precisement ce qui manquait aux poignees de main TLS : elles reclament
+  //une quarantaine de Ko alors qu'il n'en restait pas plus au repos.
+  //A appeler avant toute initialisation radio.
+  uint32_t tasAvantBT = esp_get_free_internal_heap_size();
+  if (esp_bt_controller_mem_release(ESP_BT_MODE_BTDM) == ESP_OK) {
+    uint32_t rendus = esp_get_free_internal_heap_size() - tasAvantBT;
+    StockMessage("Bluetooth inutilise : " + String(rendus / 1024) + " Ko rendus au tas");
+  }
   //Watchdog initialisation
   esp_task_wdt_deinit();
   // Initialisation de la structure de configuration pour la WDT
