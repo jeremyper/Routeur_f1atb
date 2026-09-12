@@ -40,11 +40,14 @@ void GestionMQTT() {
 //allocation failed » releve dans le journal. On libere donc la session MQTT juste
 //avant un appel HTTPS sortant ; testMQTTconnected() la retablit au passage
 //suivant du cycle reseau, sans declencher le testament (disconnect propre).
+bool TLSlibereePourAppel = false;  //coupure MQTT voulue, pas une panne
+
 void LibereTLSpourAppelSortant() {
   if (MQTTSecure != 1) return;        //en clair, la session ne coute presque rien
   if (!clientMQTT.connected()) return;
   clientMQTT.disconnect();
   MqttClientTLS.stop();
+  TLSlibereePourAppel = true;
 }
 
 bool testMQTTconnected() {
@@ -126,7 +129,16 @@ bool testMQTTconnected() {
         case  5: cause = "accès non autorisé (droits de publication manquants ?)"; break;
         default: cause = "code " + String(clientMQTT.state()); break;
       }
-      StockMessage("Echec connexion MQTT : " + host + " — " + cause);
+      //La premiere tentative qui suit une liberation volontaire retombe sur le
+      //meme manque de tas : c'est attendu, la reprise aboutit au passage suivant.
+      //Signaler « serveur injoignable (adresse, port, ou TLS non active ?) » ferait
+      //soupconner une erreur de configuration la ou tout est correct.
+      if (TLSlibereePourAppel) {
+        TLSlibereePourAppel = false;
+        TelnetPrintln("Reprise MQTT differee apres appel HTTPS sortant");
+      } else {
+        StockMessage("Echec connexion MQTT : " + host + " — " + cause);
+      }
       connecte = false;
       delay(1);
       PeriodeMQTTMillis = 30000;  // Penalisé 30s
