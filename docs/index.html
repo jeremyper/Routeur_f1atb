@@ -44,11 +44,21 @@ header{display:flex;align-items:center;justify-content:space-between;gap:10px;
 .titre{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
   color:var(--txt-dim);margin:0 0 12px}
 
-.flux{text-align:center;padding:22px 16px}
-.flux .val{font-size:40px;font-weight:800;letter-spacing:-.02em;line-height:1;
-  font-variant-numeric:tabular-nums}
-.flux .unite{font-size:12.5px;color:var(--txt-soft);margin-top:6px}
-.flux .quoi{font-size:13.5px;font-weight:700;margin-top:10px}
+/* ----- Schéma de flux ----- */
+.scene{padding:14px 10px 16px}
+.scene svg{display:block;width:100%;height:auto}
+.noeud-cercle{transition:opacity .5s}
+.noeud-val{font-weight:800;font-size:15px;font-variant-numeric:tabular-nums}
+.noeud-nom{font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.lien{fill:none;stroke-linecap:round;opacity:0;transition:opacity .6s,stroke-width .6s}
+.lien.actif{opacity:1}
+.lien-anim{stroke-dasharray:2 12;animation:defile 1.6s linear infinite}
+.lien-anim.inverse{animation-direction:reverse}
+@keyframes defile{to{stroke-dashoffset:-14}}
+.socle{stroke:var(--line);stroke-width:1.5;fill:none;opacity:.5}
+.verdict{text-align:center;font-size:13.5px;font-weight:700;margin:2px 0 0;min-height:20px}
+.resume{text-align:center;font-size:11.5px;color:var(--txt-dim);margin-top:3px}
+@media (prefers-reduced-motion:reduce){.lien-anim{animation:none;stroke-dasharray:none}}
 
 .tuiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .tuile{background:var(--card);border:1px solid var(--line);border-radius:var(--r-s);padding:13px}
@@ -147,10 +157,56 @@ button.sec{background:none;border:1px solid var(--line);color:var(--txt-soft);
 
 <!-- ======== Tableau de bord ======== -->
 <main id="vueBord" hidden>
-  <div class="carte flux">
-    <div class="val" id="fluxVal">—</div>
-    <div class="unite" id="fluxUnite">en attente de données</div>
-    <div class="quoi" id="fluxQuoi"></div>
+  <div class="carte scene">
+    <svg viewBox="0 0 320 250" role="img" aria-labelledby="fluxTitre">
+      <title id="fluxTitre">Circulation de l'énergie entre production, réseau et usages</title>
+
+      <!-- tracés au repos, toujours visibles pour donner la structure -->
+      <path class="socle" d="M80 62 Q80 118 152 122"/>
+      <path class="socle" d="M240 62 Q240 118 168 122"/>
+      <path class="socle" d="M152 134 Q80 140 80 186"/>
+      <path class="socle" d="M168 134 Q240 140 240 186"/>
+
+      <!-- flux animés -->
+      <path id="lSol"  class="lien lien-anim" d="M80 62 Q80 118 152 122"  stroke="var(--sun)"/>
+      <path id="lRes"  class="lien lien-anim" d="M240 62 Q240 118 168 122" stroke="var(--imp)"/>
+      <path id="lMai"  class="lien lien-anim" d="M152 134 Q80 140 80 186"  stroke="var(--home)"/>
+      <path id="lEau"  class="lien lien-anim" d="M168 134 Q240 140 240 186" stroke="var(--water)"/>
+
+      <!-- cœur -->
+      <circle cx="160" cy="128" r="9" fill="var(--card-2)" stroke="var(--line)" stroke-width="1.5"/>
+      <circle id="coeur" cx="160" cy="128" r="3.5" fill="var(--accent)" opacity=".9"/>
+
+      <!-- nœuds : haut -->
+      <g id="nSol">
+        <circle class="noeud-cercle" cx="80" cy="36" r="26" fill="var(--card-2)" stroke="var(--sun)" stroke-width="1.5"/>
+        <text x="80" y="32" text-anchor="middle" font-size="17">☀️</text>
+        <text x="80" y="48" text-anchor="middle" class="noeud-val" id="vSol" fill="var(--txt)">—</text>
+        <text x="80" y="80" text-anchor="middle" class="noeud-nom" fill="var(--txt-dim)">Production</text>
+      </g>
+      <g id="nRes">
+        <circle class="noeud-cercle" cx="240" cy="36" r="26" fill="var(--card-2)" stroke="var(--line)" stroke-width="1.5" id="cRes"/>
+        <text x="240" y="32" text-anchor="middle" font-size="17">⚡</text>
+        <text x="240" y="48" text-anchor="middle" class="noeud-val" id="vRes" fill="var(--txt)">—</text>
+        <text x="240" y="80" text-anchor="middle" class="noeud-nom" id="nomRes" fill="var(--txt-dim)">Réseau</text>
+      </g>
+
+      <!-- nœuds : bas -->
+      <g id="nMai">
+        <circle class="noeud-cercle" cx="80" cy="212" r="26" fill="var(--card-2)" stroke="var(--home)" stroke-width="1.5"/>
+        <text x="80" y="208" text-anchor="middle" font-size="17">🏠</text>
+        <text x="80" y="224" text-anchor="middle" class="noeud-val" id="vMai" fill="var(--txt)">—</text>
+        <text x="80" y="188" text-anchor="middle" class="noeud-nom" fill="var(--txt-dim)">Maison</text>
+      </g>
+      <g id="nEau">
+        <circle class="noeud-cercle" cx="240" cy="212" r="26" fill="var(--card-2)" stroke="var(--water)" stroke-width="1.5"/>
+        <text x="240" y="208" text-anchor="middle" font-size="17">🚿</text>
+        <text x="240" y="224" text-anchor="middle" class="noeud-val" id="vEau" fill="var(--txt)">—</text>
+        <text x="240" y="188" text-anchor="middle" class="noeud-nom" fill="var(--txt-dim)">Eau chaude</text>
+      </g>
+    </svg>
+    <p class="verdict" id="fluxQuoi">en attente de données</p>
+    <p class="resume" id="fluxResume"></p>
   </div>
 
   <div class="tuiles" id="tuiles"></div>
@@ -227,20 +283,60 @@ function tuile(lbl, couleur, valeur, sub){
 function ligne(k,v){ return `<div class="ligne"><span class="k">${k}</span><span class="v">${v}</span></div>`; }
 
 function afficher(d){
-  /* Flux principal : ce que la maison échange avec le réseau */
+  /* ---- Schéma de flux ---- */
   const soutire = Number(d.PuissanceS_M||0), injecte = Number(d.PuissanceI_M||0);
-  const net = soutire - injecte;
-  $("fluxVal").textContent = kW(Math.abs(net));
-  if (net > 20){
-    $("fluxUnite").textContent = "achetés au réseau";
-    $("fluxQuoi").innerHTML = `<span style="color:var(--imp)">⚡ La maison consomme plus qu'elle ne produit</span>`;
-  } else if (net < -20){
-    $("fluxUnite").textContent = "renvoyés au réseau";
-    $("fluxQuoi").innerHTML = `<span style="color:var(--sun)">✨ Surplus non consommé</span>`;
-  } else {
-    $("fluxUnite").textContent = "échangés avec le réseau";
-    $("fluxQuoi").innerHTML = `<span style="color:var(--exp)">✓ Équilibre — rien n'est gaspillé</span>`;
+  const net = soutire - injecte;                       // >0 : la maison achète
+  const eau = Math.max(0, Number(d.PuissanceS_T||0) - Number(d.PuissanceI_T||0));
+  const pv  = (d.Production_PV !== undefined) ? Math.max(0, Number(d.Production_PV)) : null;
+  // Consommation propre de la maison, hors eau chaude.
+  // Avec onduleur, elle se déduit du bilan complet. Sans onduleur, elle n'est
+  // connue que lorsque la maison soutire : en injection, la production est
+  // inconnue et toute valeur affichée serait inventée.
+  let maison = null;
+  if (pv !== null)      maison = Math.max(0, pv + net - eau);
+  else if (net > 20)    maison = Math.max(0, net - eau);
+
+  // Épaisseur et cadence proportionnelles à la puissance : un filet lent pour
+  // quelques watts, un trait large et rapide pour plusieurs kilowatts.
+  const epaisseur = w => Math.max(1.6, Math.min(7, 1.6 + Math.abs(w)/420));
+  const cadence   = w => Math.max(.55, Math.min(3.2, 1600/Math.max(80,Math.abs(w))/10)) + "s";
+  function lien(id, w, inverse){
+    const e = $(id), actif = Math.abs(w) > 20;
+    e.classList.toggle("actif", actif);
+    e.classList.toggle("inverse", !!inverse);
+    if (actif){ e.setAttribute("stroke-width", epaisseur(w)); e.style.animationDuration = cadence(w); }
   }
+
+  // Production : nœud masqué si l'installation ne publie pas d'onduleur
+  $("nSol").style.display = (pv === null) ? "none" : "";
+  $("lSol").style.display = (pv === null) ? "none" : "";
+  if (pv !== null){ $("vSol").textContent = kW(pv); lien("lSol", pv, false); }
+
+  // Réseau : le sens du trait suit celui du courant
+  $("vRes").textContent = kW(Math.abs(net));
+  $("nomRes").textContent = net < -20 ? "Vers le réseau" : "Réseau";
+  $("cRes").setAttribute("stroke", net > 20 ? "var(--imp)" : net < -20 ? "var(--exp)" : "var(--line)");
+  $("lRes").setAttribute("stroke", net > 20 ? "var(--imp)" : "var(--exp)");
+  lien("lRes", net, net < 0);
+
+  $("vMai").textContent = (maison === null) ? "—" : kW(maison);
+  lien("lMai", (maison === null) ? 0 : maison, false);
+  $("vEau").textContent = kW(eau);     lien("lEau", eau, false);
+  $("coeur").style.opacity = (Math.abs(net) > 20 || eau > 20) ? ".95" : ".25";
+  $("nMai").style.opacity = (maison === null) ? ".45" : "1";
+
+  if (net > 20)
+    $("fluxQuoi").innerHTML = `<span style="color:var(--imp)">La maison achète ${kW(net)} au réseau</span>`;
+  else if (net < -20)
+    $("fluxQuoi").innerHTML = `<span style="color:var(--sun)">${kW(-net)} repartent vers le réseau</span>`;
+  else if (eau > 20)
+    $("fluxQuoi").innerHTML = `<span style="color:var(--exp)">Tout le surplus part dans l'eau chaude</span>`;
+  else
+    $("fluxQuoi").innerHTML = `<span style="color:var(--exp)">Équilibre — rien n'est gaspillé</span>`;
+
+  $("fluxResume").textContent = (eau > 20)
+    ? "Le chauffe-eau absorbe " + kW(eau)
+    : "Chauffe-eau à l'arrêt";
 
   /* Tuiles : seulement ce que l'installation publie réellement */
   let t = "";
