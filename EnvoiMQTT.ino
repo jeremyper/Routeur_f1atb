@@ -5,6 +5,7 @@ char DEVICE[300];
 char ESP_ID[15];
 char mdl[30];
 char StateTopic[50];
+char HistoTopic[60];
 char PrefixMQTT[25];
 char PrefixMQTTEtat[25];
 char AvailableTopic[60];
@@ -28,6 +29,7 @@ void GestionMQTT() {
       if (testMQTTconnected()) {
         clientMQTT.loop();
         envoiVersMQTT();
+        if (HistoriqueAPublier) { HistoriqueAPublier = false; PublieHistoriqueMQTT(); }
       }
     }
   }
@@ -53,6 +55,48 @@ void LibereTLSpourAppelSortant() {
   //Chaque appel sortant repousse la fenetre : RTE puis la meteo s'enchainent
   //ainsi sans que le broker se reconnecte entre les deux.
   TLSlibereeMillis = millis();
+}
+
+//Historique publie en message RETENU : le broker le conserve, et l'application
+//le recoit des sa connexion. C'est ce qui manquait — une page web ne tourne pas
+//en arriere-plan, elle n'enregistre que pendant qu'on la regarde, et son
+//historique n'etait qu'une suite de fragments. Le routeur, lui, mesure en
+//continu et garde deja 600 points a 5 mn.
+//
+//On n'envoie pas ces 600 points : a 1700 octets de tampon PubSubClient, il faut
+//tenir large. Les 288 derniers (24 h) sont donc moyennes trois par trois, ce qui
+//donne 96 points au pas de 15 mn — amplement suffisant pour une vue a distance,
+//et environ 1,2 Ko une fois serialises.
+void PublieHistoriqueMQTT() {
+  if (!clientMQTT.connected() || !HeureValide) return;
+
+  static char buf[1500];   //en BSS : 1,5 Ko sur la pile d'une tache de 8 Ko serait imprudent
+  const int PAS = 3;       //3 echantillons de 5 mn = 15 mn
+  const int GROUPES = 96;  //96 x 15 mn = 24 h
+  const int UTILES = PAS * GROUPES;
+
+  //IdxStockPW designe la case a ecrire, donc la plus ancienne : le dernier
+  //echantillon connu est juste avant.
+  int debut = (IdxStockPW - UTILES + 600) % 600;
+  time_t fin = time(NULL);
+
+  int n = snprintf(buf, sizeof(buf), "{\"pas\":15,\"fin\":%ld,\"net\":[", (long)fin);
+  for (int g = 0; g < GROUPES; g++) {
+    long somme = 0;
+    for (int k = 0; k < PAS; k++) somme += tabPw_Maison_5mn[(debut + g * PAS + k) % 600];
+    n += snprintf(buf + n, sizeof(buf) - n, "%s%d", g ? "," : "", int(somme / PAS));
+    if (n >= (int)sizeof(buf) - 400) break;   //garde-fou : on ne deborde jamais
+  }
+  n += snprintf(buf + n, sizeof(buf) - n, "],\"eau\":[");
+  for (int g = 0; g < GROUPES; g++) {
+    long somme = 0;
+    for (int k = 0; k < PAS; k++) somme += tabPw_Triac_5mn[(debut + g * PAS + k) % 600];
+    n += snprintf(buf + n, sizeof(buf) - n, "%s%d", g ? "," : "", int(somme / PAS));
+    if (n >= (int)sizeof(buf) - 20) break;
+  }
+  snprintf(buf + n, sizeof(buf) - n, "]}");
+
+  clientMQTT.publish(HistoTopic, buf, true);   //retenu
 }
 
 bool testMQTTconnected() {
@@ -91,6 +135,9 @@ bool testMQTTconnected() {
     clientMQTT.setCallback(callback);                                                                                         // Déclaration de la fonction de souscription
     if (clientMQTT.connect(MQTTdeviceName.c_str(), MQTTUser.c_str(), MQTTPwd.c_str(), AvailableTopic, 2, true, "offline")) {  // si l'utilisateur est connecté au mqtt
       StockMessage(MQTTdeviceName + " connecté au broker MQTT");
+      //Sans cela le message retenu n'existerait qu'au bout de 15 mn, et une
+      //application ouverte juste apres un redemarrage n'aurait pas d'historique.
+      HistoriqueAPublier = true;
       SuiviPlancher("Poignee de main MQTT", minAvant);
       clientMQTT.publish(AvailableTopic, "online", true);
       for (int C = 0; C < 4; C++) {
@@ -116,6 +163,7 @@ bool testMQTTconnected() {
         }
       }
       snprintf(StateTopic, sizeof(StateTopic), "%s%s_state", PrefixMQTTEtat, MQTTdeviceName.c_str());
+      snprintf(HistoTopic, sizeof(HistoTopic), "%s%s/Historique", PrefixMQTTEtat, MQTTdeviceName.c_str());
       byte mac[6];  // the MAC address of your Wifi shield
       String cu = "http://" + WiFi.localIP().toString();
       WiFi.macAddress(mac);

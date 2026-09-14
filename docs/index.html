@@ -329,8 +329,8 @@ button.sec{background:none;border:1px solid var(--line);color:var(--txt-soft);
       <span id="legSol" hidden><i style="background:var(--sun)"></i>Solaire</span>
       <span class="etendue" id="etendue"></span>
     </div>
-    <p class="vide" id="grapheVide">L'historique se constitue pendant que l'application
-      est ouverte, et il est conservé sur cet appareil.</p>
+    <p class="vide" id="grapheVide">En attente de l'historique du routeur.
+      Il est publié toutes les 15 minutes et couvre les dernières 24 heures.</p>
   </div>
 
   <div class="carte" id="carteCalculs" hidden>
@@ -469,16 +469,45 @@ function histoPousse(c){
   histoElague();
   histoEnregistre();
 }
-// Points de la fenetre demandee, echantillon en cours inclus pour que la
-// courbe avance sans attendre la fin de la minute.
+/* ---- Historique venu du routeur ----
+   Une page web ne tourne pas en arriere-plan : fermee, elle n'enregistre rien.
+   Son historique propre n'etait donc qu'une suite de fragments. Le routeur,
+   lui, mesure en continu et publie ses 24 dernieres heures au pas de 15 mn
+   dans un message RETENU, que le broker delivre des l'abonnement. */
+let histoRouteur = [];
+
+function recoitHistoriqueRouteur(texte){
+  try{
+    const h = JSON.parse(texte);
+    if (!h || !Array.isArray(h.net)) return;
+    const pas = Number(h.pas) || 15;
+    const finMin = Math.floor(Number(h.fin) / 60);
+    const n = h.net.length;
+    const pts = [];
+    for (let i = 0; i < n; i++){
+      // Le dernier point du tableau est le plus recent : on remonte le temps.
+      const m = finMin - (n - 1 - i) * pas;
+      pts.push([m, Number(h.net[i]) || 0,
+                Math.max(0, Number((h.eau || [])[i]) || 0), null, null]);
+    }
+    histoRouteur = pts;
+    dessineGraphe();
+  }catch(e){}
+}
+
+// Fenetre demandee : le routeur fournit l'ossature, la trace locale l'affine
+// la ou elle existe. Une carte par minute suffit a les fusionner, le point
+// local ecrasant celui du routeur au meme instant.
 function histoFenetre(heures){
   const depuis = Math.floor(Date.now()/60000) - heures*60;
-  const pts = histo.filter(p => p[0] >= depuis);
+  const par = new Map();
+  for (const p of histoRouteur) if (p[0] >= depuis) par.set(p[0], p);
+  for (const p of histo)        if (p[0] >= depuis) par.set(p[0], p);
   if (enCours && enCours.n)
-    pts.push([enCours.m, Math.round(enCours.r/enCours.n), Math.round(enCours.e/enCours.n),
-              enCours.np ? Math.round(enCours.p/enCours.np) : null,
-              enCours.nt ? Math.round(enCours.t/enCours.nt*10)/10 : null]);
-  return pts;
+    par.set(enCours.m, [enCours.m, Math.round(enCours.r/enCours.n), Math.round(enCours.e/enCours.n),
+                        enCours.np ? Math.round(enCours.p/enCours.np) : null,
+                        enCours.nt ? Math.round(enCours.t/enCours.nt*10)/10 : null]);
+  return [...par.values()].sort((a,b) => a[0] - b[0]);
 }
 
 /* ================= Trace ================= */
@@ -538,8 +567,11 @@ function dessineGraphe(){
   $("axeHaut").setAttribute("y", HT + 2);
   $("axeBas").textContent  = bas ? "-" + kW(bas) : "";
   $("axeBas").setAttribute("y", HB - 1);
+  // Sur 24 h le debut tombe la veille : « 06:23 → 06:08 » se lit a l'envers
+  // sans ce reperage.
   const h = m => new Date(m*60000).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
-  $("etendue").textContent = h(t0) + " → " + h(t1);
+  const memeJour = new Date(t0*60000).getDate() === new Date(t1*60000).getDate();
+  $("etendue").textContent = (memeJour ? "" : "hier ") + h(t0) + " → " + h(t1);
 }
 
 document.querySelectorAll(".per").forEach(b => b.onclick = () => {
@@ -847,6 +879,7 @@ async function connecter(cfg){
   const url = `wss://${cfg.host}:${cfg.port}/mqtt`;
   const sujetEtat = `${cfg.prefixe}/${cfg.appareil}_state`;
   const sujetVie  = `${cfg.prefixe}/${cfg.appareil}/Available`;
+  const sujetHisto = `${cfg.prefixe}/${cfg.appareil}/Historique`;
 
   if (client) { try { client.end(true); } catch(e){} }
   client = mqtt.connect(url, {
@@ -858,12 +891,15 @@ async function connecter(cfg){
   client.on("connect", () => {
     etat("ok","connecté");
     $("errCfg").textContent = "";
-    client.subscribe([sujetEtat, sujetVie]);
+    client.subscribe([sujetEtat, sujetVie, sujetHisto]);
     vue("bord");
   });
 
   client.on("message", (sujet, charge) => {
     const texte = charge.toString();
+    // Message retenu : le broker le délivre dès l'abonnement, même si le
+    // routeur n'a rien publié depuis. C'est lui qui porte le passé.
+    if (sujet === sujetHisto){ recoitHistoriqueRouteur(texte); return; }
     if (sujet === sujetVie){
       // Publié par le broker lui-même si le routeur disparaît sans prévenir
       if (texte.trim() === "offline") etat("ko","routeur hors ligne");

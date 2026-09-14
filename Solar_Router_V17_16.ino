@@ -2,7 +2,7 @@
 // celle du firmware officiel F1ATB (V17.26 et suivantes). La base amont est la V17.16.
 // Format imposé par Stockage.ino : décimal à deux chiffres, converti en entier par
 // round(100 * toFloat()) — "1.00" est stocké 100 et affiché 1.00.
-#define Version "1.26"
+#define Version "1.27"
 #define HOSTNAME "RMS-ESP32-"
 
 /*
@@ -523,6 +523,7 @@ int8_t tab_histo_ouverture[LES_ACTIONS_LENGTH][600];
 int8_t tab_histo_2s_ouverture[LES_ACTIONS_LENGTH][300];
 int16_t IdxStock2s = 0;
 int16_t IdxStockPW = 0;
+bool HistoriqueAPublier = false;  //leve toutes les 15 mn, consomme par la tache reseau
 float PmaxReseau = 36000;  //Puissance Max pour eviter des débordements
 bool LissageLong = false;
 bool Pva_valide = false;
@@ -1455,6 +1456,9 @@ void loop() {
         }
       }
       IdxStockPW = (IdxStockPW + 1) % 600;
+      //Un point sur trois : l'historique publie est au pas de 15 mn. On se
+      //contente de lever un drapeau, la publication appartient au coeur 0.
+      if (IdxStockPW % 3 == 0) HistoriqueAPublier = true;
 
       //Discovery message pour MQTT (if HA restart)
       Discovered = false;
