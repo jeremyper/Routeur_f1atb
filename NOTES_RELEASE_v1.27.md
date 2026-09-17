@@ -1,4 +1,4 @@
-# v1.26 — Supervision à distance, application web, et fiabilité réseau
+# v1.27 — Supervision à distance, application web, et fiabilité réseau
 
 Première version stable depuis la **v1.10**. Les v1.20-beta et beta2 n'étaient que des
 préversions, et contenaient encore une page Réglages tronquée : cette release les
@@ -50,6 +50,13 @@ jamais ailleurs. Rien n'est hébergé de mon côté.
 
 - Synoptique du flux d'énergie en direct — quatre anneaux autour d'un moyeu, le sens du
   courant se lit au défilement des pointillés
+- **Courbes sur 1 h / 6 h / 24 h.** Le routeur publie ses 24 dernières heures dans un
+  message MQTT retenu : la courbe est là **dès l'ouverture**, même si le téléphone n'a pas
+  été allumé depuis deux jours. Une page web ne tourne pas en arrière-plan — c'est le
+  routeur qui mesure, pas le téléphone.
+- **Grandeurs que le routeur ne publie pas**, reconstruites dans l'application :
+  part du surplus réellement valorisée, prix du kWh évité déduit de vos économies,
+  gain et coût instantanés en €/h, vitesse de chauffe du ballon et détection de puisage
 - Production, réseau, maison, eau chaude, tarif Tempo, économies du mois
 - Thème clair / sombre, fonctionne hors ligne une fois installée
 
@@ -106,7 +113,7 @@ reste silencieuse sinon.
 
 ## Installation
 
-Le binaire `Routeur_Soleo_v1.26.bin` est attaché à cette release. Deux voies :
+Le binaire `Routeur_Soleo_v1.27.bin` est attaché à cette release. Deux voies :
 
 - **Sans USB** — page **Mise à jour** du routeur, qui propose directement cette version.
 - **Par USB** — voir le [guide d'installation](INSTALLATION.md).
