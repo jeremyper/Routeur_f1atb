@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0d1117">
+<title>Soleo — dimensionner son relais statique</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<style>
+:root{
+  --bg:#0d1117;--card:#1c2230;--card-2:#232b3b;--line:#2c3444;
+  --txt:#e8edf6;--txt-soft:#9aa6b8;--txt-dim:#6b7585;
+  --sun:#ffb547;--imp:#e5604d;--exp:#4cd28b;--accent:#6ee7c7;--warn:#ffb547;
+  --shadow:0 10px 30px rgba(0,0,0,.35);--r:16px;
+}
+html[data-theme=light]{
+  --bg:#eef2f8;--card:#fff;--card-2:#f3f6fb;--line:#e0e6f0;
+  --txt:#1a2230;--txt-soft:#586273;--txt-dim:#8a93a4;--shadow:0 8px 24px rgba(20,30,50,.10);
+  --warn:#c77c0e;--exp:#1f9a5c;
+}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--txt);line-height:1.5;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  padding:0 16px calc(32px + env(safe-area-inset-bottom));max-width:620px;margin-inline:auto}
+header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 2px 6px}
+.brand{display:flex;align-items:center;gap:9px}
+.logo{width:26px;height:26px;border-radius:8px;
+  background:radial-gradient(circle at 35% 30%,#ffd27d,var(--sun) 65%,#e98a1a)}
+h1{font-size:17px;margin:0}
+.ico{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--card);
+  color:var(--txt);font-size:15px;cursor:pointer}
+.intro{color:var(--txt-soft);font-size:14px;margin:6px 2px 14px}
+.intro strong{color:var(--txt)}
+.carte{background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+  padding:16px;margin-bottom:12px;box-shadow:var(--shadow)}
+.titre{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--txt-dim);margin:0 0 10px}
+.champs{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px}
+@media (max-width:460px){.champs{grid-template-columns:1fr}}
+label{display:block;font-size:12.5px;font-weight:700;color:var(--txt-soft);margin-bottom:4px}
+label small{display:block;font-weight:400;color:var(--txt-dim)}
+input,select{width:100%;background:var(--card-2);border:1px solid var(--line);border-radius:10px;
+  color:var(--txt);font-size:16px;padding:10px 11px;outline:none}
+input:focus,select:focus{border-color:var(--accent)}
+.chiffres{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+@media (max-width:460px){.chiffres{grid-template-columns:1fr 1fr}}
+.chiffre{background:var(--card-2);border-radius:12px;padding:10px 12px}
+.chiffre .k{font-size:11px;color:var(--txt-dim);font-weight:700}
+.chiffre .v{font-size:20px;font-weight:800;font-variant-numeric:tabular-nums;margin-top:2px}
+.chiffre .s{font-size:11.5px;color:var(--txt-soft)}
+.verdict{border-radius:12px;padding:11px 13px;font-size:14px;margin-bottom:8px;
+  border:1px solid var(--line);background:var(--card-2)}
+.ok{border-left:4px solid var(--exp)} .attention{border-left:4px solid var(--warn)} .ko{border-left:4px solid var(--imp)}
+.tab{width:100%;border-collapse:collapse;font-size:13.5px}
+.tab th{text-align:left;font-size:11px;color:var(--txt-dim);font-weight:700;padding:6px 6px;border-bottom:1px solid var(--line)}
+.tab td{padding:8px 6px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums;vertical-align:top}
+.tab tr:last-child td{border-bottom:none}
+.tab td small{display:block;color:var(--txt-dim);font-size:11.5px}
+.defile{overflow-x:auto;margin:0 -4px;padding:0 4px}
+.pastille{font-weight:800;white-space:nowrap}
+.p-ok{color:var(--exp)} .p-att{color:var(--warn)} .p-ko{color:var(--imp)}
+ul.liste{margin:0;padding-left:18px;font-size:14px}
+ul.liste li{margin:4px 0}
+.note{font-size:12px;color:var(--txt-dim);margin:8px 2px 0}
+a{color:var(--accent)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand"><span class="logo"></span><h1>Dimensionner son relais statique</h1></div>
+  <button class="ico" id="btnTheme" title="Thème">🌙</button>
+</header>
+<p class="intro">Un relais statique (SSR) meurt presque toujours <strong>de chaleur</strong>, pas
+d'un manque d'ampères. Ce calcul donne le dissipateur qu'il faut, le calibre du SSR, et ce
+qu'il faut prévoir autour.</p>
+
+<div class="carte">
+  <p class="titre">La charge</p>
+  <div class="champs">
+    <div><label for="P">Puissance du chauffe-eau (W)</label><input id="P" type="number" min="100" step="100" value="3000"></div>
+    <div><label for="raccord">Raccordement</label>
+      <select id="raccord">
+        <option value="1">Monophasé 230 V</option>
+        <option value="3">Triphasé étoile — SSR triphasé</option>
+      </select></div>
+  </div>
+</div>
+
+<div class="carte">
+  <p class="titre">Le relais statique</p>
+  <div class="champs">
+    <div><label for="type">Modèle<small>fixe la chute de tension interne</small></label>
+      <select id="type">
+        <option value="1.2">Celduc, Crydom, Omron… (≈ 1,2 V)</option>
+        <option value="1.5">Générique Fotek, LeiChuang… (≈ 1,5 V)</option>
+        <option value="perso">Autre — saisir la chute</option>
+      </select></div>
+    <div id="zoneVd" hidden><label for="Vd">Chute de tension (V)<small>« on-state voltage drop » de la fiche</small></label>
+      <input id="Vd" type="number" min="0.5" max="2.5" step="0.1" value="1.2"></div>
+    <div><label for="calibre">Calibre du SSR (A)</label><input id="calibre" type="number" min="5" step="5" value="40"></div>
+    <div><label for="Rjc">Rth jonction-boîtier (K/W)<small>fiche technique, souvent 0,5 à 1</small></label>
+      <input id="Rjc" type="number" min="0.1" max="3" step="0.1" value="0.7"></div>
+  </div>
+</div>
+
+<div class="carte">
+  <p class="titre">L'installation</p>
+  <div class="champs">
+    <div><label for="lieu">Emplacement</label>
+      <select id="lieu">
+        <option value="25">À l'air libre</option>
+        <option value="40" selected>Coffret aéré (haut et bas)</option>
+        <option value="55">Coffret fermé</option>
+        <option value="60">Combles ou local chaud en été</option>
+      </select></div>
+    <div><label for="Tamb">Température autour du SSR (°C)</label><input id="Tamb" type="number" min="0" max="80" value="40"></div>
+    <div><label for="montage">Montage du dissipateur</label>
+      <select id="montage">
+        <option value="1">Ailettes verticales</option>
+        <option value="0.7">Ailettes horizontales / couché</option>
+      </select></div>
+    <div><label for="pate">Pâte thermique</label>
+      <select id="pate">
+        <option value="0.15">Oui</option>
+        <option value="0.5">Non, montage à sec</option>
+      </select></div>
+  </div>
+</div>
+
+<div class="carte">
+  <p class="titre">Résultat</p>
+  <div class="chiffres">
+    <div class="chiffre"><div class="k">Courant</div><div class="v" id="rI">—</div><div class="s" id="rIs"></div></div>
+    <div class="chiffre"><div class="k">Chaleur à évacuer</div><div class="v" id="rPd">—</div><div class="s">à pleine ouverture</div></div>
+    <div class="chiffre"><div class="k">Dissipateur</div><div class="v" id="rRth">—</div><div class="s" id="rRths"></div></div>
+  </div>
+  <div id="verdicts"></div>
+</div>
+
+<div class="carte">
+  <p class="titre">Quel dissipateur</p>
+  <div class="defile"><table class="tab" id="tabDiss"></table></div>
+  <p class="note">Valeurs Celduc annoncées par le fabricant, à confirmer sur la fiche ; profilés
+  génériques en ordre de grandeur, convection naturelle. « Sonde » = température attendue d'une
+  sonde collée sur le dissipateur, à comparer à ce qu'affiche le routeur.</p>
+</div>
+
+<div class="carte">
+  <p class="titre">Ventilateur</p>
+  <div id="rFan"></div>
+</div>
+
+<div class="carte">
+  <p class="titre">Autour du SSR</p>
+  <div id="rCable"></div>
+  <ul class="liste">
+    <li><strong>Commutation au zéro</strong> (« zero cross ») : le routeur pilote par trains de sinus et compte dessus. Éviter « random turn-on », « phase control », et tout « régulateur » à consigne 0-10 V.</li>
+    <li><strong>Commande 3-32 V DC</strong> : l'ESP32 sort 3,3 V. Un SSR qui exige 4 V minimum ne commutera pas de façon fiable.</li>
+    <li><strong>Contacteur en série</strong> (le jour/nuit convient) : un SSR meurt presque toujours en court-circuit, le ballon chaufferait alors sans arrêt.</li>
+    <li><strong>Parafoudre</strong> au tableau, si absent.</li>
+    <li><strong>Dissipateur relié à la terre</strong>, surface plane sous le SSR, serrage ferme et régulier.</li>
+  </ul>
+</div>
+
+<p class="note">Hypothèses : température de jonction visée 90 °C (maximum 125 °C : chaque cycle
+chaud use la puce), marge de 30 % sur le dissipateur, dimensionnement à pleine ouverture puisque
+la marche forcée tourne à 100 %. Le câblage et la protection donnés sont indicatifs : la norme
+NF C 15-100 et un électricien font foi.</p>
+<p class="note"><a href="./">← Application Soleo</a> · <a href="https://github.com/jeremyper/Routeur_f1atb">code source</a></p>
+
+<script>
+const $ = id => document.getElementById(id);
+const n = (v, d=1) => Number(v).toLocaleString("fr-FR", {minimumFractionDigits:d, maximumFractionDigits:d});
+
+/* Theme partage avec l'application */
+function setTheme(t){
+  document.documentElement.setAttribute("data-theme", t);
+  $("btnTheme").textContent = t === "dark" ? "🌙" : "☀️";
+  try{ localStorage.setItem("soleoTheme", t); }catch(e){}
+}
+(function(){ let t = "dark"; try{ t = localStorage.getItem("soleoTheme") || "dark"; }catch(e){} setTheme(t); })();
+$("btnTheme").onclick = () => setTheme(document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark");
+
+const DISSIPATEURS = [
+  {nom:"Petit radiateur fourni en kit", dim:"≈ 100 × 50 mm", rth:2.5},
+  {nom:"Profilé 100 × 80 × 25 mm", dim:"générique", rth:2.0},
+  {nom:"Profilé 100 × 80 × 50 mm", dim:"générique", rth:1.5},
+  {nom:"Celduc WF121000", dim:"rail DIN", rth:1.2},
+  {nom:"Celduc WF108110", dim:"90 × 81 × 98 mm, rail DIN", rth:1.1},
+  {nom:"Profilé 100 × 100 × 40 mm", dim:"générique", rth:1.0},
+  {nom:"Celduc WF115100", dim:"110 × 100 × 90 mm, rail DIN", rth:0.9},
+  {nom:"Profilé 150 × 100 × 50 mm", dim:"générique", rth:0.7},
+  {nom:"Celduc WF050000", dim:"110 × 100 × 200 mm", rth:0.55},
+  {nom:"Celduc WF031100", dim:"110 × 120 × 145 mm", rth:0.3},
+];
+const CALIBRES = [25, 40, 50, 60, 75, 80, 100, 120];
+const TJ_VISEE = 90, MARGE = 0.7;
+
+function calcule(){
+  const P = Math.max(0, Number($("P").value) || 0);
+  const nb = Number($("raccord").value);
+  const perso = $("type").value === "perso";
+  $("zoneVd").hidden = !perso;
+  const Vd = perso ? (Number($("Vd").value) || 1.2) : Number($("type").value);
+  const calibre = Number($("calibre").value) || 0;
+  const Rjc = Number($("Rjc").value) || 0.7;
+  const Tamb = Number($("Tamb").value);
+  const montage = Number($("montage").value);        // ailettes couchees : 30 % d'efficacite en moins
+  const Rif = Number($("pate").value);
+
+  // Courant par phase, chaleur par puce et au total (un SSR triphase = 3 puces, un dissipateur)
+  const I = P / (nb * 230);
+  const Ppuce = Vd * I;
+  const Pd = nb * Ppuce;
+  // Tj = Tamb + Pd*(Rth_dissip_effective + Rth_interface) + Ppuce*Rth_jc
+  const RthEffMax = (TJ_VISEE - Tamb - Ppuce * Rjc) / Pd - Rif;
+  const RthMax = RthEffMax * montage;                 // valeur catalogue (verticale) a ne pas depasser
+  const RthCons = RthMax * MARGE;
+
+  $("rI").textContent = n(I) + " A";
+  $("rIs").textContent = nb === 3 ? "par phase" : "";
+  $("rPd").textContent = n(Pd) + " W";
+
+  let v = "";
+  if (!(Pd > 0)) {
+    $("rRth").textContent = "—"; $("rRths").textContent = "";
+  } else if (RthMax <= 0) {
+    $("rRth").textContent = "impossible";
+    $("rRths").textContent = "même dissipateur parfait";
+    v += `<div class="verdict ko">À cette température ambiante, même un dissipateur parfait ne suffit pas.
+          Rafraîchir l'emplacement, choisir un SSR à plus faible chute, ou répartir la charge.</div>`;
+  } else {
+    $("rRth").textContent = "≤ " + n(RthCons, 2) + " K/W";
+    $("rRths").textContent = "conseillé (maximum " + n(RthMax, 2) + ")";
+  }
+
+  // Calibre : plus d'amperes ne refroidit pas, mais donne de la marge en surcharge
+  if (I > 0) {
+    const conseil = CALIBRES.find(c => c >= 2.5 * I) || Math.ceil(2.5 * I / 10) * 10;
+    const r = calibre / I;
+    const cls = r >= 2 ? "ok" : r >= 1.5 ? "attention" : "ko";
+    const txt = r >= 2 ? `Calibre ${calibre} A : bonne marge (${n(r)} fois le courant).`
+              : r >= 1.5 ? `Calibre ${calibre} A : juste (${n(r)} fois le courant). ${conseil} A serait plus serein.`
+              : `Calibre ${calibre} A : insuffisant (${n(r)} fois le courant). Prendre au moins ${conseil} A.`;
+    v += `<div class="verdict ${cls}">${txt}<br><small style="color:var(--txt-dim)">Un calibre plus élevé ne
+          réduit presque pas la chaleur : la chute de tension reste la même. C'est le dissipateur qui protège le SSR.</small></div>`;
+  }
+  $("verdicts").innerHTML = v;
+
+  // Tableau des dissipateurs, du plus petit au plus gros
+  let t = "<tr><th>Dissipateur</th><th>Rth</th><th>Jonction</th><th>Sonde</th><th></th></tr>";
+  let retenu = null;
+  for (const d of DISSIPATEURS) {
+    const eff = d.rth / montage;
+    const Tj = Tamb + Pd * (eff + Rif) + Ppuce * Rjc;
+    const Ts = Tamb + Pd * eff;
+    const st = !(Pd > 0) ? "" : d.rth <= RthCons ? '<span class="pastille p-ok">✓ conseillé</span>'
+             : d.rth <= RthMax ? '<span class="pastille p-att">⚠ juste</span>'
+             : '<span class="pastille p-ko">✗ trop petit</span>';
+    if (!retenu && Pd > 0 && d.rth <= RthCons) retenu = {d, Tj, Ts};
+    t += `<tr><td>${d.nom}<small>${d.dim}</small></td><td>${n(d.rth, 2)}</td>
+          <td>${Pd > 0 ? n(Tj, 0) + " °C" : "—"}</td><td>${Pd > 0 ? n(Ts, 0) + " °C" : "—"}</td><td>${st}</td></tr>`;
+  }
+  $("tabDiss").innerHTML = t;
+
+  // Ventilateur : seulement quand le passif ne suffit plus
+  let f = "";
+  if (Pd > 0 && RthMax > 0) {
+    if (RthCons < 0.3)
+      f = `<div class="verdict ko">Ventilation forcée nécessaire : aucun dissipateur passif courant n'atteint
+           ${n(RthCons, 2)} K/W. Un radiateur de variateur de fréquence ventilé fait l'affaire.</div>`;
+    else if (RthCons < 0.55)
+      f = `<div class="verdict attention">Gros dissipateur passif (200 mm et plus) ou ventilateur.</div>`;
+    else
+      f = `<div class="verdict ok">Pas besoin de ventilateur : un dissipateur passif bien choisi suffit, et
+           c'est plus fiable — un ventilateur qui lâche ramène le SSR à sa température sans dissipateur.</div>`;
+    if (retenu) {
+      const seuil = Math.round(retenu.Ts + 10);
+      f += `<p style="font-size:14px;margin:8px 0 0">Avec le <strong>${retenu.d.nom}</strong>, une sonde sur le
+            dissipateur doit lire environ <strong>${n(retenu.Ts, 0)} °C</strong> à pleine charge. Si tu
+            installes quand même un ventilateur, règle son démarrage vers <strong>${seuil} °C</strong>
+            dans Soleo (Réglages → Ventilateur SSR, mode « module relais » s'il est commandé par relais) :
+            il ne tournera qu'en cas d'anomalie.</p>`;
+    }
+  }
+  $("rFan").innerHTML = f;
+
+  // Cablage et protection, par phase (indicatif)
+  let c = "";
+  if (I > 0) {
+    const r = I <= 20 ? ["2,5 mm²", "20 A"] : I <= 25 ? ["4 mm²", "25 A"] : I <= 32 ? ["6 mm²", "32 A"] : null;
+    c = r ? `<div class="verdict">Circuit dédié${nb === 3 ? ", par phase" : ""} : <strong>${r[0]}</strong>,
+             disjoncteur <strong>${r[1]}</strong> <small style="color:var(--txt-dim)">(indicatif)</small></div>`
+          : `<div class="verdict attention">Au-delà de 32 A par phase : étude par un électricien.</div>`;
+  }
+  $("rCable").innerHTML = c;
+}
+
+$("lieu").onchange = () => { $("Tamb").value = $("lieu").value; calcule(); };
+document.querySelectorAll("input, select").forEach(e => e.addEventListener("input", calcule));
+calcule();
+</script>
+</body>
+</html>

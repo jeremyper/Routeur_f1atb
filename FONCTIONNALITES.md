@@ -495,6 +495,11 @@ utilisée par une action, la sonde ou le port série, le journal le signale.
 GPIO 12 n'est plus proposé : c'est une broche de démarrage, qu'un module relais tirant
 vers le haut peut empêcher de booter.
 
+> 💡 Avant d'ajouter un ventilateur, vérifiez le dissipateur : un SSR meurt de chaleur, pas
+> d'un manque d'ampères, et un dissipateur passif bien choisi rend presque toujours le
+> ventilateur inutile. Le [calculateur de dimensionnement](https://jeremyper.github.io/Routeur_f1atb/dimensionnement.html)
+> donne le dissipateur, le calibre du SSR et le seuil de ventilateur adaptés à votre installation.
+
 ---
 
 ## 16. Historiques et économies

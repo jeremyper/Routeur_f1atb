@@ -50,6 +50,9 @@ Toute redistribution, modifiée ou non, doit rester sous la même licence et fou
 >
 > 📱 **Application de suivi** — installable sur téléphone, se connecte à *votre* broker :
 > [jeremyper.github.io/Routeur_f1atb](https://jeremyper.github.io/Routeur_f1atb/)
+>
+> 🌡️ **Dimensionner son relais statique** — dissipateur, calibre, ventilateur, câblage :
+> [calculateur en ligne](https://jeremyper.github.io/Routeur_f1atb/dimensionnement.html)
 
 ## Aperçu
 
