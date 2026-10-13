@@ -778,6 +778,7 @@ void handleParaVar() {
   conf["PrixActuel"] = serialized(String(PrixKwhActuel(), 3));           //€/kWh du tarif en cours
   conf["EconomieJour"] = serialized(String(EconomieJour, 2));            //€ économisés aujourd'hui
   conf["EconomieMois"] = serialized(String(EconomieMois, 2));            //€ économisés ce mois
+  conf["EnergieRouteeJour"] = serialized(String(EnergieRouteeJour, 0));  //Wh détournés vers l'eau chaude ce jour
   conf["EconomieTotal"] = serialized(String(EconomieTotal, 2));          //€ économisés au total
   conf["ModeAbsenceActif"] = ModeAbsenceActif ? 1 : 0;                   //Absence active en ce moment
   conf["AntiLegioEnCours"] = AntiLegioEnCours ? 1 : 0;                   //Chauffe anti-légionelle en cours

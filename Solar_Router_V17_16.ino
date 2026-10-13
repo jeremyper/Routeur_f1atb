@@ -2,7 +2,7 @@
 // celle du firmware officiel F1ATB (V17.26 et suivantes). La base amont est la V17.16.
 // Format imposé par Stockage.ino : décimal à deux chiffres, converti en entier par
 // round(100 * toFloat()) — "1.00" est stocké 100 et affiché 1.00.
-#define Version "1.27"
+#define Version "1.28"
 #define HOSTNAME "RMS-ESP32-"
 
 /*
@@ -682,6 +682,9 @@ int16_t FanTdemarrage = 40;  //Température de démarrage en °C
 int16_t FanTmax = 60;        //Température à pleine vitesse en °C
 uint8_t FanVitesseMin = 30;  //Vitesse minimale quand actif (%)
 uint8_t FanVitesse = 0;      //Vitesse courante en RAM (0-100%)
+uint8_t FanMode = 0;         //0 = PWM via transistor, 1 = relais tout-ou-rien
+uint8_t FanActifBas = 0;     //Relais : 1 = s'enclenche sur un niveau BAS (modules relais courants)
+#define FAN_HYSTERESIS 3     //Relais : arret 3 °C sous le seuil de demarrage, contre le battement
 int16_t BallonCoefAuto = 70;    //Part du surplus prévu utilisable en % (auto-apprise si SMA actif)
 float Ballon_Besoin = -1;       //kWh nécessaires pour remonter à la cible (-1 = pas de donnée)
 float Ballon_SurplusPrevu = -1; //kWh de surplus solaire attendu
@@ -1092,10 +1095,10 @@ void setup() {
   delay(500);
   LireSerial();
   InitGPIOs();
-  if (FanGpio > 0) {
-    pinMode(FanGpio, OUTPUT);
-    analogWrite(FanGpio, 0);
-  }
+  ConfigureSortieVentilateur();
+  //Les types 4 a 10 et 101 (ecrans CYD, WT32-ETH01) existent dans le firmware F1ATB
+  //mais pas dans Soleo : on le dit, au lieu de laisser l'utilisateur chercher.
+  if (ESP32_Type > 3) StockMessage("Carte type " + String(ESP32_Type) + " : écran / Ethernet non gérés par Soleo, sorties GPIO actives");
   TelnetPrintln("ESP32_Type:" + String(ESP32_Type));
   delay(500);
 
@@ -1492,18 +1495,26 @@ void loop() {
       SuiviEconomieRoutee(dt);  //Cumul continu de l'énergie détournée et de son équivalent en euros
       SuiviUsageBallon();  //Estimation de la consommation d'eau chaude (ballon intelligent)
       GestionAbsence();    //État mode absence + sécurité anti-légionelle
-      // Ventilateur SSR thermorégulé (rampe linéaire Tdemarrage → Tmax)
+      // Ventilateur SSR thermorégulé : PWM (rampe Tdemarrage → Tmax) ou relais (tout-ou-rien)
+      ConfigureSortieVentilateur();
       if (FanGpio > 0 && FanCanalTemp >= 0 && TemperatureValide[FanCanalTemp] > 0) {
         float tSsr = temperature[FanCanalTemp];
         uint8_t nouvelleVitesse = 0;
-        if (tSsr > float(FanTdemarrage)) {
+        if (FanMode == 1) {
+          //Hysteresis : sans elle, une sonde qui oscille autour du seuil ferait
+          //claquer le relais toutes les secondes.
+          bool enMarche = FanVitesse > 0;
+          if (tSsr >= float(FanTdemarrage)) enMarche = true;
+          else if (tSsr <= float(FanTdemarrage - FAN_HYSTERESIS)) enMarche = false;
+          nouvelleVitesse = enMarche ? 100 : 0;
+        } else if (tSsr > float(FanTdemarrage)) {
           float ramp = float(FanTmax - FanTdemarrage);
           float pct = (ramp > 0.0f) ? constrain((tSsr - float(FanTdemarrage)) / ramp, 0.0f, 1.0f) : 1.0f;
           nouvelleVitesse = uint8_t(float(FanVitesseMin) + pct * float(100 - FanVitesseMin));
         }
         if (nouvelleVitesse != FanVitesse) {
           FanVitesse = nouvelleVitesse;
-          analogWrite(FanGpio, map(int(FanVitesse), 0, 100, 0, 255));
+          PiloteSortieVentilateur();
         }
       }
     }
@@ -1883,14 +1894,17 @@ void GestionOverproduction(unsigned long dt) {  // appelée à ~200ms, dt = dur�
 }
 
 void InitGPIOs() {
-  if (ESP32_Type > 0) {
-    //En premier pour affecter le GPIO au constructeur OneWire
-    for (int i = 0; i < NbActions; i++) {
-      LesActions[i].InitGpio();
-      Gpio[i] = LesActions[i].Gpio;
-      OutOn[i] = LesActions[i].OutOn;
-      OutOff[i] = LesActions[i].OutOff;
-    }
+  //Les sorties des actions etaient conditionnees a ESP32_Type > 0. Or un type de
+  //carte que Soleo ne propose pas (ecrans, WT32-ETH01) ne peut pas s'afficher dans
+  //les Reglages : il etait remplace par 0 au premier enregistrement, et TOUTES les
+  //sorties s'eteignaient sans autre signe qu'un message au demarrage. Un GPIO
+  //renseigne dans une action est un choix explicite : on l'honore.
+  //En premier pour affecter le GPIO au constructeur OneWire
+  for (int i = 0; i < NbActions; i++) {
+    LesActions[i].InitGpio();
+    Gpio[i] = LesActions[i].Gpio;
+    OutOn[i] = LesActions[i].OutOn;
+    OutOff[i] = LesActions[i].OutOff;
   }
 
   Init_LED_OLED();
@@ -1912,6 +1926,47 @@ void InitGPIOs() {
   AnalogIn0 = Analog0[pUxI];
   AnalogIn1 = Analog1[pUxI];
   AnalogIn2 = Analog2[pUxI];
+}
+
+//Sortie du ventilateur de SSR. Deux cablages coexistent :
+// - un transistor sur le connecteur FAN : PWM, vitesse en rampe ;
+// - un module relais : tout-ou-rien. Un relais ne suit pas un PWM a 1 kHz — il
+//   gresille ou ne colle pas, et ne s'enclenche franchement qu'a 100 %, donc
+//   seulement au-dela de FanTmax. La plupart des modules relais s'enclenchent en
+//   outre sur un niveau BAS.
+void PiloteSortieVentilateur() {
+  if (FanGpio <= 0) return;
+  if (FanMode == 1) {
+    bool actif = FanVitesse > 0;
+    digitalWrite(FanGpio, (actif != (FanActifBas == 1)) ? HIGH : LOW);
+  } else {
+    analogWrite(FanGpio, map(int(FanVitesse), 0, 100, 0, 255));
+  }
+}
+
+//(Re)configure la broche des que le reglage change. Auparavant pinMode n'etait
+//appele qu'au demarrage : changer de broche ou de cablage ne prenait effet
+//qu'apres une relance, ce qui ressemble a s'y meprendre a une sortie morte.
+void ConfigureSortieVentilateur() {
+  static int8_t brocheCfg = -1;
+  static uint8_t modeCfg = 255, basCfg = 255;
+  if (FanGpio == brocheCfg && FanMode == modeCfg && FanActifBas == basCfg) return;
+  if (brocheCfg > 0 && brocheCfg != FanGpio) pinMode(brocheCfg, INPUT);  //libere l'ancienne broche
+  brocheCfg = FanGpio;
+  modeCfg = FanMode;
+  basCfg = FanActifBas;
+  FanVitesse = 0;
+  if (FanGpio <= 0) return;
+  pinMode(FanGpio, OUTPUT);
+  PiloteSortieVentilateur();  //etat arret, au bon niveau pour le cablage choisi
+  //Une broche partagee est pilotee par deux fonctions a la fois : l'une ecrase
+  //l'autre sans rien signaler.
+  String conflit = "";
+  for (int i = 0; i < NbActions; i++)
+    if (Gpio[i] == FanGpio) conflit = "l'action " + String(i);
+  if (pTemp > 0 && pinTemp[pTemp] == FanGpio) conflit = "la sonde de température";
+  if (pSerial > 0 && (RXD2 == FanGpio || TXD2 == FanGpio)) conflit = "le port série";
+  if (conflit != "") StockMessage("Ventilateur : GPIO " + String(FanGpio) + " déjà utilisé par " + conflit);
 }
 
 void infoSerieAP() {

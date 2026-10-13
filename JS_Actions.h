@@ -176,6 +176,14 @@ function TracePlanning(iAct) {
 
         if (action.OrdreOn.indexOf(IS) > 0) {
             const vals = action.OrdreOn.split(IS);
+            // Broche absente de la liste de la carte : on l'ajoute plutot que de
+            // laisser le champ vide, que l'enregistrement aurait transforme en
+            // « aucune broche » — la sortie disparaissait sans un mot.
+            if (selectPin && ![...selectPin.options].some(o => o.value === vals[0])) {
+                const o = document.createElement("option");
+                o.value = vals[0]; o.textContent = "gpio:" + vals[0] + " (hors liste)";
+                selectPin.appendChild(o);
+            }
             if (selectPin) selectPin.value = vals[0];
             if (selectOut) selectOut.value = vals[1];
         } else {
@@ -1190,7 +1198,7 @@ function Send_Values(){
         action.PID = GID("PID" + iAct).checked ? 1 : 0;
         
         const selectPin = GID("selectPin" + iAct);
-        if (selectPin && selectPin.value >= 0) {
+        if (selectPin && selectPin.value !== "" && selectPin.value >= 0) {
             // Reconstruit OrdreOn pour la sortie GPIO/relais (Pin + Sortie)
             const selectOut = GID("selectOut" + iAct);
             action.OrdreOn = selectPin.value + IS + selectOut.value;
@@ -1209,7 +1217,12 @@ function Send_Values(){
             }
         
         // Logique d'effacement de l'action
-        if (selectPin && (selectPin.value == 0 || action.Titre === "")) {
+        // Comparaison STRICTE : en JavaScript "" == 0 est vrai. Un champ resté vide
+        // (broche absente de la liste) supprimait l'action entière à l'enregistrement.
+        // Seul le choix explicite « pas choisi ou supprimer » (valeur "0") efface.
+        // L'action 0 (chauffe-eau, pilotée depuis l'accueil) n'est jamais effacée :
+        // la garde iAct > 0 du firmware F1ATB avait été perdue dans Soleo.
+        if (iAct > 0 && selectPin && (selectPin.value === "0" || action.Titre === "")) {
             action.Actif = -1; // Marque l'action à effacer
         }
         action.NbPeriode= action.Periodes.length;

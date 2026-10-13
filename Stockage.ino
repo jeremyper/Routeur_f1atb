@@ -382,6 +382,8 @@ void DeserializeConfiguration(String json) {
   FanTdemarrage = conf["FanTdemarrage"].isNull() ? FanTdemarrage : conf["FanTdemarrage"].as<int16_t>();
   FanTmax = conf["FanTmax"].isNull() ? FanTmax : conf["FanTmax"].as<int16_t>();
   FanVitesseMin = conf["FanVitesseMin"].isNull() ? FanVitesseMin : conf["FanVitesseMin"].as<uint8_t>();
+  FanMode = conf["FanMode"].isNull() ? FanMode : conf["FanMode"].as<uint8_t>();
+  FanActifBas = conf["FanActifBas"].isNull() ? FanActifBas : conf["FanActifBas"].as<uint8_t>();
   NotifOn = conf["NotifOn"] | 0;
   NotifUrl = conf["NotifUrl"].isNull() ? NotifUrl : conf["NotifUrl"].as<String>();
   DelestageOn = conf["DelestageOn"] | 0;
@@ -564,6 +566,8 @@ String SerializeConfiguration() {
   conf["FanTdemarrage"] = FanTdemarrage;
   conf["FanTmax"] = FanTmax;
   conf["FanVitesseMin"] = FanVitesseMin;
+  conf["FanMode"] = FanMode;
+  conf["FanActifBas"] = FanActifBas;
   conf["NotifOn"] = NotifOn;
   conf["NotifUrl"] = NotifUrl;
   conf["DelestageOn"] = DelestageOn;

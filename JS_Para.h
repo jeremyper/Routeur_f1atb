@@ -4,6 +4,22 @@
 // SendValues, checkDisabled — IDs HTML inchangés.
 //***************************************************
 const char * ParaJS1 = R"====(
+// Affecte une valeur a un <select>. Si elle n'y figure pas, on AJOUTE l'option :
+// sinon le navigateur laisse le champ vide, et le premier enregistrement ecrit
+// « vide » a la place de la valeur — c'est ainsi qu'un type de carte venu du
+// firmware F1ATB retombait a 0 et eteignait toutes les sorties.
+function SelectGarde(id, valeur, libelle) {
+  const sel = GID(id);
+  if (!sel || valeur === undefined || valeur === null) return;
+  const v = String(valeur);
+  if (![...sel.options].some(o => o.value === v)) {
+    const o = document.createElement("option");
+    o.value = v; o.textContent = libelle;
+    sel.appendChild(o);
+  }
+  sel.value = v;
+}
+
 var refTempIP = [];
 var dirty = false;
 var toastT;
@@ -182,7 +198,7 @@ function SetParaFixe() {
     GID("ComSurv").value = F.ComSurv;
     GID("Serie").value = F.pSerial;
     GID("Serial2V").value = F.Serial2V;
-    GID("ESP").value = F.ESP32_Type;
+    SelectGarde("ESP", F.ESP32_Type, "Type " + F.ESP32_Type + " — non géré par Soleo (écran / Ethernet)");
     GID("pLED").value = F.LEDgroupe;
     GID("pUxI").value = F.pUxI;
     GID("PTemp").value = F.pTemp;
@@ -206,7 +222,9 @@ function SetParaFixe() {
     GID("BallonPuissance").value = F.BallonPuissance !== undefined ? F.BallonPuissance : 2400;
     GID("BallonModeIntel").checked = F.BallonModeIntel == 1;
     GID("BallonTmin").value = F.BallonTmin !== undefined ? F.BallonTmin : 40;
-    GID("FanGpio").value = F.FanGpio !== undefined ? F.FanGpio : 0;
+    SelectGarde("FanGpio", F.FanGpio !== undefined ? F.FanGpio : 0, "GPIO " + F.FanGpio + " (hors liste)");
+    GID("FanMode").value = F.FanMode !== undefined ? F.FanMode : 0;
+    GID("FanActifBas").value = F.FanActifBas !== undefined ? F.FanActifBas : 0;
     GID("FanCanalTemp").value = F.FanCanalTemp !== undefined ? F.FanCanalTemp : -1;
     GID("FanTdemarrage").value = F.FanTdemarrage !== undefined ? F.FanTdemarrage : 40;
     GID("FanTmax").value = F.FanTmax !== undefined ? F.FanTmax : 60;
@@ -289,6 +307,8 @@ function SendValues() {
   F.FanTdemarrage = parseInt(GID("FanTdemarrage").value, 10) || 40;
   F.FanTmax = parseInt(GID("FanTmax").value, 10) || 60;
   F.FanVitesseMin = parseInt(GID("FanVitesseMin").value, 10) || 30;
+  F.FanMode = parseInt(GID("FanMode").value, 10) || 0;
+  F.FanActifBas = parseInt(GID("FanActifBas").value, 10) || 0;
   F.NotifOn = GID("NotifOn").checked ? 1 : 0;
   F.NotifUrl = GID("NotifUrl").value.trim();
   F.DelestageOn = GID("DelestageOn").checked ? 1 : 0;
@@ -441,6 +461,10 @@ function checkDisabled() {
     // Ventilateur SSR : champs détaillés visibles seulement si un GPIO est sélectionné
     const fanVisible = GID("FanGpio").value != "0";
     document.querySelectorAll(".ligneFan").forEach(l => { l.style.display = fanVisible ? "" : "none"; });
+    // Relais : ni rampe ni vitesse minimale, mais un niveau actif a choisir
+    const fanRelais = GID("FanMode").value == "1";
+    document.querySelectorAll(".ligneFanPwm").forEach(l => { if (fanVisible) l.style.display = fanRelais ? "none" : ""; });
+    document.querySelectorAll(".ligneFanRelais").forEach(l => { if (fanVisible) l.style.display = fanRelais ? "" : "none"; });
 
     // Notifications : adresse et test visibles seulement si le service est activé
     const notifVisible = GID("NotifOn").checked;

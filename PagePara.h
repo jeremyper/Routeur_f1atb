@@ -225,19 +225,35 @@ body{padding-bottom:90px}
 <details class="acc" id="accVentil">
 <summary><span class="aico">🌀</span><span class="atit">Ventilateur SSR<small>Refroidissement thermorégulé par sonde</small></span><span class="chev">▼</span></summary>
 <div class="abody">
-<div class="row"><label for="FanGpio">Broche GPIO du ventilateur<span class="hint">Broche câblée sur le connecteur FAN de la carte (PWM via transistor)</span></label>
+<div class="row"><label for="FanGpio">Broche GPIO du ventilateur<span class="hint">Broche qui commande le ventilateur, par transistor ou par module relais</span></label>
 <select id="FanGpio" name="FanGpio" onchange="checkDisabled();" onclick="checkDisabled();">
 <option value="0">Désactivé</option>
 <option value="4">GPIO 4</option>
 <option value="5">GPIO 5</option>
-<option value="12">GPIO 12</option>
 <option value="13">GPIO 13</option>
 <option value="14">GPIO 14</option>
+<option value="16">GPIO 16</option>
+<option value="17">GPIO 17</option>
+<option value="18">GPIO 18</option>
+<option value="19">GPIO 19</option>
+<option value="21">GPIO 21</option>
+<option value="22">GPIO 22</option>
+<option value="23">GPIO 23</option>
 <option value="25">GPIO 25</option>
 <option value="26">GPIO 26</option>
 <option value="27">GPIO 27</option>
 <option value="32">GPIO 32</option>
 <option value="33">GPIO 33</option>
+</select></div>
+<div class="row ligneFan" style="display:none"><label for="FanMode">Commande<span class="hint">Un relais ne suit pas une vitesse variable : il ne fait que marche / arrêt</span></label>
+<select id="FanMode" name="FanMode" onchange="checkDisabled();">
+<option value="0">Transistor — vitesse progressive (PWM)</option>
+<option value="1">Module relais — marche / arrêt</option>
+</select></div>
+<div class="row ligneFan ligneFanRelais" style="display:none"><label for="FanActifBas">Le relais s'enclenche sur<span class="hint">La plupart des modules relais du commerce s'enclenchent sur un niveau bas</span></label>
+<select id="FanActifBas" name="FanActifBas">
+<option value="0">Niveau haut (3,3 V)</option>
+<option value="1">Niveau bas (0 V)</option>
 </select></div>
 <div class="row ligneFan" style="display:none"><label for="FanCanalTemp">Sonde de température à surveiller<span class="hint">Sonde posée sur le dissipateur du SSR</span></label>
 <select id="FanCanalTemp" name="FanCanalTemp">
@@ -247,9 +263,9 @@ body{padding-bottom:90px}
 <option value="2">Canal 2</option>
 <option value="3">Canal 3</option>
 </select></div>
-<div class="row ligneFan" style="display:none"><label for="FanTdemarrage">Température de démarrage (°C)<span class="hint">Le ventilateur démarre à vitesse minimale dès ce seuil</span></label><input type="number" id="FanTdemarrage" name="FanTdemarrage" step="1" min="20" max="80"></div>
-<div class="row ligneFan" style="display:none"><label for="FanTmax">Température pleine vitesse (°C)<span class="hint">Au-delà, le ventilateur tourne à 100%</span></label><input type="number" id="FanTmax" name="FanTmax" step="1" min="30" max="100"></div>
-<div class="row ligneFan" style="display:none"><label for="FanVitesseMin">Vitesse minimale (%)<span class="hint">Évite le calage au démarrage — typiquement 20 à 40%</span></label><input type="number" id="FanVitesseMin" name="FanVitesseMin" step="5" min="0" max="80"></div>
+<div class="row ligneFan" style="display:none"><label for="FanTdemarrage">Température de démarrage (°C)<span class="hint">Démarrage à ce seuil. En relais, arrêt 3 °C plus bas pour éviter les claquements</span></label><input type="number" id="FanTdemarrage" name="FanTdemarrage" step="1" min="20" max="80"></div>
+<div class="row ligneFan ligneFanPwm" style="display:none"><label for="FanTmax">Température pleine vitesse (°C)<span class="hint">Au-delà, le ventilateur tourne à 100%</span></label><input type="number" id="FanTmax" name="FanTmax" step="1" min="30" max="100"></div>
+<div class="row ligneFan ligneFanPwm" style="display:none"><label for="FanVitesseMin">Vitesse minimale (%)<span class="hint">Évite le calage au démarrage — typiquement 20 à 40%</span></label><input type="number" id="FanVitesseMin" name="FanVitesseMin" step="5" min="0" max="80"></div>
 </div>
 </details>
 

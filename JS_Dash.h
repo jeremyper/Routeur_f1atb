@@ -4,6 +4,7 @@
 //*****************************************************
 const char *DashJS = R"====(
 var pwImport=0,pwExport=0,kwhJourSout=0,ssrOuvre=-1,forceBallon=0,lastOk=0;
+var kwhJourEau=null;     //kWh consommes par le chauffe-eau ce jour (voie T du JSY-MK-194T)
 
 function fmt1(n){return (Math.round(n*10)/10).toFixed(1).replace(".",",");}
 function eur(n){return n.toFixed(2).replace(".",",");}
@@ -33,6 +34,9 @@ async function PollData(){
     pwImport=parseFloat(G1[0])||0;       //Puissance soutirée W
     pwExport=parseFloat(G1[1])||0;       //Puissance injectée W
     kwhJourSout=(parseFloat(G1[4])||0)/1000;
+    // Le groupe T n'existe qu'en UxIx2 : [Deb, maison, T, Fin]. Il mesure toute
+    // l'energie du chauffe-eau, soleil et reseau confondus.
+    kwhJourEau=(g.length>=4&&g[2].indexOf("Fin")<0)?(parseFloat(g[2].split(RS)[4])||0)/1000:null;
     lastOk=Date.now();
     echecs=0;
     MajFlux();MajTuiles();
@@ -202,6 +206,18 @@ function MajTuiles(){
   else if(besoin>=0&&surplus>=0)sb=(besoin-surplus>0.05)?"🌙 Chauffe prévue cette nuit":"☀️ Le soleil suffira";
   else sb="En attente de surplus";
   GH("tBallonSub",sb);
+  // kWh du jour : total mesure par la voie T, part solaire issue du suivi du routage.
+  // Sans voie T (UxI), seule la part solaire est connue, et encore : elle depend
+  // de la meme mesure. On n'affiche que ce qui est reellement mesure.
+  const solaire=(V&&V.EnergieRouteeJour!==undefined)?parseFloat(V.EnergieRouteeJour)/1000:null;
+  let k="";
+  if(kwhJourEau!==null){
+    k=fmt1(kwhJourEau)+" kWh aujourd'hui";
+    if(solaire!==null&&solaire>=0.05)k+=" · dont "+fmt1(solaire)+" solaires";
+  }else if(solaire!==null&&solaire>=0.05){
+    k=fmt1(solaire)+" kWh solaires aujourd'hui";
+  }
+  GH("tBallonKwh",k);
   //Ce mois
   const eco=parseFloat(V.EconomieMois)||0;
   GH("tMois",eur(eco)+" €");

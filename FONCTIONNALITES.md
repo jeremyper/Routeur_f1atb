@@ -461,20 +461,39 @@ Jusqu'à **8 ESP32-RMS** peuvent être interconnectés.
 
 ## 15. Ventilateur thermorégulé SSR
 
-Gestion d'un ventilateur de refroidissement pour le SSR/Triac.
+Gestion d'un ventilateur de refroidissement pour le SSR, piloté par une sonde DS18B20
+posée sur le dissipateur.
 
 ### Paramètres
 | Paramètre | Description |
 |-----------|-------------|
-| `FanGpio` | Broche GPIO de commande du ventilateur |
+| `FanGpio` | Broche de commande. Proposées : 4, 5, 13, 14, 16 à 19, 21 à 23, 25 à 27, 32, 33 |
+| `FanMode` | **Transistor** (vitesse progressive, PWM) ou **module relais** (marche / arrêt) |
+| `FanActifBas` | Relais uniquement : s'enclenche sur un niveau **haut** ou **bas** |
 | `FanCanalTemp` | Canal de sonde de température à surveiller |
-| `FanTdemarrage` | Température de démarrage du ventilateur (°C) |
-| `FanTmax` | Température à pleine vitesse (°C) |
+| `FanTdemarrage` | Température de démarrage (°C) |
+| `FanTmax` | Transistor uniquement : température de pleine vitesse (°C) |
+| `FanVitesseMin` | Transistor uniquement : vitesse minimale quand il tourne (%) |
 
 ### Comportement
-- Commande **PWM proportionnelle** entre Tdémarrage et Tmax
-- Arrêt automatique sous Tdémarrage
-- Permet de réduire le bruit en dehors des périodes de forte dissipation
+- **Transistor** : vitesse proportionnelle entre `FanTdemarrage` et `FanTmax`, arrêt
+  sous `FanTdemarrage`.
+- **Relais** : marche dès `FanTdemarrage`, arrêt 3 °C plus bas. L'écart évite qu'une
+  sonde oscillant autour du seuil fasse claquer le relais en permanence.
+
+> ⚠️ **Un relais ne se commande pas en PWM.** Il ne suit pas une modulation à 1 kHz :
+> il grésille ou ne colle pas, et ne s'enclenche franchement qu'à 100 %. Choisissez le
+> mode « module relais » dès qu'un relais est câblé.
+>
+> La plupart des modules relais du commerce s'enclenchent sur un **niveau bas** :
+> si votre ventilateur tourne en permanence et s'arrête quand il devrait démarrer,
+> inversez le niveau actif.
+
+Un changement de broche ou de mode s'applique **sans redémarrage**. Si la broche est déjà
+utilisée par une action, la sonde ou le port série, le journal le signale.
+
+GPIO 12 n'est plus proposé : c'est une broche de démarrage, qu'un module relais tirant
+vers le haut peut empêcher de booter.
 
 ---
 

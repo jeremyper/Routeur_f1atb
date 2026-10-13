@@ -119,7 +119,7 @@ body{padding-bottom:20px}
 <div class="tiles">
 <div class="tile"><div class="ttl"><span class="emo">🌤️</span>Production</div><div class="reading" id="tPv">—</div><div class="state" id="tPvSub">en attente</div><span class="chip-status on" id="tPvChip" style="display:none"></span></div>
 <div class="tile"><div class="ttl"><span class="emo">🏠</span>Maison</div><div class="reading" id="tMaison">—</div><div class="state" id="tMaisonSub">—</div><span class="chip-status on" id="tMaisonChip" style="display:none"><span class="dotpulse"></span>100% solaire</span></div>
-<div class="tile"><div class="ttl"><span class="emo">🚿</span>Eau chaude</div><div class="reading" id="tBallon">—</div><div class="state" id="tBallonSub">—</div><div class="bar"><span id="tBallonBar" style="width:0%"></span></div><div class="btnrow"><button class="mini" onclick="Forcer(1)">Forcer</button><button class="mini" onclick="Forcer(-1)">Arrêter</button></div></div>
+<div class="tile"><div class="ttl"><span class="emo">🚿</span>Eau chaude</div><div class="reading" id="tBallon">—</div><div class="state" id="tBallonSub">—</div><div class="state" id="tBallonKwh"></div><div class="bar"><span id="tBallonBar" style="width:0%"></span></div><div class="btnrow"><button class="mini" onclick="Forcer(1)">Forcer</button><button class="mini" onclick="Forcer(-1)">Arrêter</button></div></div>
 <div class="tile"><div class="ttl"><span class="emo">💶</span>Ce mois</div><div class="reading" id="tMois">—</div><div class="state" id="tMoisSub">—</div></div>
 </div>
 </section>
