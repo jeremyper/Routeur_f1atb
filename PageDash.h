@@ -101,6 +101,10 @@ body{padding-bottom:20px}
 <line id="fHome" class="flow-dot" x1="160" y1="60" x2="72" y2="232" stroke="var(--sun-soft)" stroke-width="3.5" stroke-dasharray="2 9" stroke-linecap="round" opacity="0"/>
 <path d="M160 60 L248 232" stroke="var(--water)" stroke-width="3" fill="none" opacity=".3"/>
 <line id="fWater" class="flow-dot" x1="160" y1="60" x2="248" y2="232" stroke="var(--water)" stroke-width="3.5" stroke-dasharray="2 9" stroke-linecap="round" opacity="0"/>
+<path d="M160 284 L58 250 M160 284 L262 250" stroke="var(--line)" stroke-width="3" fill="none" opacity=".6"/>
+<line id="fGridHome" class="flow-dot" x1="160" y1="284" x2="58" y2="250" stroke="var(--grid-imp)" stroke-width="3.5" stroke-dasharray="2 9" stroke-linecap="round" opacity="0"/>
+<line id="fGridWater" class="flow-dot" x1="160" y1="284" x2="262" y2="250" stroke="var(--grid-imp)" stroke-width="3.5" stroke-dasharray="2 9" stroke-linecap="round" opacity="0"/>
+<g transform="translate(160 284)"><circle id="nGrid" r="20" fill="#4a5568"/><text y="7" text-anchor="middle" font-size="19">🔌</text></g>
 <g transform="translate(160 36)"><circle r="22" fill="var(--sun)"/><text y="7" text-anchor="middle" font-size="22">☀️</text></g>
 <g transform="translate(58 250)"><circle r="22" fill="var(--home)"/><text y="7" text-anchor="middle" font-size="20">🏠</text></g>
 <g transform="translate(262 250)"><circle r="22" fill="var(--water)"/><text y="7" text-anchor="middle" font-size="20">🚿</text></g>
@@ -111,7 +115,7 @@ body{padding-bottom:20px}
 <div class="flow-legend">
 <div class="leg"><div class="lbl"><span class="swatch" style="background:var(--home)"></span>Maison</div><div class="val" id="legHome">—</div></div>
 <div class="leg"><div class="lbl"><span class="swatch" style="background:var(--water)"></span>Eau chaude</div><div class="val" id="legWater">—</div></div>
-<div class="leg"><div class="lbl"><span class="swatch" style="background:var(--grid-exp)"></span>Réseau</div><div class="val" id="legGrid">—</div></div>
+<div class="leg"><div class="lbl"><span class="swatch" id="swGrid" style="background:var(--grid-exp)"></span>Réseau</div><div class="val" id="legGrid">—</div></div>
 </div>
 </section>
 <section>

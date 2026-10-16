@@ -5,6 +5,7 @@
 const char *DashJS = R"====(
 var pwImport=0,pwExport=0,kwhJourSout=0,ssrOuvre=-1,forceBallon=0,lastOk=0;
 var kwhJourEau=null;     //kWh consommes par le chauffe-eau ce jour (voie T du JSY-MK-194T)
+var pwEau=null;          //Puissance mesuree sur la voie T (W), null sans voie T
 
 function fmt1(n){return (Math.round(n*10)/10).toFixed(1).replace(".",",");}
 function eur(n){return n.toFixed(2).replace(".",",");}
@@ -36,7 +37,9 @@ async function PollData(){
     kwhJourSout=(parseFloat(G1[4])||0)/1000;
     // Le groupe T n'existe qu'en UxIx2 : [Deb, maison, T, Fin]. Il mesure toute
     // l'energie du chauffe-eau, soleil et reseau confondus.
-    kwhJourEau=(g.length>=4&&g[2].indexOf("Fin")<0)?(parseFloat(g[2].split(RS)[4])||0)/1000:null;
+    const voieT=(g.length>=4&&g[2].indexOf("Fin")<0)?g[2].split(RS):null;
+    kwhJourEau=voieT?(parseFloat(voieT[4])||0)/1000:null;
+    pwEau=voieT?Math.max(0,(parseFloat(voieT[0])||0)-(parseFloat(voieT[1])||0)):null;
     lastOk=Date.now();
     echecs=0;
     MajFlux();MajTuiles();
@@ -123,9 +126,29 @@ function MajFlux(){
   const sma=V&&V.SmaOn==1;
   const pv=sma?Math.max(0,parseFloat(V.PuissancePV)||0):null;
   const net=pwImport-pwExport; //>0 : import réseau
-  let rout=0;
-  if(pv!==null&&ssrOuvre>0)rout=Math.min(pv,pv*(parseFloat(V.BallonCoefAuto)||0)/100);
-  const maison=(pv!==null)?Math.max(0,pv+net-rout):Math.max(0,net);
+  // Chauffe-eau : la voie T mesure la puissance reelle de la resistance, soleil et
+  // reseau confondus (marche forcee de nuit comprise). Sans voie T, on garde
+  // l'ancienne estimation, qui ne voit que la part solaire.
+  let eau=0;
+  if(pwEau!==null)eau=pwEau;
+  else if(pv!==null&&ssrOuvre>0)eau=Math.min(pv,pv*(parseFloat(V.BallonCoefAuto)||0)/100);
+  // Repartition : le solaire sert d'abord la maison, puis l'eau ; le reste vient du
+  // reseau (import) ou y repart (export).
+  let maison,solMaison,solEau,resMaison,resEau;
+  if(pv!==null){
+    maison=Math.max(0,pv+net-eau);
+    solMaison=Math.min(pv,maison);
+    solEau=Math.min(eau,pv-solMaison);
+    resMaison=maison-solMaison;
+    resEau=eau-solEau;
+  }else{
+    resEau=(net>0)?Math.min(eau,net):0;
+    resMaison=Math.max(0,net-resEau);
+    solEau=eau-resEau;
+    solMaison=0;
+    maison=resMaison;
+  }
+  const rout=solEau;
   //Au repos (nuit, ou pas d'onduleur declare) le cercle affichait un tiret :
   //on montre plutot la prevision utile — celle du jour le matin, celle de demain le soir.
   if(pv!==null&&pv>50){
@@ -149,12 +172,22 @@ function MajFlux(){
   const ratio=(pv!==null)?Math.min(1,pv/crete):0;
   GID("arcSun").setAttribute("stroke-dashoffset",String(Math.round(754*(1-ratio))));
   GH("legHome",kW(maison));
-  GH("legWater",kW(rout));
+  GH("legWater",kW(eau));
   GH("legGrid",kW(net));
-  SetFlux("fHome",(pv!==null)?Math.max(0,Math.min(pv-rout,maison)):0);
-  SetFlux("fWater",rout);
+  const coulRes=(net<-10)?"var(--grid-exp)":"var(--grid-imp)";
+  GID("swGrid").style.background=coulRes;
+  GID("nGrid").setAttribute("fill",(net>50)?"var(--grid-imp)":(net<-50)?"var(--grid-exp)":"#4a5568");
+  SetFlux("fHome",solMaison);
+  SetFlux("fWater",solEau);
+  // Import : reseau -> maison. Export : le meme trait, anime dans l'autre sens.
+  const gh=GID("fGridHome");
+  gh.setAttribute("stroke",coulRes);
+  gh.style.animationDirection=(net<-10)?"reverse":"normal";
+  SetFlux("fGridHome",(net<-10)?-net:resMaison);
+  SetFlux("fGridWater",resEau);
   let ic,t,m,bg;
-  if(pv!==null&&pv>50){
+  if(resEau>50&&!(pv!==null&&pv>50)){ic="🔥";t="Chauffe sur le réseau.";m="Le chauffe-eau tire "+kW(resEau)+" du réseau (marche forcée ou heures creuses).";bg="radial-gradient(circle,var(--grid-imp),#a8432f)";}
+  else if(pv!==null&&pv>50){
     if(net<=10&&rout>0){ic="☀️";t="Tout roule.";m="Le soleil couvre la maison et le surplus chauffe votre eau.";bg="radial-gradient(circle,var(--grid-exp),#2faa6c)";}
     else if(net<=10){ic="✨";t="Surplus disponible.";m="Vous produisez plus que vous ne consommez : "+kW(net)+" repartent vers le réseau.";bg="radial-gradient(circle,var(--sun),#e98a1a)";}
     else{ic="🌤️";t="Production limitée.";m="Le solaire aide, mais "+kW(net)+" sont encore achetés au réseau.";bg="radial-gradient(circle,#e8a14a,#cf7d1a)";}

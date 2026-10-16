@@ -162,7 +162,8 @@ void StockFichier(String filename, String Contenu) {  //Fichier de données
 void RecordEnergieEncours(String date) {
   JsonDocument conf;
 
-  conf["Date"] = date;
+  //Date des références et non du jour : un fichier périmé doit rester reconnaissable après un reboot
+  conf["Date"] = (DateFichierEnergie.length() == 8) ? DateFichierEnergie : date;
   conf["Energie_M_Soutiree"] = EAS_M_J0;  //Références de minuit, pas les totaux courants
   conf["Energie_M_Injectee"] = EAI_M_J0;
   conf["Energie_T_Soutiree"] = EAS_T_J0;
@@ -219,6 +220,7 @@ void LectureConsoMatinJour(void) {
     return;
   }
 
+  DateFichierEnergie = conf["Date"] | "";
   EAS_T_J0 = conf["Energie_T_Soutiree"];  //Triac
   EAI_T_J0 = conf["Energie_T_Injectee"];
   EAS_M_J0 = conf["Energie_M_Soutiree"];  //Maison

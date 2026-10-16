@@ -491,6 +491,7 @@ bool EnergieActiveValide = false;
 long EAS_T_J0 = 0;
 long EAI_T_J0 = 0;
 long EAS_M_J0 = 0;  //Debut du jour energie active
+String DateFichierEnergie = "";  //Jour auquel appartiennent les références de minuit (AAAAMMJJ)
 long EAI_M_J0 = 0;
 float Tension_T, Intensite_T, PowerFactor_T, Frequence;
 float Tension_M, Intensite_M, PowerFactor_M;
@@ -1984,6 +1985,7 @@ void infoSerieAP() {
 
 void EnergieQuotidienne() {
   if (HeureValide && Source != "Ext") {
+    ControleReferencesMinuit();
     if (Energie_M_Soutiree < EAS_M_J0 || EAS_M_J0 == 0) {
       EAS_M_J0 = Energie_M_Soutiree;
     }
@@ -2001,6 +2003,29 @@ void EnergieQuotidienne() {
     }
     EnergieJour_T_Injectee = Energie_T_Injectee - EAI_T_J0;
   }
+}
+
+//Références de minuit périmées : le fichier /EnergieMinuit.eng date d'avant-hier ou plus
+//(routeur éteint au passage de minuit, ou fichier laissé par une autre version du
+//firmware). Sans ce contrôle, l'énergie "du jour" couvrait des semaines de consommation.
+//On repart alors des compteurs actuels : la journée en cours recommence à zéro.
+void ControleReferencesMinuit() {
+  static bool fait = false;
+  if (fait) return;
+  fait = true;
+  if (DateFichierEnergie.length() != 8) return;  //Date inconnue : on ne peut pas juger
+  time_t hier = time(NULL) - 86400;
+  struct tm tmHier;
+  localtime_r(&hier, &tmHier);
+  char buf[9];
+  strftime(buf, sizeof(buf), "%Y%m%d", &tmHier);
+  if (DateFichierEnergie == DateAMJ || DateFichierEnergie == String(buf)) return;
+  JournalAjoute("Compteurs du jour : référence de minuit du " + DateFichierEnergie + " périmée, recalage sur les compteurs actuels");
+  EAS_M_J0 = 0;  //0 = recalé sur le compteur courant par EnergieQuotidienne()
+  EAI_M_J0 = 0;
+  EAS_T_J0 = 0;
+  EAI_T_J0 = 0;
+  DateFichierEnergie = DateAMJ;
 }
 
 void H_Ouvre_Equivalent(unsigned long dt) {
