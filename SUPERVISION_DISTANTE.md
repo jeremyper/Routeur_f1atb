@@ -17,7 +17,7 @@ Votre téléphone va simplement les y lire.
 Personne n'entre chez vous. Le routeur sort déposer ses données, vous allez les chercher.
 
 ```
-   Routeur  ──── dépose ────►  Broker (HiveMQ)  ◄──── consulte ────  Téléphone
+   Routeur  ──── dépose ────►  Broker (EMQX)    ◄──── consulte ────  Téléphone
    (chez vous)                   (internet)                          (n'importe où)
 ```
 
@@ -28,47 +28,70 @@ Personne n'entre chez vous. Le routeur sort déposer ses données, vous allez le
 
 ---
 
-## Étape 1 — Créer un compte HiveMQ Cloud
+## Étape 1 — Créer un compte EMQX Cloud
 
-HiveMQ propose une offre gratuite largement suffisante pour un routeur.
-**Chacun crée son propre compte** : vos données ne transitent par aucune infrastructure
-partagée.
+EMQX propose une offre **Serverless** gratuite, largement suffisante pour un routeur :
+1 million de minutes de connexion et 1 Go de trafic par mois, soit une vingtaine
+d'appareils connectés en permanence. **Chacun crée son propre compte** : vos données ne
+transitent par aucune infrastructure partagée.
 
-1. Rendez-vous sur **https://www.hivemq.com/cloud/** et créez un compte
-2. Créez un cluster en choisissant l'offre **gratuite**
-3. Sélectionnez une région proche (Europe)
+1. Rendez-vous sur **https://cloud.emqx.com** et créez un compte
+2. Créez un déploiement **Serverless**
+3. Sélectionnez une région proche (Europe, par exemple Francfort)
+4. **Laissez la limite de dépense mensuelle à 0** : vous restez dans le quota gratuit, et
+   si par extraordinaire il était dépassé, le service s'arrête au lieu de vous facturer
 
 La création prend une minute.
 
-## Étape 2 — Relever l'adresse du cluster
+> **Vous utilisiez HiveMQ Cloud ?** Son offre gratuite (Serverless) n'est plus proposée
+> depuis le 30 septembre 2026, les clusters existants cessent de fonctionner le
+> 31 décembre 2026 et sont supprimés le 7 janvier 2027. Suivez ce guide puis remplacez,
+> dans le routeur et sur le téléphone, l'adresse et les identifiants : rien d'autre ne
+> change.
 
-Une fois le cluster créé, sa page affiche son adresse, de la forme :
+## Étape 2 — Relever l'adresse du déploiement
+
+La page **Overview** du déploiement affiche son adresse, de la forme :
 
 ```
-a1b2c3d4e5f6g7h8.s1.eu.hivemq.cloud
+a1b2c3d4.ala.eu-central-1.emqxsl.com
 ```
 
-Notez-la, ainsi que le port **8883** (le port des connexions chiffrées).
+Notez-la, ainsi que les deux ports :
+
+| Port | Pour quoi |
+|---|---|
+| **8883** | MQTT chiffré : le routeur et les applications MQTT du téléphone |
+| **8084** | MQTT par WebSocket chiffré : l'application web Soleo dans un navigateur |
 
 > Cette adresse est un **nom d'hôte**, pas une adresse IP. C'est pour cela que le routeur
 > dispose d'un champ distinct : le champ « adresse IP » historique ne peut pas la contenir.
 
 ## Étape 3 — Créer deux accès distincts
 
-C'est le point qui protège votre installation. Dans la gestion des accès de votre cluster
-(rubrique *Access Management* ou équivalent), créez **deux** jeux d'identifiants :
+C'est le point qui protège votre installation. Dans **Access Control → Authentication**,
+créez **deux** jeux d'identifiants :
 
-| Nom suggéré | Permission | Pour qui |
-|---|---|---|
-| `routeur` | **Publication** seule | Le routeur, qui dépose ses mesures |
-| `telephone` | **Souscription** seule | Votre téléphone, qui les lit |
+| Nom suggéré | Pour qui |
+|---|---|
+| `routeur` | Le routeur, qui dépose ses mesures |
+| `telephone` | Votre téléphone, qui les lit |
 
 Choisissez des mots de passe différents et notez-les.
 
+Puis, dans **Access Control → Authorization**, limitez chaque accès à son rôle :
+
+| Identifiant | Topic | Action | Autoriser |
+|---|---|---|---|
+| `telephone` | `#` | Publish | **Deny** |
+| `routeur` | `#` | Subscribe | **Deny** |
+
 **Pourquoi deux ?** L'identifiant du téléphone sera saisi dans une application, donc plus
-exposé. Avec une permission de lecture seule, quelqu'un qui le récupérerait pourrait voir
-votre consommation — sans jamais pouvoir publier de fausses mesures ni perturber le
-routeur.
+exposé. Privé du droit de publier, quelqu'un qui le récupérerait pourrait voir votre
+consommation — sans jamais pouvoir publier de fausses mesures ni perturber le routeur.
+
+> Les intitulés de la console EMQX évoluent : si la rubrique *Authorization* n'apparaît
+> pas sous ce nom, cherchez les règles d'accès (ACL) de votre déploiement.
 
 ## Étape 4 — Configurer le routeur
 
@@ -98,7 +121,7 @@ Configurez la connexion :
 
 | Réglage | Valeur |
 |---|---|
-| Serveur | l'adresse du cluster |
+| Serveur | l'adresse du déploiement |
 | Port | `8883` |
 | TLS / SSL | activé |
 | Identifiant | `telephone` |
@@ -150,15 +173,22 @@ répond plus ».
 
 **Rien n'arrive sur le téléphone**
 - La période d'envoi est-elle bien supérieure à zéro ?
-- Le port est-il bien `8883` et le TLS activé ? HiveMQ n'accepte aucune connexion en clair.
+- Le port est-il bien `8883` et le TLS activé ? EMQX Serverless n'accepte aucune connexion en clair.
+- Dans l'application web Soleo (navigateur), le port est `8084`, pas `8883` : un navigateur
+  ne parle MQTT qu'à travers un WebSocket.
 - Le champ « adresse IP » doit rester vide : renseigné, il prendrait le pas.
+
+**Le service s'est arrêté en cours de mois**
+Le quota gratuit est épuisé (cas très improbable avec un seul routeur). La console EMQX
+l'indique ; le service reprend le mois suivant. Une période d'envoi de 10 s ou plus
+ménage le trafic.
 
 **Le routeur ne se connecte pas**
 Consultez le journal du routeur en Telnet. Le message `connecté au broker MQTT` confirme
 la connexion ; son absence répétée indique un problème d'identifiants ou d'adresse.
 
 **Vérifier le compte plutôt que le routeur**
-La console HiveMQ affiche le nombre de clients connectés. Si le routeur y apparaît, le
+La page **Overview** du déploiement EMQX affiche le nombre de clients connectés. Si le routeur y apparaît, le
 problème vient de la configuration du téléphone, pas du routeur.
 
 ---

@@ -381,7 +381,7 @@ et y publie sa télémétrie.
 
 | Paramètre | Rôle |
 |---|---|
-| `MQTTHost` | Nom d'hôte du broker (ex. `a1b2c3d4.s1.eu.hivemq.cloud`). Renseigné, il remplace `MQTTIP` — les brokers cloud n'ont pas d'adresse IP exploitable. |
+| `MQTTHost` | Nom d'hôte du broker (ex. `a1b2c3d4.ala.eu-central-1.emqxsl.com`). Renseigné, il remplace `MQTTIP` — les brokers cloud n'ont pas d'adresse IP exploitable. |
 | `MQTTSecure` | Chiffrement TLS, port 8883. Obligatoire sur un broker cloud, inutile en local. |
 
 Chacun ouvre son propre compte chez l'hébergeur de son choix : aucune infrastructure

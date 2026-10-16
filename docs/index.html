@@ -167,12 +167,12 @@ button.sec{background:none;border:1px solid var(--line);color:var(--txt-soft);
       broker, jamais ailleurs.</p>
 
     <label for="host">Adresse du broker</label>
-    <input id="host" placeholder="xxxxx.s1.eu.hivemq.cloud" autocapitalize="off" autocorrect="off" spellcheck="false">
+    <input id="host" placeholder="xxxxx.ala.eu-central-1.emqxsl.com" autocapitalize="off" autocorrect="off" spellcheck="false">
     <div class="aide">Celle de votre cluster, sans <code>https://</code>.</div>
 
     <label for="port">Port WebSocket sécurisé</label>
-    <input id="port" type="number" value="8884">
-    <div class="aide">8884 chez HiveMQ. Ce n'est pas le port 8883 du routeur : un navigateur
+    <input id="port" type="number" value="8084">
+    <div class="aide">8084 chez EMQX (8884 chez HiveMQ). Ce n'est pas le port 8883 du routeur : un navigateur
       ne sait parler MQTT qu'à travers un WebSocket.</div>
 
     <label for="user">Identifiant</label>
@@ -926,7 +926,7 @@ async function connecter(cfg){
 $("btnConnect").onclick = () => {
   const cfg = {
     host: $("host").value.trim().replace(/^https?:\/\//,"").replace(/\/.*$/,""),
-    port: parseInt($("port").value,10) || 8884,
+    port: parseInt($("port").value,10) || 8084,
     user: $("user").value.trim(),
     pass: $("pass").value,
     prefixe: $("prefixe").value.trim() || "homeassistant",
@@ -943,7 +943,7 @@ $("btnCfg").onclick = () => {
 };
 
 function remplir(c){
-  $("host").value = c.host||""; $("port").value = c.port||8884;
+  $("host").value = c.host||""; $("port").value = c.port||8084;
   $("user").value = c.user||""; $("pass").value = c.pass||"";
   $("prefixe").value = c.prefixe||"homeassistant";
   $("appareil").value = c.appareil||"routeur_rms";
