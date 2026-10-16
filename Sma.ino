@@ -66,7 +66,14 @@ void Call_SMA_data() {
   long total = SMA_Read32(30529, ok);  //Energie totale en Wh (U32)
   if (ok && total > 0) {
     EnergieTotalePV = total;
-    if (EnergieTotalePV < EnergiePV_J0 || EnergiePV_J0 == 0) EnergiePV_J0 = EnergieTotalePV;
+    if (EnergiePV_J0 == 0) {
+      //Premier relevé après un démarrage : on recale sur le compteur jour de l'onduleur (30535)
+      //pour ne pas perdre ce qui a été produit avant le reboot
+      ok = true;
+      long jour = SMA_Read32(30535, ok);  //Energie du jour en Wh (U32)
+      EnergiePV_J0 = (ok && jour >= 0 && jour <= EnergieTotalePV) ? EnergieTotalePV - jour : EnergieTotalePV;
+    }
+    if (EnergieTotalePV < EnergiePV_J0) EnergiePV_J0 = EnergieTotalePV;
     EnergieJourPV = EnergieTotalePV - EnergiePV_J0;
   }
   clientSma.stop();
