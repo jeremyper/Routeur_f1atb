@@ -33,7 +33,9 @@ float PrixKwhActuel() {
 // Appelée depuis la boucle 2 s ; dt est la durée réelle écoulée en millisecondes.
 void SuiviEconomieRoutee(unsigned long dt) {
   if (PuissanceS_M > 20) return;  //La maison soutire : ce n'est pas du surplus
-  int pRoutee = PuissanceS_T - PuissanceI_T;
+  //La voie T alimente une charge : elle ne produit jamais. Un tore posé à l'envers range la
+  //puissance en "injectée" ; on additionne les deux sens pour rester juste dans les deux cas.
+  int pRoutee = PuissanceS_T + PuissanceI_T;
   if (pRoutee <= 0) return;
   float wh = float(pRoutee) * float(dt) / 3600000.0;
   EnergieRouteeJour += wh;

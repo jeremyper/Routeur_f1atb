@@ -38,8 +38,10 @@ async function PollData(){
     // Le groupe T n'existe qu'en UxIx2 : [Deb, maison, T, Fin]. Il mesure toute
     // l'energie du chauffe-eau, soleil et reseau confondus.
     const voieT=(g.length>=4&&g[2].indexOf("Fin")<0)?g[2].split(RS):null;
-    kwhJourEau=voieT?(parseFloat(voieT[4])||0)/1000:null;
-    pwEau=voieT?Math.max(0,(parseFloat(voieT[0])||0)-(parseFloat(voieT[1])||0)):null;
+    // Un chauffe-eau ne produit jamais : un tore T pose a l'envers range sa puissance en
+    // "produite". On additionne les deux sens pour rester juste dans les deux montages.
+    kwhJourEau=voieT?((parseFloat(voieT[4])||0)+(parseFloat(voieT[5])||0))/1000:null;
+    pwEau=voieT?(parseFloat(voieT[0])||0)+(parseFloat(voieT[1])||0):null;
     lastOk=Date.now();
     echecs=0;
     MajFlux();MajTuiles();
