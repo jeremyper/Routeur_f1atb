@@ -140,7 +140,11 @@ Chaque action peut être configurée avec des **tranches horaires** (jusqu'à pl
 ### DS18B20 (bus 1-Wire interne)
 - Jusqu'à **4 capteurs** sur un seul bus
 - Adressage automatique à la mise sous tension
-- Offset de correction configurable par canal (°C)
+- Offset de correction configurable par canal (°C, au dixième de degré, ±10 °C)
+- **Assistant de recalibrage** (Réglages → Équipements & mesures → Sondes de température) :
+  on saisit la température lue sur un thermomètre de référence placé au même endroit, le
+  routeur relit sa mesure, en retire la correction déjà enregistrée et calcule la nouvelle.
+  La correction s'applique dès l'enregistrement, sans redémarrage.
 - Nom personnalisé par canal
 
 ### Sources externes
