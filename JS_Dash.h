@@ -4,6 +4,7 @@
 //*****************************************************
 const char *DashJS = R"====(
 var pwImport=0,pwExport=0,kwhJourSout=0,ssrOuvre=-1,forceBallon=0,lastOk=0;
+var actBallon=null; //Action du chauffe-eau, donnée par le routeur (/ParaVar ActionBallon)
 var kwhJourEau=null;     //kWh consommes par le chauffe-eau ce jour (voie T du JSY-MK-194T)
 var pwEau=null;          //Puissance mesuree sur la voie T (W), null sans voie T
 
@@ -64,7 +65,7 @@ async function PollData(){
 async function PollVar(){
   try{
     const r=await fetch("/ParaVar");
-    if(r.ok){V=await r.json();MajVar();}
+    if(r.ok){V=await r.json();if(V.ActionBallon!==undefined)actBallon=parseInt(V.ActionBallon)||0;MajVar();}
   }catch(e){}
   setTimeout(PollVar,10000);
 }
@@ -278,7 +279,7 @@ async function FetchActions(force,num){
       const idx=parseInt(d[0]),f=parseInt(d[3])||0;
       let pct=0;
       if(d[2]==="On")pct=100;else if(d[2]!=="Off")pct=parseInt(d[2])||0;
-      if(idx===0){ssrOuvre=pct;forceBallon=f;}
+      if(idx===(actBallon===null?0:actBallon)){ssrOuvre=pct;forceBallon=f;}
       let cls,txt;
       if(f>0){cls="force";txt="Forcé On · "+f+" mn";}
       else if(f<0){cls="off";txt="Arrêté · "+(-f)+" mn";}
@@ -293,7 +294,9 @@ async function FetchActions(force,num){
   }catch(e){}
 }
 async function PollActions(){await FetchActions(0,0);setTimeout(PollActions,4000);}
-function Forcer(s){FetchActions(s,0);} //Boutons Forcer / Arrêter de la tuile Eau chaude (action 0)
+//Boutons Forcer / Arrêter de la tuile Eau chaude : action désignée par le routeur.
+//Tant qu'elle est inconnue (page à peine ouverte), on ne force rien plutôt que de deviner.
+function Forcer(s){if(actBallon===null)return;FetchActions(s,actBallon);}
 
 //---------- Journal /ajax_journal (30 s) ----------
 function icoJ(msg){

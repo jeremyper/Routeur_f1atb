@@ -1717,6 +1717,19 @@ int IndexActionBallon() {
   return premierSSR;
 }
 
+// Action qui pilote le chauffe-eau, pour l'accueil (boutons Forcer / Arrêter, état de chauffe).
+// Même règle que l'anti-légionelle : action liée à une sonde du ballon, sinon première action
+// SSR. À défaut seulement, l'action 0 : supposer « action 0 = chauffe-eau » laissait les
+// boutons sans effet chez qui garde en action 0 une action inactive héritée de F1ATB.
+int IndexActionChauffeEau() {
+  int i = IndexActionBallon();  //-1 sans sonde ballon
+  if (i >= 0) return i;
+  for (int a = 0; a < NbActions; a++) {
+    if (LesActions[a].Actif == MODE_MULTISINUS || LesActions[a].Actif == MODE_TRAINSINUS) return a;
+  }
+  return 0;
+}
+
 // ****************
 // *  MODE ABSENCE *
 // ****************

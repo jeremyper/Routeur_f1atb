@@ -95,7 +95,7 @@ function TracePlanning(iAct) {
 
     let S = "<div class='titre'><span id ='titre" + iAct + "' onclick='editTitre(" + iAct + ")' title='Touchez pour renommer'>Titre</span></div>";
     //Bouton visible : l'ancienne consigne (« effacez le titre ») n'existait qu'en infobulle, invisible au doigt
-    if (iAct > 0) S += "<div class='suppr'><button type='button' class='btn-s' onclick='SupprimerAction(" + iAct + ")'>🗑 Supprimer cette action</button></div>";
+    S += "<div class='suppr'><button type='button' class='btn-s' onclick='SupprimerAction(" + iAct + ")'>🗑 Supprimer cette action</button></div>";
     S += "<div class='visu' onclick='Plot(" + iAct + ")' id='visu" + iAct + "' title='Zoom sur la régulation en temps réel. Les réglages peuvent être modifiés. Ne pas oublier de sauvegarder'>&#128200;</div>";
     S += "<div class='mode'><div class='TitZone' title='Choix du mode de découpe du secteur'>Mode</div>" + Radio0 + Radio1 + "</div>";
     S += "<div id='blocPlanning" + iAct + "'>";
@@ -1222,9 +1222,10 @@ function Send_Values(){
         // Comparaison STRICTE : en JavaScript "" == 0 est vrai. Un champ resté vide
         // (broche absente de la liste) supprimait l'action entière à l'enregistrement.
         // Seul le choix explicite « pas choisi ou supprimer » (valeur "0") efface.
-        // L'action 0 (chauffe-eau, pilotée depuis l'accueil) n'est jamais effacée :
-        // la garde iAct > 0 du firmware F1ATB avait été perdue dans Soleo.
-        if (iAct > 0 && (action.ASupprimer || (selectPin && (selectPin.value === "0" || action.Titre === "")))) {
+        // L'action 0 n'est jamais effacée IMPLICITEMENT (titre vide, broche « supprimer ») :
+        // la garde iAct > 0 du firmware F1ATB avait été perdue dans Soleo. Une suppression
+        // demandée par la poubelle, confirmée, vaut pour toutes, sauf la dernière action.
+        if ((action.ASupprimer && F.Actions.length > 1) || (iAct > 0 && selectPin && (selectPin.value === "0" || action.Titre === ""))) {
             action.Actif = -1; // Marque l'action à effacer
         }
         action.NbPeriode= action.Periodes.length;
@@ -1605,10 +1606,11 @@ var _TA = typeof TraceActions === 'function' ? TraceActions : null;
 if (_TA) window.TraceActions = function(r){ _TA(r); RenderCardView(); };
 
 // ---- Suppression d'un automatisme ----
-// L'action 0 pilote le chauffe-eau (boutons Forcer / Arrêter de l'accueil) : jamais effacée.
+// Toute action peut être supprimée, sauf la dernière (la page en recréerait une aussitôt).
+// L'accueil ne suppose plus que le chauffe-eau est l'action 0 : le routeur lui désigne la bonne.
 function SupprimerAction(i){
-  if (i == 0) {
-    alert("L'action 0 pilote le chauffe-eau (boutons Forcer et Arrêter de l'accueil) : elle ne peut pas être supprimée.\n\nPour qu'elle n'agisse plus : Modifier, mode « Inactif », puis Sauvegarder.");
+  if (F.Actions.length <= 1) {
+    alert("C'est la dernière action : elle ne peut pas être supprimée.\n\nPour qu'elle n'agisse plus : Modifier, mode « Inactif », puis Sauvegarder.");
     return;
   }
   var titre = (F.Actions[i].Titre || ("Action " + i)).replace(/<[^>]*>/g, "");

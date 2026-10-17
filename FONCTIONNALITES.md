@@ -629,6 +629,10 @@ Interface responsive **dark/light** accessible depuis n'importe quel navigateur 
 ### Tableau de bord (`/`)
 - **Flux d'énergie SVG** animé : soleil → maison → eau chaude → réseau
 - **Tuiles** : production PV du jour, consommation maison, ballon (avec barre de niveau), économies du mois
+- **Boutons Forcer / Arrêter** de la tuile Eau chaude : ils pilotent l'action du chauffe-eau
+  désignée par le routeur (`ActionBallon` dans `/ParaVar`) — l'action liée à une sonde du
+  ballon, sinon la première action SSR, à défaut l'action 0. Le chauffe-eau n'a donc pas
+  besoin d'être l'action 0.
 - **Liste des automatismes** avec état en temps réel (chip coloré)
 - **Journal** des 20 derniers événements
 - **Badge tarifaire** : couleur Tempo + HP/HC en cours
