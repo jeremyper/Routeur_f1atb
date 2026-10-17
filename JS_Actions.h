@@ -93,7 +93,9 @@ function TracePlanning(iAct) {
     // Sélecteur de sortie (niveau logique)
     let SelectOut = "<div id='SelectOut" + iAct + "'>Sortie 'On' <select id='selectOut" + iAct + "' title='Dépend du relais. En général +3.3V'><option value=0>0V</option><option value=1 selected>3.3V</option></select></div>";
 
-    let S = "<div class='titre'><span id ='titre" + iAct + "' onclick='editTitre(" + iAct + ")' title='Donnez un nom ou effacez pour supprimer l'action'>Titre</span></div>";
+    let S = "<div class='titre'><span id ='titre" + iAct + "' onclick='editTitre(" + iAct + ")' title='Touchez pour renommer'>Titre</span></div>";
+    //Bouton visible : l'ancienne consigne (« effacez le titre ») n'existait qu'en infobulle, invisible au doigt
+    if (iAct > 0) S += "<div class='suppr'><button type='button' class='btn-s' onclick='SupprimerAction(" + iAct + ")'>🗑 Supprimer cette action</button></div>";
     S += "<div class='visu' onclick='Plot(" + iAct + ")' id='visu" + iAct + "' title='Zoom sur la régulation en temps réel. Les réglages peuvent être modifiés. Ne pas oublier de sauvegarder'>&#128200;</div>";
     S += "<div class='mode'><div class='TitZone' title='Choix du mode de découpe du secteur'>Mode</div>" + Radio0 + Radio1 + "</div>";
     S += "<div id='blocPlanning" + iAct + "'>";
@@ -1222,7 +1224,7 @@ function Send_Values(){
         // Seul le choix explicite « pas choisi ou supprimer » (valeur "0") efface.
         // L'action 0 (chauffe-eau, pilotée depuis l'accueil) n'est jamais effacée :
         // la garde iAct > 0 du firmware F1ATB avait été perdue dans Soleo.
-        if (iAct > 0 && selectPin && (selectPin.value === "0" || action.Titre === "")) {
+        if (iAct > 0 && (action.ASupprimer || (selectPin && (selectPin.value === "0" || action.Titre === "")))) {
             action.Actif = -1; // Marque l'action à effacer
         }
         action.NbPeriode= action.Periodes.length;
@@ -1230,15 +1232,30 @@ function Send_Values(){
     
     // 2. Effacement des Actions inutilisées
     let j=0 ;
+    const nouvelIndex = []; //ancien numéro -> nouveau (-1 = effacée)
     for (let iAct = 0; iAct < F.Actions.length; iAct++) {
         if (F.Actions[iAct].Actif >= 0) { // N'envoie que les actions valides ou actives
             if(j!=iAct) F.Actions[j]=F.Actions[iAct];
             F.Actions[j].Action=j;
+            nouvelIndex[iAct] = j;
             j++;
+        } else {
+            nouvelIndex[iAct] = -1;
         }
     }
     
     F.Actions=F.Actions.slice(0,j);
+    // Les conditions « état d'une action » de CE routeur (SelAct 0 à 9 = numéro d'action)
+    // suivent la renumérotation ; une condition sur l'action effacée est retirée.
+    for (const a of F.Actions) {
+        delete a.ASupprimer;
+        for (const p of (a.Periodes || [])) {
+            if (p.SelAct < 10) {
+                const n = nouvelIndex[p.SelAct];
+                p.SelAct = (n === undefined || n < 0) ? 255 : n;
+            }
+        }
+    }
    
     // 3. Récupération des paramètres globaux
     F.NbActions=F.Actions.length;
@@ -1253,6 +1270,7 @@ function Send_Values(){
 
     })
       .then(response => {
+        if (response.status === 401) throw new Error("mot de passe d'accès refusé, rechargez la page et ressaisissez-le");
         if (!response.ok) throw new Error("Erreur HTTP " + response.status);
         return response.json();             // transforme la réponse JSON en objet JS
       })
@@ -1261,7 +1279,10 @@ function Send_Values(){
         location.reload();
       })
       .catch(error => {
+        //Échec silencieux auparavant : l'utilisateur croyait avoir supprimé ou modifié
         console.error("Erreur d'envoi :", error);
+        GID("attente").style.visibility = "hidden";
+        alert("La sauvegarde a échoué : " + error.message + ".\nRechargez la page avant de réessayer.");
       });
     
 }
@@ -1571,7 +1592,7 @@ function RenderCardView(){
     }
     s += "<button class='btn-s' onclick='OuvrirDetail(" + i + ")'>Modifier</button>";
     s += "<span style='flex:1 1 auto'></span>";
-    s += "<button class='btn-s' title='Modifier / supprimer dans l editeur' onclick='OuvrirDetail(" + i + ")'>🗑</button>";
+    s += "<button class='btn-s' title='Supprimer' onclick='SupprimerAction(" + i + ")'>🗑</button>";
     s += "</div>";
     s += "</div>";
   }
@@ -1582,6 +1603,19 @@ function RenderCardView(){
 // ---- Wrap TraceActions pour rafraichir les cartes ----
 var _TA = typeof TraceActions === 'function' ? TraceActions : null;
 if (_TA) window.TraceActions = function(r){ _TA(r); RenderCardView(); };
+
+// ---- Suppression d'un automatisme ----
+// L'action 0 pilote le chauffe-eau (boutons Forcer / Arrêter de l'accueil) : jamais effacée.
+function SupprimerAction(i){
+  if (i == 0) {
+    alert("L'action 0 pilote le chauffe-eau (boutons Forcer et Arrêter de l'accueil) : elle ne peut pas être supprimée.\n\nPour qu'elle n'agisse plus : Modifier, mode « Inactif », puis Sauvegarder.");
+    return;
+  }
+  var titre = (F.Actions[i].Titre || ("Action " + i)).replace(/<[^>]*>/g, "");
+  if (!confirm("Supprimer l'automatisme « " + titre + " » ?\n\nLes autres modifications en cours sur cette page seront enregistrées en même temps.")) return;
+  F.Actions[i].ASupprimer = true;
+  Send_Values();
+}
 
 // ---- Bascule vue cartes <-> editeur ----
 function OuvrirDetail(iAct){
