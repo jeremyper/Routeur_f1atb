@@ -93,15 +93,15 @@ void CalculBallon() {
     Ballon_Deficit = 0;  //Sonde invalide : pas de forçage adaptatif
     return;
   }
+  //Deux moitiés : bas à la sonde du bas, haut à la sonde du haut (ou du bas si absente).
+  //Chaque moitié est comptée séparément : un bas froid n'efface pas l'eau chaude du haut.
   float Tb = temperature[BallonCanal];
-  float dT = float(BallonTcible) - Tb;
-  if (dT < 0) dT = 0;
-  Ballon_Besoin = float(BallonVolume) * 1.163 / 1000.0 * dT;  //kWh pour atteindre la cible (affichage)
+  float Th = BallonHautValide() ? temperature[BallonCanalHaut] : Tb;
+  float demi = float(BallonVolume) / 2.0;
+  Ballon_Besoin = KwhEau(demi, float(BallonTcible) - Tb) + KwhEau(demi, float(BallonTcible) - Th);  //kWh pour atteindre la cible
 
   //Énergie utile actuellement stockée (eau au-dessus de la température minimale exploitable)
-  float dispo = Tb - float(BallonTmin);
-  if (dispo < 0) dispo = 0;
-  Ballon_Reserve = float(BallonVolume) * 1.163 / 1000.0 * dispo;
+  Ballon_Reserve = KwhEau(demi, Tb - float(BallonTmin)) + KwhEau(demi, Th - float(BallonTmin));
 
   //La production "qui vient" : avant midi c'est celle du jour, après midi celle du lendemain
   float prevision = (HeureCouranteDeci < 1200) ? Meteo_PrevisionJour : Meteo_PrevisionDemain;

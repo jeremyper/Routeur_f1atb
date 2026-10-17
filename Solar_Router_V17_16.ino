@@ -2,7 +2,7 @@
 // celle du firmware officiel F1ATB (V17.26 et suivantes). La base amont est la V17.16.
 // Format imposé par Stockage.ino : décimal à deux chiffres, converti en entier par
 // round(100 * toFloat()) — "1.00" est stocké 100 et affiché 1.00.
-#define Version "1.28"
+#define Version "1.29"
 #define HOSTNAME "RMS-ESP32-"
 
 /*
@@ -653,7 +653,8 @@ unsigned long LastSmaMillis = 0;
 int16_t BallonVolume = 200;     //Volume cuve en litres
 int16_t BallonTcible = 55;      //Température cible en °C
 int16_t BallonPuissance = 2400; //Puissance résistance en W
-int8_t BallonCanal = -1;        //Canal sonde température ballon (-1 = non configuré)
+int8_t BallonCanal = -1;        //Canal sonde température ballon (-1 = non configuré), posée en BAS du ballon
+int8_t BallonCanalHaut = -1;    //Canal sonde facultative en HAUT du ballon (-1 = absente)
 
 //Mode absence (vacances / hôtel) : coupe les actions, avec sécurité anti-légionelle sur le ballon
 byte AbsenceManuel = 0;          //Interrupteur manuel (0/1) persisté
@@ -698,6 +699,7 @@ float Ballon_UsageMoyen = 0;    //Consommation quotidienne moyenne apprise (kWh/
 float Ballon_UsageJour = 0;     //Consommation accumulée aujourd'hui (kWh)
 float Ballon_Reserve = 0;       //Énergie utile actuellement stockée au-dessus de Tmin (kWh)
 float Ballon_TempPrec = -127;   //Température précédente pour détecter les puisages
+float Ballon_TempPrecHaut = -127; //Idem pour la sonde du haut
 
 // Verrous inter-cœurs.
 // Depuis le déport des appels réseau sur le cœur 0 (Task_Reseau), deux ressources sont
@@ -1643,6 +1645,25 @@ void loop() {
 // *********************
 // *  BALLON INTELLIGENT *
 // *********************
+// Modèle du ballon : deux moitiés de même volume. La moitié basse est à la température
+// de la sonde du bas, la moitié haute à celle de la sonde du haut. Sans sonde du haut,
+// les deux moitiés prennent la température du bas : on retrouve le calcul à une sonde.
+//
+// La sonde du bas reste la référence : c'est elle qui voit arriver l'eau froide (puisages)
+// et qui dit si TOUT le ballon a atteint la cible (anti-légionelle). La sonde du haut
+// corrige l'estimation de la réserve : le haut reste chaud bien après que le bas a refroidi.
+
+// Sonde du haut utilisable ? Elle est facultative.
+bool BallonHautValide() {
+  return BallonCanalHaut >= 0 && BallonCanalHaut < 4 && BallonCanalHaut != BallonCanal
+         && TemperatureValide[BallonCanalHaut] > 0 && temperature[BallonCanalHaut] > -50;
+}
+
+// kWh correspondant à "litres" d'eau sur un écart de température dT (0 si l'écart est négatif)
+float KwhEau(float litres, float dT) {
+  return (dT > 0) ? litres * 1.163 / 1000.0 * dT : 0;
+}
+
 // Estime la consommation d'eau chaude en détectant les chutes nettes de température.
 // Le refroidissement naturel est lent ; une chute marquée = puisage d'eau chaude.
 // Appelé depuis la boucle 2s, échantillonne en interne toutes les 60s.
@@ -1653,17 +1674,24 @@ void SuiviUsageBallon() {
   if (now - lastSample < 60000UL) return;  //Un échantillon par minute
   lastSample = now;
   float Tb = temperature[BallonCanal];
+  bool haut = BallonHautValide();
+  float Th = haut ? temperature[BallonCanalHaut] : Tb;
+  float demi = float(BallonVolume) / 2.0;
   //Ballon_UsageJour est lu et remis à zéro par ApprentissageBallon() sur le cœur 0 :
   //l'accumulation doit être protégée pour ne pas perdre ou dupliquer un puisage.
   if (MutexBallon == NULL) return;
   if (xSemaphoreTake(MutexBallon, pdMS_TO_TICKS(50)) != pdTRUE) return;
   if (Ballon_TempPrec > -50) {
     float drop = Ballon_TempPrec - Tb;
-    if (drop > 0.3) {  //Chute > 0,3°C/min : puisage (le refroidissement naturel est bien plus lent)
-      Ballon_UsageJour += float(BallonVolume) * 1.163 / 1000.0 * drop;  //kWh prélevés
+    if (drop > 0.3) {  //Chute > 0,3°C/min en bas : puisage (le refroidissement naturel est bien plus lent)
+      //Énergie prélevée = baisse de l'énergie stockée dans chacune des deux moitiés.
+      //Sans sonde du haut, la moitié haute est supposée baisser autant que le bas.
+      float dropHaut = (haut && Ballon_TempPrecHaut > -50) ? Ballon_TempPrecHaut - Th : drop;
+      Ballon_UsageJour += KwhEau(demi, drop) + KwhEau(demi, dropHaut);  //kWh prélevés
     }
   }
   Ballon_TempPrec = Tb;
+  Ballon_TempPrecHaut = haut ? Th : -127;
   xSemaphoreGive(MutexBallon);
 }
 
@@ -1680,6 +1708,7 @@ int IndexActionBallon() {
     if (LesActions[i].Actif == MODE_INACTIF) continue;
     for (int p = 0; p < LesActions[i].NbPeriode && p < 8; p++) {
       if (LesActions[i].CanalTemp[p] == BallonCanal) return i;  //Action liée à la sonde ballon
+      if (BallonCanalHaut >= 0 && LesActions[i].CanalTemp[p] == BallonCanalHaut) return i;
     }
     if (premierSSR < 0 && (LesActions[i].Actif == MODE_MULTISINUS || LesActions[i].Actif == MODE_TRAINSINUS)) {
       premierSSR = i;
@@ -1704,7 +1733,8 @@ void GestionAbsence() {
   }
   ModeAbsenceActif = actif;
 
-  //Sécurité anti-légionelle : active en absence ET en mode intelligent (qui peut garder le ballon tiède)
+  //Sécurité anti-légionelle : active en absence ET en mode intelligent (qui peut garder le ballon tiède).
+  //Elle se juge sur la sonde du BAS : quand le bas atteint la cible, tout le ballon est chaud.
   bool surveillance = (ModeAbsenceActif || BallonModeIntel == 1);
   if (BallonCanal >= 0 && TemperatureValide[BallonCanal] > 0) {
     if (temperature[BallonCanal] >= float(BallonTcible)) {

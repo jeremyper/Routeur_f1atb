@@ -141,9 +141,13 @@ body{padding-bottom:90px}
 <div class="row ligneSma" style="display:none"><label for="SmaIP">Adresse de votre onduleur SMA<span class="hint">ex : 192.168.1.50</span></label><input type="text" id="SmaIP" name="SmaIP"></div>
 <div class="row ligneSma" style="display:none"><label>Production actuelle / du jour</label><div class="info" id="productionSma">—</div></div>
 <div class="subt">Ballon d'eau chaude</div>
-<div class="row"><label for="BallonCanal">Sonde de température du ballon<span class="hint">Permet la chauffe intelligente : forçage la nuit seulement si le soleil du lendemain ne suffira pas</span></label>
+<div class="row"><label for="BallonCanal">Sonde du bas du ballon<span class="hint">Au tiers inférieur, contre la cuve ou dans le doigt de gant du thermostat. Permet la chauffe intelligente : forçage la nuit seulement si le soleil du lendemain ne suffira pas</span></label>
 <select id="BallonCanal" name="BallonCanal" onchange="checkDisabled();" onclick="checkDisabled();">
 <option value="-1">Non exploité</option><option value="0">Canal 0</option><option value="1">Canal 1</option><option value="2">Canal 2</option><option value="3">Canal 3</option>
+</select></div>
+<div class="row ligneBallon" style="display:none"><label for="BallonCanalHaut">Sonde du haut du ballon (facultative)<span class="hint">Près de la sortie d'eau chaude, contre la cuve. Affine l'estimation de la réserve d'eau chaude ; la détection des puisages et l'anti-légionelle restent sur la sonde du bas</span></label>
+<select id="BallonCanalHaut" name="BallonCanalHaut" onchange="checkDisabled();">
+<option value="-1">Aucune</option><option value="0">Canal 0</option><option value="1">Canal 1</option><option value="2">Canal 2</option><option value="3">Canal 3</option>
 </select></div>
 <div class="row ligneBallon" style="display:none"><label for="BallonVolume">Capacité du ballon (litres)</label><input type="number" id="BallonVolume" name="BallonVolume" step="10" min="50" max="500"></div>
 <div class="row ligneBallon" style="display:none"><label for="BallonTcible">Température souhaitée (°C)</label><input type="number" id="BallonTcible" name="BallonTcible" step="1" min="40" max="80"></div>

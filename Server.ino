@@ -766,6 +766,7 @@ void handleParaVar() {
   conf["PuissancePV"] = serialized(String(PuissancePV, 0));              //Production onduleur en W
   conf["EnergieJourPV"] = EnergieJourPV;                                 //Production du jour en Wh
   conf["BallonCanal"] = BallonCanal;
+  conf["BallonCanalHaut"] = BallonCanalHaut;                             //Sonde facultative en haut du ballon
   conf["BallonBesoin"] = serialized(String(Ballon_Besoin, 1));           //kWh pour remonter à la cible
   conf["BallonSurplus"] = serialized(String(Ballon_SurplusPrevu, 1));    //kWh de surplus attendu
   conf["BallonCoefAuto"] = BallonCoefAuto;                               //Coefficient routable appris en %
