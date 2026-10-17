@@ -89,6 +89,7 @@ tr { margin:2px; text-align:left; font-size:20px; }
 .planning.active-edit { border-color:#6ee7c7; box-shadow:0 0 0 2px #6ee7c7; }
 .titre { display:flex; justify-content:center; cursor:pointer; color:#e8e8ff; font-weight:700; font-size:115%; padding:6px 0; letter-spacing:.5px; }
 .titre:hover { color:#7dcfff; }
+.suppr { display:flex; justify-content:center; margin:0 0 8px; }
 .visu { position:absolute; top:4px; right:6px; cursor:pointer; font-size:120%; opacity:.7; }
 .visu:hover { opacity:1; }
 .mode { display:flex; flex-wrap:wrap; gap:4px; font-size:14px; text-align:center; background:rgba(20,20,36,.6); border-radius:8px; margin:4px 0; padding:6px 4px; border:1px solid #333; }
