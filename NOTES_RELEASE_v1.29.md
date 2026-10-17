@@ -69,6 +69,12 @@ méthode (effacer le titre) n'était indiquée que dans une infobulle, invisible
 > ⚠️ Si vous avez déjà supprimé une action alors qu'une autre en dépendait (condition
 > « état d'une action »), vérifiez cette condition : elle vise peut-être la mauvaise action.
 
+## 🔄 Page Mise à jour
+
+- La version actuelle s'affiche **1.29** au lieu du nombre brut **129**.
+- Le bouton **Télécharger la dernière version** est de nouveau lisible (texte foncé sur
+  fond vert, au lieu de bleu sur vert).
+
 ## 📡 Supervision à distance : EMQX Cloud remplace HiveMQ
 
 L'offre gratuite HiveMQ Cloud n'est plus proposée, et les clusters existants s'arrêtent le
@@ -82,7 +88,9 @@ port WebSocket 8084 par défaut.
 
 Le binaire `Routeur_Soleo_v1.29.bin` est attaché à cette release. Deux voies :
 
-- **Sans USB** — page **Mise à jour** du routeur, qui propose directement cette version.
+- **Sans USB** — téléchargez le `.bin` ci-dessous, puis page **Mise à jour** du routeur :
+  **Choisir un fichier**, sélectionnez-le, **Mettre à jour**. Le routeur ne télécharge
+  rien de lui-même.
 - **Par USB** — voir le [guide d'installation](https://github.com/jeremyper/Routeur_f1atb/blob/main/INSTALLATION.md).
 
 Exportez votre configuration (page **Import / Export**) avant de flasher. Aucun réglage n'est
