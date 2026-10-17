@@ -243,6 +243,18 @@ compte à part, si bien qu'un bas froid n'efface pas l'eau chaude encore disponi
   surestimée (risque de douche froide) et l'anti-légionelle s'arrête alors que le bas est
   encore tiède.
 
+**Réglages recommandés** (page **Réglages**) :
+
+| Réglage | Valeur | Pourquoi |
+|---|---|---|
+| Température souhaitée *(L'essentiel → Ballon)* | **55 à 60 °C** | Sous 55 °C, les légionelles se développent ; au-delà de 60 °C, plus de calcaire et de pertes |
+| Température minimale utile *(L'essentiel → Ballon)* | **40 °C** | Une douche se prend vers 38–40 °C. Champ visible avec la chauffe prédictive |
+| Chauffe anti-légionelle *(Mode absence → Sécurité sanitaire)* | **7 jours** | Chauffe complète forcée si la cible n'est pas atteinte depuis 7 jours. Active aussi hors absence quand la chauffe prédictive est en marche : ne pas mettre 0, le ballon peut rester tiède |
+
+Gardez au moins **10 °C d'écart** entre la température souhaitée et la minimale utile : la
+réserve d'eau chaude se calcule sur cet écart. Trop serré, la réserve paraît toujours vide et
+le routeur chauffe sans arrêt.
+
 **Pose.** Coupez le disjoncteur du ballon avant d'ouvrir le capot : il y a du 230 V. Ne
 retirez jamais le thermostat, c'est une sécurité. Plaquez la sonde avec un peu de pâte
 thermique et remettez l'isolant par-dessus, sinon elle mesure surtout la pièce. Jamais sur le
