@@ -127,7 +127,8 @@ function Init() {
               </select></div>`;
         S += `<div id='ligneTemperature${i}' style='display:none'>`;
         S += `<div class='row'><label for='nomTemperature${i}'>Nom de la sonde</label><input type='text' id='nomTemperature${i}'></div>`;
-        S += `<div class='row' id='ligneoffsetTemp${i}' style='display:none'><label for='offsetTemp${i}'>Correction de mesure (°C)</label><input type='number' id='offsetTemp${i}'></div>`;
+        S += `<div class='row' id='ligneoffsetTemp${i}' style='display:none'><label for='offsetTemp${i}'>Correction de mesure (°C)<span class='hint'>ajoutée à la mesure de la sonde, au dixième de degré (0 = aucune)</span></label><input type='number' id='offsetTemp${i}' step='0.1' min='-10' max='10'></div>`;
+        S += `<div class='row' id='ligneCalib${i}' style='display:none'><label for='tempReelle${i}'>Recalibrer avec un thermomètre<span class='hint'>Mesure actuelle : <b id='tempMesure${i}'>—</b>. Mettez la sonde et un thermomètre de référence au même endroit (un verre d'eau), attendez 2 minutes, saisissez la température lue puis Calculer. Enregistrez ensuite.</span></label><div class='duo'><input type='number' id='tempReelle${i}' step='0.1' placeholder='°C lus'><button type='button' class='ghost' onclick='Calibrer(${i});'>Calculer</button></div></div>`;
         S += `<div class='row' id='ligneTopicT${i}' style='display:none'><label for='TopicT${i}'>MQTT Topic température</label><input type='text' id='TopicT${i}'></div>`;
         S += `<div class='row' id='ligneIPtemp${i}' style='display:none'><label for='refTempIP${i}'>Routeur externe (ESP-RMS)</label><select id='refTempIP${i}'></select></div>`;
         S += `<div class='row' id='canalEXTtemp${i}' style='display:none'><label for='canalEXT${i}'>Canal sur le routeur externe</label><select id='canalEXT${i}'>
@@ -248,12 +249,41 @@ function SetParaFixe() {
         GID(`TopicT${c}`).value = F[`TopicT${c}`];
         refTempIP[c] = F[`refTempIP${c}`];
         GID(`canalEXT${c}`).value = F[`canalTempExterne${c}`];
-        GID(`offsetTemp${c}`).value = F[`offsetTemp${c}`] / 100;
+        GID(`offsetTemp${c}`).value = (parseInt(F[`offsetTemp${c}`]) || 0) / 100;
     }
     LoadParaVar();
     GID("LesParas").style.display = "block";
     dirty = false;
     GID("saveBar").classList.remove("show");
+}
+
+//---------- Recalibrage des sondes de température ----------
+//La mesure publiée par le routeur inclut déjà la correction ENREGISTRÉE (F), pas celle
+//éventuellement tapée sans enregistrer : on la retire pour retrouver la mesure brute.
+function AfficheMesureTemp(c, v) {
+    if (!v || !v.temperature || !GID(`tempMesure${c}`)) return null;
+    const t = parseFloat(v.temperature[c]);
+    if (isNaN(t) || t < -50) { GH(`tempMesure${c}`, "aucune mesure"); return null; }
+    GH(`tempMesure${c}`, t.toFixed(1) + " °C");
+    return t;
+}
+async function Calibrer(c) {
+    const reelle = parseFloat(GID(`tempReelle${c}`).value);
+    if (isNaN(reelle)) { Toast("Saisissez d'abord la température lue sur le thermomètre"); return; }
+    let v;
+    try {
+        const r = await fetch("/ParaVar");
+        if (!r.ok) throw new Error();
+        v = await r.json();
+    } catch (e) { Toast("Routeur injoignable, réessayez"); return; }
+    const mesure = AfficheMesureTemp(c, v);
+    if (mesure === null) { Toast("La sonde " + c + " ne renvoie pas de mesure"); return; }
+    const brute = mesure - (parseInt(F[`offsetTemp${c}`]) || 0) / 100;
+    const corr = Math.round((reelle - brute) * 10) / 10;
+    if (Math.abs(corr) > 10) { Toast("Écart de " + corr.toFixed(1) + " °C : trop grand pour une correction, vérifiez la sonde"); return; }
+    GID(`offsetTemp${c}`).value = corr;
+    markDirty();
+    Toast("Correction " + (corr >= 0 ? "+" : "") + corr.toFixed(1) + " °C calculée : pensez à enregistrer");
 }
 
 /**
@@ -350,7 +380,8 @@ function SendValues() {
     F["TopicT" + c] = GID(`TopicT${c}`).value.trim();
     F["refTempIP" + c] = GID(`refTempIP${c}`).value;
     F["canalTempExterne" + c] = GID(`canalEXT${c}`).value;
-    F["offsetTemp" + c] = GID(`offsetTemp${c}`).value * 100;
+    //Arrondi indispensable : 0.29 * 100 vaut 28.999… en JavaScript, que le firmware tronquerait à 28
+    F["offsetTemp" + c] = Math.round(Math.max(-10, Math.min(10, parseFloat(GID(`offsetTemp${c}`).value) || 0)) * 100);
   }
   F.RMS_IP0 = ip2int(GID("adrIP").value);
   F.IP_Fixe = F.RMS_IP0;
@@ -536,6 +567,7 @@ function checkDisabled() {
         SH('ligneIPtemp' + c, isExt);
         SH('canalEXTtemp' + c, isExt);
         SH('ligneoffsetTemp' + c, isInt);
+        SH('ligneCalib' + c, isInt);
 
         // Si une source est MQTT, force l'affichage du bloc MQTT
         if (isMqtt) GID("Zmqtt").style.display = "";
@@ -589,6 +621,7 @@ function AdaptationSource() {
  * Termine le chargement des paramètres des routeurs et sélecteurs de température externe.
  */
 function SetParaVar() {
+    for (let c = 0; c < 4; c++) AfficheMesureTemp(c, V);
     GID("adrIP").value = int2ip(V.IP_Fixe); //Valeur actuelle, pas F.IP_Fixe
     let Soptions = "";
     for (let c = 0; c < nb_ESP; c++) {

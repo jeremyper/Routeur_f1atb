@@ -255,6 +255,12 @@ Gardez au moins **10 °C d'écart** entre la température souhaitée et la minim
 réserve d'eau chaude se calcule sur cet écart. Trop serré, la réserve paraît toujours vide et
 le routeur chauffe sans arrêt.
 
+**Calibrer avant de poser.** Une sonde DS18B20 peut se tromper d'un demi-degré. Plongez les
+deux sondes et un thermomètre dans le même verre d'eau, attendez 2 minutes, puis
+**Réglages** → Équipements & mesures → Sondes de température → *Recalibrer avec un
+thermomètre* sur chaque sonde, et enregistrez. Sans cela, l'écart haut/bas et le seuil de la
+température souhaitée sont faussés.
+
 **Pose.** Coupez le disjoncteur du ballon avant d'ouvrir le capot : il y a du 230 V. Ne
 retirez jamais le thermostat, c'est une sécurité. Plaquez la sonde avec un peu de pâte
 thermique et remettez l'isolant par-dessus, sinon elle mesure surtout la pièce. Jamais sur le
