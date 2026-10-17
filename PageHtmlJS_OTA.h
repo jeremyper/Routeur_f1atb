@@ -30,6 +30,8 @@ ol li{font-size:14px;line-height:1.5}
 input[type=file]{width:100%;background:var(--card-2);border:1px solid var(--line);border-radius:10px;color:var(--txt);font-size:14px;padding:9px 12px;outline:none;margin-bottom:10px}
 .btn-pri{display:inline-block;background:var(--accent);color:#08221a;border:none;border-radius:11px;padding:11px 22px;font-size:14.5px;font-weight:800;cursor:pointer;white-space:nowrap;text-decoration:none}
 .btn-pri:active{transform:scale(.96)}
+/* a:link de commun.css est plus spécifique que .btn-pri : sans ceci, texte bleu sur fond vert */
+a.btn-pri,a.btn-pri:link,a.btn-pri:visited{color:#08221a}
 .pbar-wrap{height:10px;border-radius:999px;background:var(--card-2);overflow:hidden;margin-top:10px}
 .pbar{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--accent),var(--grid-exp));width:0%;transition:width .3s}
 @media(min-width:700px){body{padding-bottom:20px}.botnav{position:static;border-top:none;border-bottom:1px solid var(--line);max-width:760px;margin:0 auto;justify-content:center;gap:20px;background:transparent;backdrop-filter:none}.botnav a{flex-direction:row;font-size:13px;gap:7px}.botnav a .ni{font-size:17px}}
@@ -132,7 +134,8 @@ $("form").submit(function(e){
 function Init(){LoadParaFixe();}
 function AdaptationSource(){}
 function SetParaVar(){}
-function SetParaFixe(){GH("Version_actu",F.VersionStocke);}
+//VersionStocke est la version x 100 (129 pour 1.29), cf. Stockage.ino
+function SetParaFixe(){const v=parseInt(F.VersionStocke);GH("Version_actu",isNaN(v)?"—":(v/100).toFixed(2));}
 </script>
 </body>
 </html>
