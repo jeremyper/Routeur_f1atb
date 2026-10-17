@@ -209,7 +209,8 @@ Système de gestion prédictive du chauffe-eau ECS.
 ### Paramètres
 | Paramètre | Description |
 |-----------|-------------|
-| `BallonCanal` | Canal de sonde DS18B20 mesurant la température du ballon |
+| `BallonCanal` | Canal de la sonde DS18B20 du **bas** du ballon (tiers inférieur) |
+| `BallonCanalHaut` | Canal de la sonde facultative du **haut** du ballon (-1 = absente) |
 | `BallonVolume` | Volume du ballon en litres |
 | `BallonTcible` | Température cible (°C) |
 | `BallonPuissance` | Puissance de la résistance (W) |
@@ -217,8 +218,11 @@ Système de gestion prédictive du chauffe-eau ECS.
 | `BallonModeIntel` | Active le mode intelligent (apprentissage usage) |
 
 ### Calculs en temps réel
-- **Besoin** (kWh) = Volume × 1,163/1000 × (Tcible − Tballon)
-- **Réserve** (kWh) = Volume × 1,163/1000 × (Tballon − Tmin)
+Le ballon est vu comme deux moitiés de même volume : la basse à la température de la sonde
+du bas (Tbas), la haute à celle de la sonde du haut (Thaut). Sans sonde du haut, Thaut = Tbas
+et on retrouve le calcul à une sonde. Chaque terme est borné à 0.
+- **Besoin** (kWh) = Volume/2 × 1,163/1000 × [(Tcible − Tbas) + (Tcible − Thaut)]
+- **Réserve** (kWh) = Volume/2 × 1,163/1000 × [(Tbas − Tmin) + (Thaut − Tmin)]
 - **Surplus prévu** (kWh) = Prévision météo × Coefficient routable / 100
 - **Déficit** = Besoin − Surplus prévu → déclenche le **forçage adaptatif** si > 0
 
@@ -227,12 +231,18 @@ Le ballon est chauffé lorsque le déficit est positif (besoin > surplus solaire
 
 ### Mode intelligent (`BallonModeIntel = 1`)
 - Le routeur **apprend l'usage habituel d'eau chaude** en détectant les chutes de température (signe de puisage).
-- Chute mesurée = ΔT sur 60 secondes × Volume × 1,163/1000
+- Puisage détecté quand la sonde du **bas** perd plus de 0,3 °C en 60 secondes
+- Énergie prélevée = Volume/2 × 1,163/1000 × (chute du bas + chute du haut) ; sans sonde du haut, la chute du haut est prise égale à celle du bas
 - Moyenne glissante sur ~5 jours : `UsageMoyen = 0.8 × ancien + 0.2 × nouveau`
 - Le déficit vise à couvrir `UsageMoyen × 1.3 − Réserve` (marge 30%)
 - **Objectif** : ne maintenir que la réserve nécessaire, pas toujours chasser la température cible
 
+### Placement des sondes
+Voir le schéma dans le [README](README.md#placement-des-sondes-du-ballon). La sonde du bas
+détecte les puisages et juge l'anti-légionelle ; la sonde du haut n'affine que la réserve.
+
 ### Anti-légionelle
+- Jugé sur la sonde du **bas** : la cible n'est atteinte que lorsque le bas y est
 - Si le ballon n'a pas chauffé depuis `BallonAntiLegioJours` jours : chauffe forcée à 100%
 - Valable en mode présence **et** en mode absence
 - Le compteur `AbsenceJoursSansChauffe` est incrémenté chaque nuit à minuit

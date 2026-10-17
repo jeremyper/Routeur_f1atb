@@ -217,6 +217,7 @@ function SetParaFixe() {
     GID("SmaOn").checked = F.SmaOn == 1;
     GID("SmaIP").value = F.SmaIP !== undefined ? F.SmaIP : "";
     GID("BallonCanal").value = F.BallonCanal !== undefined ? F.BallonCanal : -1;
+    GID("BallonCanalHaut").value = F.BallonCanalHaut !== undefined ? F.BallonCanalHaut : -1;
     GID("BallonVolume").value = F.BallonVolume !== undefined ? F.BallonVolume : 200;
     GID("BallonTcible").value = F.BallonTcible !== undefined ? F.BallonTcible : 55;
     GID("BallonPuissance").value = F.BallonPuissance !== undefined ? F.BallonPuissance : 2400;
@@ -297,6 +298,8 @@ function SendValues() {
   F.SmaOn = GID("SmaOn").checked ? 1 : 0;
   F.SmaIP = GID("SmaIP").value.trim();
   F.BallonCanal = parseInt(GID("BallonCanal").value, 10);
+  F.BallonCanalHaut = parseInt(GID("BallonCanalHaut").value, 10);
+  if (F.BallonCanalHaut == F.BallonCanal) F.BallonCanalHaut = -1;  //Même sonde : pas de seconde mesure
   F.BallonVolume = parseInt(GID("BallonVolume").value, 10) || 200;
   F.BallonTcible = parseInt(GID("BallonTcible").value, 10) || 55;
   F.BallonPuissance = parseInt(GID("BallonPuissance").value, 10) || 2400;
@@ -454,6 +457,9 @@ function checkDisabled() {
     // Ballon : champs visibles seulement si une sonde est choisie
     const ballonVisible = GID("BallonCanal").value >= 0;
     document.querySelectorAll(".ligneBallon").forEach(l => { l.style.display = ballonVisible ? "" : "none"; });
+    // Sonde du haut : on ne peut pas choisir le canal déjà pris par la sonde du bas
+    for (const o of GID("BallonCanalHaut").options) o.disabled = (o.value != "-1" && o.value == GID("BallonCanal").value);
+    if (GID("BallonCanalHaut").value != "-1" && GID("BallonCanalHaut").value == GID("BallonCanal").value) GID("BallonCanalHaut").value = "-1";
     // Température minimale utile : seulement si le mode prédictif est activé
     const intelVisible = ballonVisible && GID("BallonModeIntel").checked;
     document.querySelectorAll(".ligneBallonIntel").forEach(l => { l.style.display = intelVisible ? "" : "none"; });
@@ -627,7 +633,14 @@ function SetParaVar() {
             if (V.BallonModeIntel == 1) {
                 intel = "<br>Mode prédictif : réserve d'eau chaude <strong>" + V.BallonReserve + " kWh</strong>, usage moyen appris <strong>" + V.BallonUsageMoyen + " kWh/jour</strong>";
             }
-            GH("etatBallon", "Besoin : <strong>" + V.BallonBesoin + " kWh</strong> &nbsp;|&nbsp; Surplus prévu : <strong>" + V.BallonSurplus + " kWh</strong> &nbsp;|&nbsp; Coef : " + V.BallonCoefAuto + "% &mdash; " + decision + intel);
+            let sondes = "";
+            const cb = parseInt(V.BallonCanal), ch = parseInt(V.BallonCanalHaut);
+            if (ch >= 0 && V.temperature && V.temperature[ch] > -50 && V.temperature[cb] > -50) {
+                const tH = parseFloat(V.temperature[ch]), tB = parseFloat(V.temperature[cb]);
+                sondes = "<br>Haut <strong>" + tH.toFixed(1) + "°</strong> &nbsp;|&nbsp; Bas <strong>" + tB.toFixed(1) + "°</strong>";
+                if (tB > tH + 3) sondes += " &mdash; <span style='color:var(--grid-imp);'>bas plus chaud que le haut : normal pendant une chauffe, sinon sondes inversées ?</span>";
+            }
+            GH("etatBallon", "Besoin : <strong>" + V.BallonBesoin + " kWh</strong> &nbsp;|&nbsp; Surplus prévu : <strong>" + V.BallonSurplus + " kWh</strong> &nbsp;|&nbsp; Coef : " + V.BallonCoefAuto + "% &mdash; " + decision + intel + sondes);
         } else {
             GH("etatBallon", "En attente (sonde et météo nécessaires)…");
         }

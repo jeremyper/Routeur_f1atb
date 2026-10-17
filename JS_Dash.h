@@ -225,13 +225,16 @@ function MajTuiles(){
   GH("tMaisonSub",(net>=0?"tirés du réseau":"renvoyés au réseau")+" · "+fmt1(kwhJourSout)+" kWh achetés ce jour");
   GID("tMaisonChip").style.display=(pwExport>10)?"inline-flex":"none";
   //Eau chaude
-  const c=parseInt(V.BallonCanal);
-  let temp=null;
+  //Avec une sonde en haut : on affiche ce qui sort au robinet (haut), la jauge suit la moyenne haut/bas
+  const c=parseInt(V.BallonCanal),ch=parseInt(V.BallonCanalHaut);
+  let temp=null,tempH=null;
   if(c>=0&&V.temperature&&V.temperature[c]>-50)temp=parseFloat(V.temperature[c]);
+  if(ch>=0&&ch!=c&&V.temperature&&V.temperature[ch]>-50)tempH=parseFloat(V.temperature[ch]);
   const cible=(F&&parseFloat(F.BallonTcible)>20)?parseFloat(F.BallonTcible):55;
   if(temp!==null){
-    GH("tBallon",fmt1(temp)+"°");
-    GID("tBallonBar").style.width=Math.max(0,Math.min(100,Math.round(100*(temp-20)/(cible-20))))+"%";
+    const moy=(tempH!==null)?(temp+tempH)/2:temp;
+    GH("tBallon",(tempH!==null)?(fmt1(tempH)+"° <span style='font-size:13px;font-weight:600;color:var(--txt-soft)'>haut · bas "+fmt1(temp)+"°</span>"):(fmt1(temp)+"°"));
+    GID("tBallonBar").style.width=Math.max(0,Math.min(100,Math.round(100*(moy-20)/(cible-20))))+"%";
   }else{GH("tBallon","—");GID("tBallonBar").style.width="0%";}
   let sb;
   const besoin=parseFloat(V.BallonBesoin),surplus=parseFloat(V.BallonSurplus);

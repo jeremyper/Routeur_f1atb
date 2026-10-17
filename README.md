@@ -77,6 +77,8 @@ Toute redistribution, modifiée ou non, doit rester sous la même licence et fou
 - **Sécurité anti-légionelle** — chauffe complète forcée après N jours sans montée en
   température, y compris en mode absence
 - **Forçage adaptatif** — croise le besoin du ballon avec le surplus solaire attendu
+- **Deux sondes** — une en bas (obligatoire), une en haut (facultative) pour mieux estimer
+  la réserve d'eau chaude ; voir [où placer les sondes](#placement-des-sondes-du-ballon)
 
 ### Prévision météo solaire
 - Source **Open-Meteo** (gratuite, sans clé API) : latitude, longitude, puissance crête
@@ -209,6 +211,48 @@ historiques au redémarrage.
 Le forçage nocturne ne se déclenche alors que si la journée suivante ne permettra pas
 de chauffer l'eau au solaire. En activant en plus la **chauffe prédictive**, le ballon
 n'entretient que le volume correspondant à votre consommation habituelle.
+
+---
+
+## Placement des sondes du ballon
+
+![Schéma : sonde du bas au tiers inférieur, sonde du haut près de la sortie d'eau chaude](docs/schema_sondes_ballon.svg)
+
+Dans un ballon, l'eau se range par couches : la chaude en haut, la froide en bas. Quand on
+tire de l'eau chaude, l'eau froide entre **par le bas** et l'eau chaude sort **par le haut**.
+Le bas refroidit donc tout de suite, le haut reste chaud jusqu'à ce que le ballon soit
+presque vide.
+
+| | ② Sonde du **bas** | ① Sonde du **haut** |
+|---|---|---|
+| Obligatoire ? | **Oui** — c'est elle qui active la chauffe intelligente | Non, facultative |
+| Où | Au **tiers inférieur**, contre la cuve sous l'isolant, ou dans le doigt de gant du thermostat | Près de la sortie d'eau chaude, contre la cuve sous l'isolant |
+| Sert à | Détecter les **puisages** (l'eau froide arrive par le bas) et juger l'**anti-légionelle** (quand le bas est chaud, tout le ballon l'est) | Mieux estimer la **réserve** d'eau chaude, et afficher la température qui sort au robinet |
+| Réglage | **Réglages** → Ballon → *Sonde du bas du ballon* | **Réglages** → Ballon → *Sonde du haut du ballon* |
+
+**Comment le routeur s'en sert.** Il découpe le ballon en deux moitiés de même volume : la
+moitié basse est à la température du bas, la moitié haute à celle du haut. Chaque moitié
+compte à part, si bien qu'un bas froid n'efface pas l'eau chaude encore disponible en haut.
+
+- **Sans sonde du haut**, tout le ballon est supposé à la température du bas. Le routeur
+  sous-estime alors la réserve et chauffe un peu plus que nécessaire : c'est le côté
+  confort, avec un peu moins d'économies.
+- **Avec la sonde du haut**, la réserve et la consommation apprise sont plus justes : la
+  chauffe intelligente entretient au plus près de votre besoin.
+- **Une seule sonde, en haut : à éviter.** Les puisages passent inaperçus, la réserve est
+  surestimée (risque de douche froide) et l'anti-légionelle s'arrête alors que le bas est
+  encore tiède.
+
+**Pose.** Coupez le disjoncteur du ballon avant d'ouvrir le capot : il y a du 230 V. Ne
+retirez jamais le thermostat, c'est une sécurité. Plaquez la sonde avec un peu de pâte
+thermique et remettez l'isolant par-dessus, sinon elle mesure surtout la pièce. Jamais sur le
+tuyau d'eau chaude : au repos il est à la température de la pièce, et il chauffe pendant un
+puisage, l'inverse de ce que le routeur attend.
+
+**Vérifier.** Ouvrez un robinet d'eau chaude 2 minutes : la sonde du bas doit perdre plus de
+0,3 °C par minute, sinon le puisage n'est pas vu. Le lendemain matin, le journal doit afficher
+*« Ballon : usage estimé du jour … kWh »*. Dans **Réglages** → Ballon, la ligne *Diagnostic
+du jour* affiche les deux températures et signale des sondes probablement inversées.
 
 ---
 
