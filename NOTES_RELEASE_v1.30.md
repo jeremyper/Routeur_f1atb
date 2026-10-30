@@ -15,7 +15,8 @@ médiane, jusqu'à 80 %.
 - Le routeur demande désormais à Open-Meteo le rayonnement **sur le plan des panneaux**,
   heure par heure.
 - Deux nouveaux réglages dans **Réglages** → Prévision solaire : **Inclinaison** (30° par
-  défaut) et **Orientation** (0 = plein sud, −90 = est, 90 = ouest).
+  défaut) et **Orientation** (0 = plein sud, −90 = est, 90 = ouest). Avec un relevé à la
+  boussole (sud = 180°), retirez 180 : 223° donne 43.
 - Sur l'installation de l'audit, le 30/10 : 7,6 kWh prévus avant, **12,2 kWh** maintenant,
   pour 11,25 kWh produits.
 
