@@ -84,6 +84,7 @@ void JourHeureChange() {
       if (AbsenceJoursSansChauffe < 99) AbsenceJoursSansChauffe++;  //Compteur anti-légionelle (remis à 0 quand le ballon atteint sa cible)
       EconomieJour = 0;         //Nouvelle journée
       EnergieRouteeJour = 0;
+      EnergieInjecteeJour = 0;
     }
     old_Heure = Int_Heure;
     old_Minute = Int_Minute;

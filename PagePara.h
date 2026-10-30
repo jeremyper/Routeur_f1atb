@@ -131,6 +131,8 @@ body{padding-bottom:90px}
 <div class="subt">Prévision solaire</div>
 <div class="rowh"><label for="MeteoOn">Activer la prévision solaire<span class="hint">Le routeur anticipe la production de vos panneaux (Open-Meteo, gratuit, sans clé)</span></label><label class="sw"><input type="checkbox" id="MeteoOn" name="MeteoOn" onclick="checkDisabled();"><span class="kn"></span></label></div>
 <div class="row ligneMeteo" style="display:none"><label for="MeteoPVcrete">Puissance crête de vos panneaux (kWc)</label><input type="number" id="MeteoPVcrete" name="MeteoPVcrete" step="0.1" min="0.1" max="100"></div>
+<div class="row ligneMeteo" style="display:none"><label for="MeteoInclinaison">Inclinaison des panneaux (°)<span class="hint">0 = à plat, 30 à 35 = toiture courante, 90 = façade</span></label><input type="number" id="MeteoInclinaison" name="MeteoInclinaison" step="1" min="0" max="90"></div>
+<div class="row ligneMeteo" style="display:none"><label for="MeteoAzimut">Orientation des panneaux (°)<span class="hint">0 = plein sud, -90 = est, 90 = ouest, -45 = sud-est, 45 = sud-ouest</span></label><input type="number" id="MeteoAzimut" name="MeteoAzimut" step="1" min="-180" max="180"></div>
 <div class="row ligneMeteo" style="display:none"><label for="MeteoLat">Localisation de la maison<span class="hint">latitude / longitude</span></label>
 <div class="duo"><input type="number" id="MeteoLat" name="MeteoLat" step="0.0001" min="-90" max="90" placeholder="Latitude"><input type="number" id="MeteoLon" name="MeteoLon" step="0.0001" min="-180" max="180" placeholder="Longitude"></div>
 </div>

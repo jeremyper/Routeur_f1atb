@@ -114,11 +114,13 @@ Chaque action peut être configurée avec des **tranches horaires** (jusqu'à pl
 | Code | Condition |
 |------|-----------|
 | 0 | Toujours actif (pas de condition météo) |
-| 1 | Actif si prévision solaire **bonne** (surplus attendu) |
-| 2 | Actif si prévision solaire **mauvaise** (pour chauffe en HC) |
-| 3 | Actif si température ballon **insuffisante** (besoin détecté) |
-| 4 | Actif si **Linky en heures creuses** (HC/CREUSE) |
-| 5 | **Adaptatif ballon** : chauffe si déficit prévu (mode ballon intelligent) |
+| 1 | Actif si la prévision de **demain** est **inférieure** au seuil (kWh) |
+| 2 | Actif si la prévision de **demain** est **supérieure ou égale** au seuil |
+| 3 | Actif si la prévision d'**aujourd'hui** est **inférieure** au seuil |
+| 4 | Actif si la prévision d'**aujourd'hui** est **supérieure ou égale** au seuil |
+| 5 | **Adaptatif ballon** : actif si le besoin du ballon dépasse le surplus solaire prévu |
+
+Sans prévision disponible, les conditions 1 à 4 laissent l'action se faire.
 
 ### Conditions de puissance
 - Seuil de puissance importée minimum pour déclencher l'action
@@ -132,6 +134,17 @@ Chaque action peut être configurée avec des **tranches horaires** (jusqu'à pl
 
 ### Conditionnement par d'autres actions
 - Une action peut être déclenchée **seulement si une autre action est ON** (même ESP32 ou ESP distant)
+
+### Marche forcée sous condition : repli en régulation (v1.30)
+Quand les conditions d'une période **ON** (marche forcée) ne sont pas remplies — température,
+météo, tarif, autre action — une sortie **Multi-sinus** ou **Train de sinus** régule le
+surplus au lieu de s'arrêter (consigne 0 W, ouverture plafonnée à celle de la période).
+On peut ainsi poser une marche forcée sous condition en plein jour sans perdre le routage
+solaire. Exemple : heures creuses de midi, **ON si sonde < 35 °C, jusqu'à 42 °C** — les jours
+gris, le ballon rattrape au tarif heures creuses ; les jours de soleil, il route le surplus.
+Les relais **On/Off** et les actions à distance gardent l'ancien comportement (arrêt).
+
+Chaque période garde son propre état d'hystérésis : il ne passe plus d'une période à l'autre.
 
 ---
 
@@ -165,12 +178,17 @@ Connexion directe à un onduleur **SMA Sunny Boy** via le protocole Modbus TCP (
 ### Données lues
 - **Puissance AC instantanée** (registre 30775, S32) en W
 - **Énergie totale produite** (registre 30529, U32) en Wh
-- **Énergie journalière** calculée par différence depuis 6h00
+- **Énergie journalière** calculée par différence depuis minuit (calage sur le compteur du jour
+  de l'onduleur, registre 30535, au premier relevé après un démarrage)
 
 ### Comportement
 - Lecture toutes les **20 secondes**
 - Si l'onduleur est injoignable (nuit — certains modèles coupent) : retry toutes les 5 minutes
 - Valeur NaN SMA (`0x80000000`) interprétée comme 0 W (veille)
+- Chaque requête Modbus porte son identifiant de transaction, vérifié dans la réponse : une
+  réponse arrivée en retard n'est plus prise pour celle de la requête suivante (v1.30)
+- Compteur total qui recule ou bondit de plus de 50 kWh : lecture ignorée (acceptée au 5e
+  relevé identique, cas d'un onduleur remplacé)
 
 ### Activation
 Serveur Modbus à activer dans l'interface web SMA :
@@ -183,26 +201,40 @@ Serveur Modbus à activer dans l'interface web SMA :
 Prévision de production solaire basée sur l'API **Open-Meteo** (gratuite, sans clé API).
 
 ### Principe
-- Récupération du **rayonnement global quotidien** (`shortwave_radiation_sum` en MJ/m²)
+- Récupération du **rayonnement reçu par le plan des panneaux**, heure par heure
+  (`global_tilted_irradiance` en W/m², selon l'inclinaison et l'orientation réglées)
 - Conversion en production estimée :
-  `kWh = MJ/m² ÷ 3.6 × Puissance_crête_kWc × 0.80`
+  `kWh = Σ 24 h (W/m²) ÷ 1000 × Puissance_crête_kWc × 0.80`
 - Prévisions **J** (aujourd'hui) et **J+1** (demain) rafraîchies toutes les **2 heures**
+
+Jusqu'en v1.29, la prévision partait du rayonnement **horizontal** : en automne, elle
+sous-estimait la production de 35 % environ (médiane sur 12 jours d'octobre, 3 kWc à 30°
+plein sud), parce que le soleil bas frappe bien mieux un panneau incliné que le sol.
 
 ### Paramètres configurables
 - **Latitude / Longitude** GPS (avec bouton de géolocalisation automatique)
 - **Puissance crête PV** installée (kWc)
+- **Inclinaison** des panneaux (°, 0 = à plat, par défaut 30) et **orientation** (°, 0 = sud,
+  −90 = est, 90 = ouest, par défaut 0)
 - **Coefficient routable** (`BallonCoefAuto`) : fraction de la production effectivement dispatchable vers le ballon (auto-appris)
 
 ### Auto-apprentissage du coefficient
 Chaque soir à minuit, le routeur compare :
 - Production SMA réelle du jour (kWh)
-- Énergie réellement routée vers le ballon (kWh)
+- Surplus réellement disponible : soleil reçu par le ballon + énergie réinjectée (kWh)
 
-Le coefficient est ajusté par **moyenne pondérée (70/30)** et mémorisé dans `/coefauto.txt`.
+Le coefficient est ajusté par **moyenne pondérée (70/30)**, borné entre 20 et 90 %, et
+mémorisé dans `/coefauto.txt`. Une production du jour invraisemblable (plus de 2 × kWc × 24 h)
+est écartée.
+
+Jusqu'en v1.29, l'énergie « routée » était le temps d'ouverture de la sortie × la puissance
+de la résistance : elle comptait la marche forcée au réseau et les heures où le thermostat
+du ballon avait coupé, et le coefficient montait sans raison.
 
 ### Historique prévision/production
 Fichier `/histmeteo.csv` : 60 dernières lignes, une par jour.
-Format : `date;prévision_kWh;production_kWh;routée_kWh;coef`
+Format : `date;prévision_kWh;production_kWh;routée_kWh;coef` (routée = soleil reçu par le
+ballon depuis la v1.30)
 
 ---
 
@@ -238,7 +270,12 @@ Le ballon est chauffé lorsque le déficit est positif (besoin > surplus solaire
 - Puisage détecté quand la sonde du **bas** perd plus de 0,3 °C en 60 secondes
 - Énergie prélevée = Volume/2 × 1,163/1000 × (chute du bas + chute du haut) ; sans sonde du haut, la chute du haut est prise égale à celle du bas
 - Moyenne glissante sur ~5 jours : `UsageMoyen = 0.8 × ancien + 0.2 × nouveau`
-- Le déficit vise à couvrir `UsageMoyen × 1.3 − Réserve` (marge 30%)
+- Manque utile = `UsageMoyen × 1.3 − Réserve` (marge 30%)
+- Besoin retenu = **min(Besoin, montée à Tmin + manque utile)**, où la montée à Tmin est
+  l'énergie qui remonte jusqu'à Tmin l'eau qui est en dessous. Le mode intelligent ne chauffe
+  donc jamais plus que le mode standard. Jusqu'en v1.29, la montée n'était pas comptée : le
+  besoin ne baissait pas pendant la chauffe de l'eau froide, et la marche forcée de nuit
+  poussait le ballon à Tmin + manque même quand le soleil prévu aurait fait la fin
 - **Objectif** : ne maintenir que la réserve nécessaire, pas toujours chasser la température cible
 
 ### Placement des sondes
@@ -248,8 +285,15 @@ détecte les puisages et juge l'anti-légionelle ; la sonde du haut n'affine que
 ### Anti-légionelle
 - Jugé sur la sonde du **bas** : la cible n'est atteinte que lorsque le bas y est
 - Si le ballon n'a pas chauffé depuis `BallonAntiLegioJours` jours : chauffe forcée à 100%
-- Valable en mode présence **et** en mode absence
+- Surveillance active en absence, en mode intelligent et, depuis la v1.30, dès que le
+  chauffe-eau a une marche forcée **adaptative** (condition météo 5)
 - Le compteur `AbsenceJoursSansChauffe` est incrémenté chaque nuit à minuit
+- Fin de la chauffe (v1.30) : cible atteinte, **ou** thermostat du ballon atteint (sortie
+  grande ouverte, ballon à 0 W pendant 15 min, mesuré sur la voie T), **ou** 8 h écoulées
+  (signalé au journal). Avant, une cible plus haute que ce que la sonde voit ballon plein
+  laissait le ballon en marche forcée jour et nuit.
+- La température souhaitée se lit **sur la sonde** : si le thermostat du ballon coupe quand
+  la sonde du bas affiche 46 °C, une cible à 50 °C n'est jamais atteinte
 
 ---
 
@@ -343,7 +387,7 @@ La couleur du jour est affichée en badge dans l'en-tête (ex. "Tempo Bleu · HC
 
 ### Calcul des économies
 - `PrixKwhActuel()` : retourne le prix de l'instant (selon LTARF + Tempo si activé)
-- Économie journalière = énergie routée (kWh) × prix courant
+- Économie journalière = Σ (puissance du ballon − puissance soutirée, si positive) × prix courant
 - Cumul mensuel et annuel dans l'historique
 
 ---
@@ -519,9 +563,18 @@ vers le haut peut empêcher de booter.
 ## 16. Historiques et économies
 
 ### Calcul des économies
-Le gain affiché repose sur l'**énergie réellement détournée** : la puissance envoyée aux
-charges pendant que la maison n'achète rien au réseau. Cette énergie aurait autrement été
-exportée ; l'avoir consommée sur place évite de l'acheter plus tard.
+Le gain affiché repose sur l'**énergie réellement détournée** : à chaque mesure, la part de
+la puissance envoyée au ballon que la maison n'achète pas (puissance du ballon − puissance
+soutirée au réseau). Cette énergie aurait autrement été exportée ; l'avoir consommée sur
+place évite de l'acheter plus tard.
+
+Jusqu'en v1.29, le calcul était en tout ou rien : rien n'était compté dès que la maison
+soutirait plus de 20 W. Comme la régulation vise 0 W, cela arrivait une mesure sur deux, et
+la moitié environ du soleil envoyé au ballon était oubliée.
+
+La puissance du ballon est celle de la **voie T**. Sans voie T, elle est estimée par
+l'ouverture de la sortie × la puissance de la résistance (rien quand la sortie est grande
+ouverte et que la maison réinjecte : le thermostat a probablement coupé).
 
 Ce qui est chauffé en **marche forcée** est acheté au réseau et se trouve donc exclu du
 calcul. Le tarif appliqué est celui en vigueur à l'instant du détournement, ce qui respecte

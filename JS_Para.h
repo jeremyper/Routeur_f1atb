@@ -215,6 +215,8 @@ function SetParaFixe() {
     GID("MeteoLat").value = F.MeteoLat !== undefined ? F.MeteoLat : 46.5;
     GID("MeteoLon").value = F.MeteoLon !== undefined ? F.MeteoLon : 2.4;
     GID("MeteoPVcrete").value = F.MeteoPVcrete !== undefined ? F.MeteoPVcrete : 3.0;
+    GID("MeteoInclinaison").value = F.MeteoInclinaison !== undefined ? F.MeteoInclinaison : 30;
+    GID("MeteoAzimut").value = F.MeteoAzimut !== undefined ? F.MeteoAzimut : 0;
     GID("SmaOn").checked = F.SmaOn == 1;
     GID("SmaIP").value = F.SmaIP !== undefined ? F.SmaIP : "";
     GID("BallonCanal").value = F.BallonCanal !== undefined ? F.BallonCanal : -1;
@@ -325,6 +327,8 @@ function SendValues() {
   F.MeteoLat = parseFloat(GID("MeteoLat").value) || 0;
   F.MeteoLon = parseFloat(GID("MeteoLon").value) || 0;
   F.MeteoPVcrete = parseFloat(GID("MeteoPVcrete").value) || 3;
+  F.MeteoInclinaison = Math.min(90, Math.max(0, parseInt(GID("MeteoInclinaison").value, 10) || 0));
+  F.MeteoAzimut = Math.min(180, Math.max(-180, parseInt(GID("MeteoAzimut").value, 10) || 0));
   F.SmaOn = GID("SmaOn").checked ? 1 : 0;
   F.SmaIP = GID("SmaIP").value.trim();
   F.BallonCanal = parseInt(GID("BallonCanal").value, 10);

@@ -16,30 +16,51 @@ float PrixKwhActuel() {
   return estHC ? PrixHC : PrixHP;  //Tarif Base / HP-HC classique
 }
 
-//Economie estimée du jour en € : toute la production PV est considérée autoconsommée (routeur)
-//Utilise le tarif courant (couleur Tempo prise en compte) pour rester cohérent
 // Économie du jour : accumulée en continu depuis l'énergie réellement détournée.
 //
 // L'ancien calcul créditait toute la production de l'onduleur SMA, ce qui exigeait un
 // onduleur SMA — donc rien pour la plupart des installations — et surestimait le gain en
 // comptant aussi ce qui repartait vers le réseau.
 //
-// On ne retient désormais que la puissance envoyée aux charges pendant que la maison
-// n'achète rien : c'est de l'énergie obtenue sans la payer. Ce qui est chauffé en marche
-// forcée est acheté au réseau, donc explicitement exclu. Le tarif est appliqué à l'instant
-// où l'énergie est détournée, ce qui respecte les changements heure pleine / heure creuse
-// et les couleurs Tempo au fil de la journée.
+// On ne retient que la part de la puissance envoyée au ballon que la maison n'achète pas :
+// à chaque mesure, puissance du ballon moins puissance soutirée au réseau. Jusqu'en v1.29,
+// le calcul était en tout ou rien (rien dès que la maison soutirait plus de 20 W) : comme la
+// régulation vise 0 W, la maison soutire un peu une mesure sur deux, et la moitié du soleil
+// envoyé au ballon n'était pas comptée (1,7 kWh annoncés pour ~4 kWh le 30/10/2026). Ce qui
+// est chauffé en marche forcée est acheté au réseau et reste exclu de fait. Le tarif est
+// appliqué à l'instant où l'énergie est détournée, ce qui respecte les changements heure
+// pleine / heure creuse et les couleurs Tempo au fil de la journée.
+//
+// La réinjection est cumulée à côté : soleil + réinjection = surplus réellement disponible,
+// qui sert à apprendre le coefficient routable du ballon (voir ApprentissageBallon()).
 //
 // Appelée depuis la boucle 2 s ; dt est la durée réelle écoulée en millisecondes.
 void SuiviEconomieRoutee(unsigned long dt) {
-  if (PuissanceS_M > 20) return;  //La maison soutire : ce n'est pas du surplus
-  //La voie T alimente une charge : elle ne produit jamais. Un tore posé à l'envers range la
-  //puissance en "injectée" ; on additionne les deux sens pour rester juste dans les deux cas.
-  int pRoutee = PuissanceS_T + PuissanceI_T;
-  if (pRoutee <= 0) return;
-  float wh = float(pRoutee) * float(dt) / 3600000.0;
+  float h = float(dt) / 3600000.0;
+  EnergieInjecteeJour += float(PuissanceI_M) * h;
+  float pSolaire = PuissanceBallon() - float(PuissanceS_M);
+  if (pSolaire <= 0) return;
+  float wh = pSolaire * h;
   EnergieRouteeJour += wh;
   EconomieJour += wh / 1000.0 * PrixKwhActuel();
+}
+
+// Puissance reçue par le ballon (W).
+// La voie T alimente une charge : elle ne produit jamais. Un tore posé à l'envers range la
+// puissance en "injectée" ; on additionne les deux sens pour rester juste dans les deux cas.
+// Sans voie T (source à une seule mesure), on l'estime par l'ouverture de la sortie x la
+// puissance de la résistance. Une sortie grande ouverte alors que la maison réinjecte veut
+// dire, le plus souvent, que le thermostat du ballon a coupé : on ne compte alors rien. Dans
+// le doute, le surplus appris est sous-estimé, ce qui penche vers le confort (plus de forçage).
+float PuissanceBallon() {
+  float pT = float(PuissanceS_T + PuissanceI_T);
+  if (pT > 100) VoieTMesureBallon = true;
+  if (VoieTMesureBallon) return pT;
+  int i = IndexActionChauffeEau();
+  if (i < 0 || i >= NbActions || Actif[i] == MODE_INACTIF) return 0;
+  float ouverture = (100.0 - RetardF[i]) / 100.0;
+  if (ouverture >= 0.95 && PuissanceI_M > 150) return 0;
+  return ouverture * float(BallonPuissance);
 }
 
 //Conservée pour les appelants existants : le cumul se fait désormais en continu.

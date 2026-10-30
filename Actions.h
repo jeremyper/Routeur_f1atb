@@ -6,9 +6,12 @@ private:
   int Idx;  //Index
   void CallExterne(String host, String url, int port);
   bool MeteoOk(int i);
+  bool RepliRegulation(int i, bool ConditionsOk);
   unsigned long T_LastAction = 0;  //Horodatage en secondes (millis()/1000) ; unsigned pour gérer le wrap de millis()
   int tempoTimer = 0;
-  int16_t Tseuil = 2000;
+  //Seuil d'hystérésis en cours, propre à chaque période : partagé, il passait d'une période à
+  //l'autre (ex. forçage de nuit 40-45 °C puis rattrapage de midi 35-42 °C).
+  int16_t Tseuil[8] = { 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000 };
 
 
 

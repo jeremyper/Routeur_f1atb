@@ -2,7 +2,7 @@
 // celle du firmware officiel F1ATB (V17.26 et suivantes). La base amont est la V17.16.
 // Format imposé par Stockage.ino : décimal à deux chiffres, converti en entier par
 // round(100 * toFloat()) — "1.00" est stocké 100 et affiché 1.00.
-#define Version "1.29"
+#define Version "1.30"
 #define HOSTNAME "RMS-ESP32-"
 
 /*
@@ -634,6 +634,8 @@ byte MeteoOn = 0;                  //0=inactif, 1=actif
 float MeteoLat = 46.5;             //Latitude
 float MeteoLon = 2.4;              //Longitude
 float MeteoPVcrete = 3.0;          //Puissance crête installation en kWc
+int16_t MeteoInclinaison = 30;     //Inclinaison des panneaux en degrés (0 = à plat)
+int16_t MeteoAzimut = 0;           //Orientation (convention Open-Meteo) : 0 = sud, -90 = est, 90 = ouest
 float Meteo_PrevisionJour = -1;      //Production estimée aujourd'hui en kWh (-1 = pas de donnée)
 float Meteo_PrevisionDemain = -1;    //Production estimée demain en kWh (-1 = pas de donnée)
 float Meteo_PrevisionJourMemo = -1;  //Prévision du jour telle qu'annoncée (mémo pour l'historique prévision/production)
@@ -721,7 +723,9 @@ float PrixBlancHP = 0.1894;  //€/kWh Tempo Blanc Heure Pleine
 float PrixBlancHC = 0.1486;  //€/kWh Tempo Blanc Heure Creuse
 float PrixRougeHP = 0.7562;  //€/kWh Tempo Rouge Heure Pleine
 float PrixRougeHC = 0.1568;  //€/kWh Tempo Rouge Heure Creuse
-float EnergieRouteeJour = 0;  //Wh réellement détournés vers les charges aujourd'hui, hors marche forcée
+float EnergieRouteeJour = 0;  //Wh de soleil envoyés au ballon aujourd'hui (part non achetée au réseau)
+float EnergieInjecteeJour = 0;  //Wh réinjectés aujourd'hui : surplus que le ballon n'a pas pris
+bool VoieTMesureBallon = false;  //Vrai dès que la voie T a vu passer une puissance : elle mesure le ballon
 float EconomieJour = 0;   //€ économisés aujourd'hui (énergie détournée x tarif du moment)
 float EconomieMois = 0;   //€ économisés depuis le début du mois (persisté)
 float EconomieTotal = 0;  //€ économisés depuis l'installation (persisté)
@@ -1615,15 +1619,29 @@ void loop() {
       OK = "Oui";
       PuissanceValide = 4;
       PuissanceRecue = false;
+      ResetsSansMesure(true, false);
       esp_task_wdt_reset();
       delay(1);  //VERY VERY IMPORTANT for Watchdog Reset to apply.
     }
     if (PuissanceValide > 0) {
       PuissanceValide = PuissanceValide - 1;
-    } else {
+    } else if (ResetsSansMesure(false, false) < 3 || millis() > 1800000UL) {
+      //Les 3 premières fois, puis toutes les 30 min : un redémarrage peut débloquer la liaison
+      ResetsSansMesure(false, true);
       TelnetPrintln("Puissances non reçues => Reset ");
       delay(5000);
       ReseT("Puissances non reçues => Reset ");
+    } else {
+      //Le 17/10/2026, le compteur JSY s'est tu 16 h : 330 redémarrages toutes les 3 min, chacun
+      //écrit dans l'historique, sans effet (seule une coupure d'alimentation l'a relancé). Après
+      //3 échecs, le routeur reste en marche : page web accessible, régulation fermée faute de
+      //mesure (sécurité 5 s de GestionOverproduction), nouvel essai toutes les 30 min.
+      static bool signale = false;
+      if (!signale) {
+        JournalAjoute("Mesures de puissance absentes après 3 redémarrages : nouvel essai toutes les 30 min. Si le compteur ne répond plus, coupez l'alimentation du routeur");
+        signale = true;
+      }
+      esp_task_wdt_reset();  //La boucle tourne : le chien de garde n'a pas à redémarrer à notre place
     }
     TelnetPrintln("Puissance reçue : " + OK);
     TelnetPrintln("Charge Lecture RMS (coeur 0) en ms - Min : " + String(int(previousTimeRMSMin)) + " Moy : " + String(int(previousTimeRMSMoy)) + "  Max : " + String(int(previousTimeRMSMax)));
@@ -1746,21 +1764,63 @@ void GestionAbsence() {
   }
   ModeAbsenceActif = actif;
 
-  //Sécurité anti-légionelle : active en absence ET en mode intelligent (qui peut garder le ballon tiède).
-  //Elle se juge sur la sonde du BAS : quand le bas atteint la cible, tout le ballon est chaud.
-  bool surveillance = (ModeAbsenceActif || BallonModeIntel == 1);
+  //Sécurité anti-légionelle : active en absence, en mode intelligent et avec le forçage adaptatif,
+  //qui tous peuvent garder le ballon tiède. Elle se juge sur la sonde du BAS : quand le bas
+  //atteint la cible, tout le ballon est chaud.
+  bool surveillance = (ModeAbsenceActif || BallonModeIntel == 1 || ForcageAdaptatifBallon());
+  static unsigned long debutAntiLegio = 0;    //millis() du déclenchement
+  static unsigned long debutSansCourant = 0;  //millis() depuis lequel le ballon ne prend plus rien
   if (BallonCanal >= 0 && TemperatureValide[BallonCanal] > 0) {
     if (temperature[BallonCanal] >= float(BallonTcible)) {
       AbsenceJoursSansChauffe = 0;   //Cible atteinte : compteur remis à zéro
       if (AntiLegioEnCours) JournalAjoute("Anti-légionelle : chauffe complète terminée");
       AntiLegioEnCours = false;
+    } else if (AntiLegioEnCours) {
+      //La chauffe ne s'arrêtait qu'à la cible. Si la sonde ne peut pas l'atteindre (thermostat
+      //du ballon réglé plus bas, sonde placée dans une zone plus froide), le ballon restait en
+      //marche forcée jour et nuit, routage solaire perdu, sans que le bouton Arrêter y puisse
+      //rien. Deux sorties de plus :
+      // - le thermostat a coupé : sortie grande ouverte, ballon à 0 W pendant 15 min. Le ballon
+      //   est à sa température maximale, c'est le but de la chauffe complète ;
+      // - 8 h se sont écoulées : on arrête et on le signale.
+      int i = IndexActionBallon();
+      bool ouvert = (i >= 0 && Retard[i] == 0);
+      if (VoieTMesureBallon && ouvert && PuissanceBallon() < 100) {
+        if (debutSansCourant == 0) debutSansCourant = millis();
+      } else {
+        debutSansCourant = 0;
+      }
+      String tSonde = String(temperature[BallonCanal], 1);
+      if (debutSansCourant != 0 && millis() - debutSansCourant > 900000UL) {
+        JournalAjoute("Anti-légionelle : thermostat du ballon atteint (sonde à " + tSonde + " °C), chauffe complète terminée");
+        AbsenceJoursSansChauffe = 0;
+        AntiLegioEnCours = false;
+      } else if (millis() - debutAntiLegio > 28800000UL) {
+        JournalAjoute("Anti-légionelle : arrêtée après 8 h, sonde à " + tSonde + " °C sans atteindre " + String(BallonTcible) + " °C. Baissez la température souhaitée ou vérifiez le thermostat");
+        AbsenceJoursSansChauffe = 0;
+        AntiLegioEnCours = false;
+      }
     } else if (surveillance && AbsenceAntiLegio > 0 && AbsenceJoursSansChauffe >= AbsenceAntiLegio) {
-      if (!AntiLegioEnCours) JournalAjoute("Anti-légionelle : chauffe de sécurité déclenchée");
+      JournalAjoute("Anti-légionelle : chauffe de sécurité déclenchée");
       AntiLegioEnCours = true;       //Trop longtemps sans chauffe : déclenchement
+      debutAntiLegio = millis();
+      debutSansCourant = 0;
     }
   } else {
     AntiLegioEnCours = false;        //Pas de sonde ballon valide : pas de cycle
   }
+}
+
+// Le chauffe-eau a-t-il une marche forcée « adaptative » (condition météo 5) ? Elle ne chauffe
+// la nuit que ce que le soleil n'apportera pas : les jours où la prévision se trompe, le ballon
+// peut rester tiède, comme en mode intelligent. La surveillance anti-légionelle s'impose donc.
+bool ForcageAdaptatifBallon() {
+  int i = IndexActionBallon();
+  if (i < 0) return false;
+  for (int p = 0; p < LesActions[i].NbPeriode && p < 8; p++) {
+    if (LesActions[i].Type[p] == 2 && LesActions[i].MeteoCond[p] == 5) return true;
+  }
+  return false;
 }
 
 // ************
@@ -1893,7 +1953,11 @@ void GestionOverproduction(unsigned long dt) {  // appelée à ~200ms, dt = dur�
       TelnetPrintln(String(buffer));
     }
     if (Retard[i] == 100) {  // Force en cas d'arret des IT
-      LesActions[i].Arreter();
+      //Une action inactive dont la sortie sert aussi à une action active (cas des actions
+      //héritées de F1ATB, laissées sur le GPIO du chauffe-eau) remettait cette sortie à
+      //l'arrêt toutes les 200 ms, entre deux passages de l'interruption 10 ms : le relais
+      //statique perdait des demi-alternances. Elle n'y touche plus.
+      if (Actif[i] != MODE_INACTIF || !GpioPrisParActionActive(i)) LesActions[i].Arreter();
       PulseOn[i] = 0;  //Stop Triac ou relais
     } else {
 
@@ -1935,6 +1999,34 @@ void GestionOverproduction(unsigned long dt) {  // appelée à ~200ms, dt = dur�
     }
     TelnetPrintln(dispOut);
   }
+}
+
+// La sortie (GPIO) de l'action i est-elle aussi celle d'une autre action active ?
+bool GpioPrisParActionActive(int i) {
+  int g = LesActions[i].Gpio;
+  if (g <= 0) return false;
+  for (int j = 0; j < NbActions; j++) {
+    if (j != i && LesActions[j].Actif != MODE_INACTIF && LesActions[j].Gpio == g) return true;
+  }
+  return false;
+}
+
+// Nombre de redémarrages consécutifs faute de mesure de puissance. Conservé en mémoire RTC
+// (survit à ESP.restart(), pas à une coupure d'alimentation) ; la signature distingue une
+// valeur posée par nous du contenu aléatoire de la RTC après une mise sous tension.
+RTC_NOINIT_ATTR uint32_t ResetsMesureSignature;
+RTC_NOINIT_ATTR uint32_t ResetsMesureNb;
+uint32_t ResetsSansMesure(bool raz, bool incremente) {
+  const uint32_t SIGNATURE = 0x50AE0130;
+  static bool verifie = false;  //Contrôle une fois par démarrage
+  if (!verifie) {
+    if (ResetsMesureSignature != SIGNATURE || esp_reset_reason() == ESP_RST_POWERON) ResetsMesureNb = 0;
+    ResetsMesureSignature = SIGNATURE;
+    verifie = true;
+  }
+  if (raz) ResetsMesureNb = 0;
+  if (incremente && ResetsMesureNb < 1000) ResetsMesureNb++;
+  return ResetsMesureNb;
 }
 
 void InitGPIOs() {

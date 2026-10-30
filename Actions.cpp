@@ -123,6 +123,15 @@ int16_t Action::CanalTempEnCours(int Heure) {
   return CanalEnCours;
 }
 
+// Période de marche forcée dont les conditions (température, météo, tarif, autre action) ne
+// sont pas remplies : jusqu'en v1.29, l'action s'arrêtait. Sur un relais statique, elle
+// régule désormais le surplus, comme une période « PW » : une marche forcée sous condition
+// en plein jour (heures creuses de midi, par exemple) ne coupe plus le routage solaire.
+// Les relais tout-ou-rien et les actions à distance gardent l'ancien comportement.
+bool Action::RepliRegulation(int i, bool ConditionsOk) {
+  return !ConditionsOk && Type[i] == 2 && (Actif == 2 || Actif == 3);  //2 = multi-sinus, 3 = train de sinus
+}
+
 Action::ParaPeriode Action::ParaEnCours(int Heure, float Temperature, int Ltarfbin, int Retard) {  //Retourne type d'action  active à cette heure , test temperature OK et seuils
   ParaPeriode P;
   P.Type = 1;                                 //Off
@@ -133,9 +142,9 @@ Action::ParaPeriode Action::ParaEnCours(int Heure, float Temperature, int Ltarfb
       ConditionsOk = true;
       if (Temperature > -100.0) {
         if (Tinf[i] < 1500 && Tsup[i] < 1500 && Tinf[i] < Tsup[i]) {  // on applique un hystérésis dont les valeurs sont Tinf et Tsup
-          if (Tempx10 > Tinf[i] && Tempx10 > Tsup[i]) Tseuil = Tinf[i];
-          if (Tempx10 < Tinf[i] && Tempx10 < Tsup[i]) Tseuil = Tsup[i];
-          if (Tempx10 > Tseuil) { ConditionsOk = false; }
+          if (Tempx10 > Tinf[i] && Tempx10 > Tsup[i]) Tseuil[i] = Tinf[i];
+          if (Tempx10 < Tinf[i] && Tempx10 < Tsup[i]) Tseuil[i] = Tsup[i];
+          if (Tempx10 > Tseuil[i]) { ConditionsOk = false; }
         } else {
           if (Tinf[i] <= 1000 && Tempx10 > Tinf[i]) { ConditionsOk = false; }
           if (Tsup[i] <= 1000 && Tempx10 < Tsup[i]) { ConditionsOk = false; }
@@ -153,6 +162,11 @@ Action::ParaPeriode Action::ParaEnCours(int Heure, float Temperature, int Ltarfb
       P.Vmin = Vmin[i];
       P.Vmax = Vmax[i];
       if (P.Type==2) P.Vmax=ONouvre[i] ;
+      if (RepliRegulation(i, ConditionsOk)) {  //Marche forcée non autorisée : on route le surplus
+        P.Type = 3;
+        P.Vmin = 0;           //Viser 0 W échangé avec le réseau
+        P.Vmax = ONouvre[i];  //Ouverture maximale choisie pour cette période
+      }
     }
   }
 
@@ -173,9 +187,9 @@ byte Action::TypeEnCours(int Heure, float Temperature, int Ltarfbin, int Retard)
       ConditionsOk = true;
       if (Temperature > -100.0) {
         if (Tinf[i] < 1500 && Tsup[i] < 1500 && Tinf[i] < Tsup[i]) {  // on applique un hystérésis dont les valeurs sont Tinf et Tsup
-          if (Tempx10 > Tinf[i] && Tempx10 > Tsup[i]) Tseuil = Tinf[i];
-          if (Tempx10 < Tinf[i] && Tempx10 < Tsup[i]) Tseuil = Tsup[i];
-          if (Tempx10 > Tseuil) { ConditionsOk = false; }
+          if (Tempx10 > Tinf[i] && Tempx10 > Tsup[i]) Tseuil[i] = Tinf[i];
+          if (Tempx10 < Tinf[i] && Tempx10 < Tsup[i]) Tseuil[i] = Tsup[i];
+          if (Tempx10 > Tseuil[i]) { ConditionsOk = false; }
         } else {
           if (Tinf[i] <= 1000 && Tempx10 > Tinf[i]) { ConditionsOk = false; }
           if (Tsup[i] <= 1000 && Tempx10 < Tsup[i]) { ConditionsOk = false; }
@@ -190,6 +204,7 @@ byte Action::TypeEnCours(int Heure, float Temperature, int Ltarfbin, int Retard)
         if (O_on[i] != 0 && ((int(O_on[i]) > ExtOuvert && Retard == 100) || ExtValide == 0)) ConditionsOk = false;   //Inferieur au seuil haut et pas encore ouvert
       }
       if (ConditionsOk) S = Type[i];
+      if (RepliRegulation(i, ConditionsOk)) S = 3;
     }
   }
 

@@ -364,6 +364,8 @@ void DeserializeConfiguration(String json) {
   MeteoLat = conf["MeteoLat"].isNull() ? MeteoLat : conf["MeteoLat"].as<float>();
   MeteoLon = conf["MeteoLon"].isNull() ? MeteoLon : conf["MeteoLon"].as<float>();
   MeteoPVcrete = conf["MeteoPVcrete"].isNull() ? MeteoPVcrete : conf["MeteoPVcrete"].as<float>();
+  MeteoInclinaison = conf["MeteoInclinaison"].isNull() ? MeteoInclinaison : constrain(conf["MeteoInclinaison"].as<int>(), 0, 90);
+  MeteoAzimut = conf["MeteoAzimut"].isNull() ? MeteoAzimut : constrain(conf["MeteoAzimut"].as<int>(), -180, 180);
   LastMeteoMillis = 0;  //Forcer une relecture météo après changement de paramètres
   SmaOn = conf["SmaOn"] | 0;
   SmaIP = conf["SmaIP"].isNull() ? SmaIP : conf["SmaIP"].as<String>();
@@ -551,6 +553,8 @@ String SerializeConfiguration() {
   conf["MeteoLat"] = MeteoLat;
   conf["MeteoLon"] = MeteoLon;
   conf["MeteoPVcrete"] = MeteoPVcrete;
+  conf["MeteoInclinaison"] = MeteoInclinaison;
+  conf["MeteoAzimut"] = MeteoAzimut;
   conf["SmaOn"] = SmaOn;
   conf["SmaIP"] = SmaIP;
   conf["BallonVolume"] = BallonVolume;

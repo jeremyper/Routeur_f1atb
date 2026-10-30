@@ -81,7 +81,8 @@ Toute redistribution, modifiée ou non, doit rester sous la même licence et fou
   la réserve d'eau chaude ; voir [où placer les sondes](#placement-des-sondes-du-ballon)
 
 ### Prévision météo solaire
-- Source **Open-Meteo** (gratuite, sans clé API) : latitude, longitude, puissance crête
+- Source **Open-Meteo** (gratuite, sans clé API) : latitude, longitude, puissance crête,
+  inclinaison et orientation des panneaux (rayonnement sur le plan des panneaux)
 - Production estimée aujourd'hui / demain, rafraîchie périodiquement
 - **Nouvelle condition de période** : « actif si prévision demain/aujourd'hui < ou ≥ seuil »
   — par exemple *ne forcer le chauffe-eau la nuit que si demain s'annonce couvert*
@@ -254,6 +255,13 @@ compte à part, si bien qu'un bas froid n'efface pas l'eau chaude encore disponi
 Gardez au moins **10 °C d'écart** entre la température souhaitée et la minimale utile : la
 réserve d'eau chaude se calcule sur cet écart. Trop serré, la réserve paraît toujours vide et
 le routeur chauffe sans arrêt.
+
+La température souhaitée se lit **sur la sonde du bas**, pas sur le thermostat du ballon.
+Regardez ce qu'affiche la sonde quand le thermostat coupe (sortie à 100 %, ballon à 0 W) :
+si elle plafonne par exemple à 46 °C, une cible à 50 °C n'est jamais atteinte. Réglez alors
+la cible un peu en dessous (45 °C). Depuis la v1.30, la chauffe anti-légionelle s'arrête
+d'elle-même quand le thermostat coupe, mais le bilan et le forçage restent calculés sur
+cette cible.
 
 **Calibrer avant de poser.** Une sonde DS18B20 peut se tromper d'un demi-degré. Plongez les
 deux sondes et un thermomètre dans le même verre d'eau, attendez 2 minutes, puis

@@ -4,9 +4,13 @@
 // * en heures creuses uniquement si la production de demain sera faible)*
 // ***********************************************************************
 
-// L'API Open-Meteo retourne le rayonnement global quotidien (shortwave_radiation_sum)
-// en MJ/m². Conversion en production estimée :
-//   kWh estimés = MJ/m² / 3.6 (=> kWh/m²) x Puissance crête (kWc) x rendement 0.80
+// L'API Open-Meteo retourne, heure par heure, le rayonnement reçu par un plan incliné
+// comme les panneaux (global_tilted_irradiance, W/m², moyenne de l'heure écoulée).
+// La somme des 24 heures d'un jour donne des kWh/m². Conversion en production estimée :
+//   kWh estimés = somme W/m² / 1000 x Puissance crête (kWc) x rendement 0.80
+// Le rayonnement horizontal (shortwave_radiation_sum) utilisé jusqu'en v1.29 sous-estimait
+// la production d'environ 35 % en automne : le soleil bas frappe bien mieux un panneau
+// incliné que le sol. L'écart s'inverse presque en été, aucun coefficient fixe ne convenait.
 
 void Call_Meteo_data() {
   if (MeteoOn != 1 || ModeReseau != 0) {
@@ -21,7 +25,10 @@ void Call_Meteo_data() {
 
   const char* adr_Meteo_Host = "api.open-meteo.com";
   String Host = String(adr_Meteo_Host);
-  String url = "/v1/forecast?latitude=" + String(MeteoLat, 4) + "&longitude=" + String(MeteoLon, 4) + "&daily=shortwave_radiation_sum&timezone=auto&forecast_days=2";
+  //timeformat=unixtime raccourcit le tableau des heures : la réponse tient en ~1 Ko
+  String url = "/v1/forecast?latitude=" + String(MeteoLat, 4) + "&longitude=" + String(MeteoLon, 4)
+               + "&hourly=global_tilted_irradiance&tilt=" + String(MeteoInclinaison) + "&azimuth=" + String(MeteoAzimut)
+               + "&timezone=auto&forecast_days=2&timeformat=unixtime";
   String MeteoData = "";
   MeteoData.reserve(2048);  //voir Tempo_RTE.ino : evite les reallocations en boucle
   uint32_t minAvantMeteo = esp_get_minimum_free_heap_size();
@@ -70,36 +77,49 @@ void Call_Meteo_data() {
   while (clientSecuMeteo.connected() && (millis() - timeout < 5000)) {
     line = clientSecuMeteo.readStringUntil('\n');
     MeteoData += line;
-    if (line.indexOf("shortwave_radiation_sum") >= 0 && line.indexOf("]") > 0) break;
+    int deb = line.indexOf("\"global_tilted_irradiance\":[");
+    if (deb >= 0 && line.indexOf("]", deb) > 0) break;
     yield();
   }
   clientSecuMeteo.stop();
   SuiviPlancher("Lecture reponse meteo", minAvantMeteo);
 
-  // Extraction du tableau "shortwave_radiation_sum":[jour,demain]
-  int p = MeteoData.lastIndexOf("\"shortwave_radiation_sum\":[");
+  // Extraction du tableau "global_tilted_irradiance":[48 valeurs horaires]. L'unité figure
+  // aussi dans "hourly_units" ("global_tilted_irradiance":"W/m²"), sans crochet : le "[" lève
+  // l'ambiguïté.
+  int p = MeteoData.indexOf("\"global_tilted_irradiance\":[");
   if (p < 0) {
     StockMessage("Open-Meteo : données invalides");
     return;
   }
-  String S = MeteoData.substring(p + 27);
-  int q = S.indexOf("]");
-  if (q < 0) {
+  int fin = MeteoData.indexOf("]", p);
+  if (fin < 0) {
     StockMessage("Open-Meteo : données invalides");
     return;
   }
-  S = S.substring(0, q);  // "25.5,12.3"
-  q = S.indexOf(",");
-  if (q < 0) {
-    StockMessage("Open-Meteo : données incomplètes");
+  //Les 24 premières heures sont celles d'aujourd'hui (timezone=auto), les 24 suivantes demain.
+  //Un jour de changement d'heure décale d'une heure la frontière de minuit : la nuit, le
+  //rayonnement est nul, l'erreur aussi.
+  float radJour = 0, radDemain = 0;  //Wh/m²
+  int n = 0;
+  int pos = p + 28;  //longueur de "global_tilted_irradiance":[ guillemets compris
+  while (pos < fin && n < 48) {
+    int virgule = MeteoData.indexOf(",", pos);
+    if (virgule < 0 || virgule > fin) virgule = fin;
+    float v = MeteoData.substring(pos, virgule).toFloat();  //"null" donne 0
+    if (n < 24) radJour += v;
+    else radDemain += v;
+    n++;
+    pos = virgule + 1;
+  }
+  if (n < 48) {
+    StockMessage("Open-Meteo : données incomplètes (" + String(n) + " heures)");
     return;
   }
-  float radJour = S.substring(0, q).toFloat();    //MJ/m² aujourd'hui
-  float radDemain = S.substring(q + 1).toFloat();  //MJ/m² demain
 
   //Production estimée en kWh (rendement global 0.80)
-  Meteo_PrevisionJour = radJour / 3.6 * MeteoPVcrete * 0.80;
-  Meteo_PrevisionDemain = radDemain / 3.6 * MeteoPVcrete * 0.80;
+  Meteo_PrevisionJour = radJour / 1000.0 * MeteoPVcrete * 0.80;
+  Meteo_PrevisionDemain = radDemain / 1000.0 * MeteoPVcrete * 0.80;
   Meteo_PrevisionJourMemo = Meteo_PrevisionJour;  //Mémo de la prévision annoncée pour l'historique quotidien
   StockMessage("Météo : prévision solaire jour " + String(Meteo_PrevisionJour, 1) + " kWh, demain " + String(Meteo_PrevisionDemain, 1) + " kWh");
 }
